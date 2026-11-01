@@ -161,6 +161,7 @@ def score_episode(episode: dict, task: dict) -> dict:
         "settlement_ok": float(settlement_ok),
         "calls": n_calls,
         "errors": len(errors),
+        "steps": len(episode["steps"]),
     }
 
 

@@ -65,6 +65,16 @@ def tool_reward(completions, expected_tools=None, **kwargs):
     return scores
 
 
+def efficiency_reward(completions, **kwargs):
+    """Reward turns whose calls are all distinct; duplicate calls get no credit."""
+    scores = []
+    for item in completions:
+        calls = parse_calls(_text(item)) or []
+        keys = [json.dumps([call["tool_name"], call["arguments"]], sort_keys=True, default=str) for call in calls]
+        scores.append(1.0 if keys and len(keys) == len(set(keys)) else 0.0)
+    return scores
+
+
 def answer_reward(completions, answer=None, **kwargs):
     if answer is None:
         return [0.0 for _ in completions]
@@ -87,6 +97,7 @@ def main() -> None:
     parser.add_argument("--lr", type=float, default=1e-6)
     parser.add_argument("--max-completion-length", type=int, default=256)
     parser.add_argument("--max-steps-per-turn", type=int, default=3)
+    parser.add_argument("--efficiency", action="store_true", help="add a no-duplicate-calls reward")
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
 
@@ -103,12 +114,16 @@ def main() -> None:
 
     from agenttune.core.backend_factory import create_agentic_trainer
 
+    reward_funcs = [format_reward, tool_reward, answer_reward]
+    if args.efficiency:
+        reward_funcs.append(efficiency_reward)
+
     trainer = create_agentic_trainer(
         algorithm="grpo",
         model=args.model,
         train_dataset=dataset,
         tools=TOOL_FUNCTIONS,
-        reward_funcs=[format_reward, tool_reward, answer_reward],
+        reward_funcs=reward_funcs,
         output_dir=args.out,
         max_steps=args.max_steps,
         per_device_train_batch_size=args.batch_size,

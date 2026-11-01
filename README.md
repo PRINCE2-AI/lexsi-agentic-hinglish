@@ -4,9 +4,30 @@ A solo-friendly Track 3 (Agentic Fine-tuning) entry for the **Lexsi AI Safety & 
 
 Tiny Aya learns to call tools reliably in Hinglish: it records shared expenses, carries the ledger across turns, converts USD/EUR, and settles balances. Success is checked against the **final ledger state**, not an LLM judge, so the before/after numbers are reproducible.
 
+## Problem statement (Track 3)
+
+The live Track 3 statements are on [hackathon.lexsi.ai/tracks](https://hackathon.lexsi.ai/tracks). This project targets one as primary and measures a second:
+
+> **Reliable tool calling** — *Train an agent with reinforcement learning on real tool-calling rollouts to choose the right tool, pass well-formed arguments and call tools in the right order.*
+
+> **Efficient trajectories** — *Cut redundant, looping or failed tool calls and the number of steps per task, without lowering the success rate.*
+
+The third and final statement this project touches is *Data and database agents*: the agent answers finance questions by operating on a ledger and is rewarded on verified results, not on text similarity.
+
+How each clause is measured, all without an LLM judge:
+
+| Statement clause | Metric in this repo |
+|---|---|
+| choose the right tool | `tac` — every required tool was called |
+| well-formed arguments | `ter`, `arr` — failed calls and argument reliability |
+| right order | `ledger_ok` — order shows up as a correct final ledger |
+| redundant calls | `rad` — repeated identical calls |
+| looping | `lcf` — episode hit max steps without `finish` |
+| steps per task | `calls`, `steps` — averaged in `summary.json` |
+| without lowering success | `success` reported alongside, never traded away |
+
 ## Why this project
 
-- Track 3 asks for an agent that is **post-trained for reliable tool use**, evaluated with AuditKIT.
 - The Cohere models do not render `tools` in their chat template, so AgentTune falls back to tool schemas in the system prompt. Baseline Tiny Aya is therefore weak at this task — which gives a real, measurable before/after gap.
 - The outcome is deterministic. Judges can re-run the dataset and get the same ledger.
 - Hinglish + Aya's multilingual pretraining is a differentiated angle in a crowded safety hackathon.
@@ -15,7 +36,7 @@ Tiny Aya learns to call tools reliably in Hinglish: it records shared expenses, 
 
 - Deterministic ledger and five stateless tools (`add_expense`, `convert_currency`, `get_balance`, `settle_up`, `finish`).
 - **20 Hinglish tasks**, all verified against the oracle (`20/20` success, 0 tool errors).
-- Programmatic metrics: `success`, `tac`, `arr`, `ter`, `rad`, `lcf`, plus answer match.
+- Programmatic metrics: `success`, `tac`, `arr`, `ter`, `rad`, `lcf`, plus answer match and trajectory efficiency (`calls`, `steps`).
 - Standalone Tiny Aya baseline runner (transformers, 4-bit) that writes AgentTune-compatible `trajectories.jsonl`.
 - GRPO training script using `create_agentic_trainer` with custom rewards.
 - AuditKIT handoff via `episodes_from_agenttune`.
@@ -90,7 +111,7 @@ python scripts/run_baseline.py --model CohereLabs/tiny-aya-global --limit 20
 # 2) training: smoke test first, then a real run
 python scripts/train_grpo.py --check
 python scripts/train_grpo.py --max-steps 10
-python scripts/train_grpo.py --max-steps 120
+python scripts/train_grpo.py --max-steps 120 --efficiency
 
 # 3) tuned evaluation
 python scripts/run_baseline.py --model CohereLabs/tiny-aya-global \
@@ -114,6 +135,8 @@ Programmatic, computed in `hinglish_agent/runner.py`:
 | `ter` | tool error rate: failed calls / total calls |
 | `rad` | redundant actions: repeated identical calls |
 | `lcf` | loop collapse: episode hit max steps without `finish` |
+| `calls` | tool calls per task (mean) — efficiency |
+| `steps` | agent turns per task (mean) — efficiency |
 
 Fill this in after your runs:
 
@@ -125,13 +148,15 @@ Fill this in after your runs:
 | ter | TBD | TBD |
 | rad | TBD | TBD |
 | lcf | TBD | TBD |
+| Avg tool calls / task | TBD | TBD |
+| Avg steps / task | TBD | TBD |
 
 The oracle table should be perfect; use it as a sanity check, not as a result.
 
 ## Training notes
 
 - Tools are **stateless**: every ledger tool takes and returns the ledger object. Parallel GRPO rollouts cannot leak state.
-- The GRPO reward is format + expected tool + answer number. The real quality signal is the post-hoc ledger check, so do not tune rewards to chase `success` on the eval set.
+- The GRPO reward is format + expected tool + answer number; `--efficiency` adds a no-duplicate-calls reward for the *Efficient trajectories* statement. The real quality signal is the post-hoc ledger check, so do not tune rewards to chase `success` on the eval set.
 - Baseline must be measured **before** training on the same 20 tasks. If you change tasks after seeing baseline results, re-run both.
 - `max_steps=10` only proves the pipeline works. It is not a result.
 - If GRPO OOMs or crawls on a T4, reduce `--max-completion-length`, keep `--generations 2`, and use `--batch-size 1 --grad-accum 4`. Do not switch to 8B/32B models on free hardware.
