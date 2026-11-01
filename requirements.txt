@@ -1,0 +1,19 @@
+# AgentTune is not on PyPI.
+agenttune @ git+https://github.com/Lexsi-Labs/AgentTune.git
+
+# Evaluation and artifacts
+auditkit
+datasets>=2.20
+huggingface_hub[cli]>=0.30
+
+# Model + training stack
+# AgentTune pins torch 2.11 and transformers >= 5.15; install on Linux/CUDA
+# (Colab or Kaggle), not on the local Windows shell.
+transformers>=5.15
+peft
+trl
+accelerate
+bitsandbytes
+
+# Demo
+gradio>=5.0

@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Runs and artifacts
+runs/
+*.log
+.env
+
+# Hugging Face cache if someone points it here
+.cache/
