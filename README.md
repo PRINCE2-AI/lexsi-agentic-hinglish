@@ -159,7 +159,8 @@ The oracle table should be perfect; use it as a sanity check, not as a result.
 - The GRPO reward is format + expected tool + answer number; `--efficiency` adds a no-duplicate-calls reward for the *Efficient trajectories* statement. The real quality signal is the post-hoc ledger check, so do not tune rewards to chase `success` on the eval set.
 - Baseline must be measured **before** training on the same 20 tasks. If you change tasks after seeing baseline results, re-run both.
 - `max_steps=10` only proves the pipeline works. It is not a result.
-- If GRPO OOMs or crawls on a T4, reduce `--max-completion-length`, keep `--generations 2`, and use `--batch-size 1 --grad-accum 4`. Do not switch to 8B/32B models on free hardware.
+- TRL loads the policy in float32 unless told otherwise, which is ~13.4 GB for a 3.35B model and OOMs a 16 GB T4. The script now passes `model_init_kwargs={"dtype": torch.float16}` by default (`--dtype bfloat16` on Ampere+).
+- If GRPO still OOMs on a T4, use `--max-completion-length 128 --max-steps-per-turn 2`, keep `--generations 2`, and `--batch-size 1 --grad-accum 4`. Do not switch to 8B/32B models on free hardware.
 
 ## Demo deployment
 

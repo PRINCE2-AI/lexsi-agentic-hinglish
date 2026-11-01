@@ -12,9 +12,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from pathlib import Path
+
+# Must be set before torch initialises CUDA; reduces fragmentation on a 16 GB T4.
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -98,6 +102,12 @@ def main() -> None:
     parser.add_argument("--max-completion-length", type=int, default=256)
     parser.add_argument("--max-steps-per-turn", type=int, default=3)
     parser.add_argument("--efficiency", action="store_true", help="add a no-duplicate-calls reward")
+    parser.add_argument(
+        "--dtype",
+        choices=["float16", "bfloat16"],
+        default="float16",
+        help="model dtype; TRL defaults to float32, which OOMs a 16 GB T4",
+    )
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
 
@@ -112,6 +122,7 @@ def main() -> None:
 
     dataset = build_dataset(tasks)
 
+    import torch
     from agenttune.core.backend_factory import create_agentic_trainer
 
     reward_funcs = [format_reward, tool_reward, answer_reward]
@@ -124,6 +135,8 @@ def main() -> None:
         train_dataset=dataset,
         tools=TOOL_FUNCTIONS,
         reward_funcs=reward_funcs,
+        model_init_kwargs={"dtype": getattr(torch, args.dtype)},
+        gradient_checkpointing=True,
         output_dir=args.out,
         max_steps=args.max_steps,
         per_device_train_batch_size=args.batch_size,
