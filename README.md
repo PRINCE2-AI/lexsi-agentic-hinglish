@@ -72,7 +72,7 @@ tests/
 
 ## Quickstart
 
-One-click Colab (T4 GPU): [notebooks/colab_starter.ipynb](notebooks/colab_starter.ipynb) — open it from GitHub's "Open in Colab" badge.
+One-click Colab (T4 GPU): [notebooks/colab_grpo.ipynb](notebooks/colab_grpo.ipynb) — fresh clone, verifies the fp16 fix, then baseline and a 2-step GRPO smoke test. The older [colab_starter.ipynb](notebooks/colab_starter.ipynb) still works but trains in float32.
 
 Pure-Python checks (Windows/macOS/Linux, no GPU, no model download):
 
