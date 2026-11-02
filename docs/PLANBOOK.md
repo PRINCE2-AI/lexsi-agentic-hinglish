@@ -315,7 +315,7 @@ Training details:
 | LoRA | r=16, alpha=32, all-linear, dropout 0.05 | same shape as GRPO stage |
 | Seq length | 4096 | the system prompt alone is 4,966 chars (~1.4k tokens); 4-expense tasks reach ~7.8k chars. Skip, never truncate, an overlong target. |
 | Batch | 1 × grad-accum 4 | T4-safe; 100 rows × 3 epochs = 75 optimizer steps |
-| LR | 2e-4, warmup 3% | standard LoRA SFT; a fixed warmup of 10 never reaches peak on short runs |
+| LR | 2e-4, warmup = 3% of total steps | transformers 5 removed `warmup_ratio`; compute `warmup_steps` from the step count |
 | Epochs | 3 | ~300 micro-batches for 100 rows |
 | Loss | assistant tokens only (`-100` on system/user) | learn format + ledger copy, not prompts |
 | Save | adapter + merged fp16 model | GRPO needs a plain model path |

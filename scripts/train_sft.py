@@ -273,9 +273,11 @@ def main() -> None:
         task_type="CAUSAL_LM",
     )
     model = get_peft_model(model, peft_config)
+    expected_steps = max(1, int(len(encoded) * args.epochs) // args.grad_accum)
+    warmup_steps = max(1, int(expected_steps * 0.03))
     model.print_trainable_parameters()
     print("loss: assistant-token cross-entropy (skips masked logits)")
-    print(f"plan: ~{int(len(encoded) * args.epochs) // args.grad_accum} optimizer steps")
+    print(f"plan: ~{expected_steps} optimizer steps, warmup {warmup_steps}")
 
     training_args = TrainingArguments(
         output_dir=str(args.out),
@@ -283,7 +285,7 @@ def main() -> None:
         gradient_accumulation_steps=args.grad_accum,
         num_train_epochs=args.epochs,
         learning_rate=args.lr,
-        warmup_ratio=0.03,
+        warmup_steps=warmup_steps,
         logging_steps=2,
         save_steps=25,
         save_total_limit=2,
