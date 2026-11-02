@@ -197,6 +197,8 @@ def score_episode(episode: dict, task: dict) -> dict:
         success = bool(ledger_ok and settlement_ok)
     else:
         success = bool(answer_ok)
+    if task.get("require_answer"):
+        success = bool(success and answer_ok)
 
     return {
         "task_id": task.get("id"),

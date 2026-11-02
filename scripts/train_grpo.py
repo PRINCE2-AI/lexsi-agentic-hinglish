@@ -45,6 +45,10 @@ def build_dataset(tasks: list[dict]):
             ],
             "answer": task["answer_text"],
             "expected_tools": task["expected_tools"],
+            # JSON strings: Arrow cannot hold one struct type for parameters
+            # whose keys differ between tools.
+            "oracle_actions": json.dumps(task["actions"], ensure_ascii=False),
+            "answer_contains": json.dumps(task.get("answer_contains") or []),
         }
         for task in tasks
     ]
@@ -67,6 +71,23 @@ def tool_reward(completions, expected_tools=None, **kwargs):
         names = {call["tool_name"] for call in (parse_calls(_text(item)) or [])}
         scores.append(1.0 if expected and all(name in names for name in expected) else 0.0)
     return scores
+
+
+def graded_reward(completions, oracle_actions=None, answer_contains=None, **kwargs):
+    """Format + tool name + parameter names + parameter values + answer (0..9).
+
+    The binary `tool_reward` above collapses to a single bit, which is why the
+    first smoke run reported `frac_reward_zero_std=1`.
+    """
+    from hinglish_agent.rewards import grade_text
+
+    if oracle_actions is None:
+        return [0.0 for _ in completions]
+    needles = answer_contains or [None] * len(completions)
+    return [
+        grade_text(_text(item), actions, needs)["total"]
+        for item, actions, needs in zip(completions, oracle_actions, needles)
+    ]
 
 
 def efficiency_reward(completions, **kwargs):
@@ -103,6 +124,12 @@ def main() -> None:
     parser.add_argument("--max-steps-per-turn", type=int, default=3)
     parser.add_argument("--efficiency", action="store_true", help="add a no-duplicate-calls reward")
     parser.add_argument(
+        "--reward-mode",
+        choices=["graded", "binary"],
+        default="graded",
+        help="graded: partial credit per tool call (0..9); binary: the old 0/1 rewards",
+    )
+    parser.add_argument(
         "--dtype",
         choices=["float16", "bfloat16"],
         default="float16",
@@ -118,6 +145,17 @@ def main() -> None:
     print(f"expected tools: {tasks[0]['expected_tools']}")
 
     if args.check:
+        from hinglish_agent.rewards import MAX_REWARD, grade_text
+        from hinglish_agent.runner import run_oracle
+
+        for task in tasks[:3]:
+            episode = run_oracle(task)
+            text = "\n".join(
+                message["content"] for message in episode["messages"]
+                if message["role"] == "assistant"
+            )
+            parts = grade_text(text, task["actions"], task.get("answer_contains"))
+            print(f"{task['id']}: graded {parts['total']:.2f}/{MAX_REWARD} {parts}")
         return
 
     dataset = build_dataset(tasks)
@@ -125,7 +163,10 @@ def main() -> None:
     import torch
     from agenttune.core.backend_factory import create_agentic_trainer
 
-    reward_funcs = [format_reward, tool_reward, answer_reward]
+    if args.reward_mode == "graded":
+        reward_funcs = [graded_reward]
+    else:
+        reward_funcs = [format_reward, tool_reward, answer_reward]
     if args.efficiency:
         reward_funcs.append(efficiency_reward)
 
