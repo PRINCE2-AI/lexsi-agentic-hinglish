@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -161,6 +162,48 @@ def make_collator(pad_token_id: int):
     return collate
 
 
+def masked_causal_lm_loss(
+    logits,
+    labels,
+    vocab_size: int | None = None,
+    num_items_in_batch=None,
+    ignore_index: int = -100,
+    shift_labels=None,
+    **kwargs,
+):
+    """Cross-entropy on supervised tokens only.
+
+    transformers' ForCausalLMLoss upcasts every logit to fp32. At 2670 tokens x
+    256k vocab that is ~2.7 GB and OOMs a 14.5 GB T4. Only ~450 tokens per row
+    carry labels, so select them before the upcast and skip the rest.
+    """
+    import torch
+    import torch.nn.functional as F
+
+    vocab_size = vocab_size or logits.size(-1)
+    if shift_labels is None:
+        labels = F.pad(labels, (0, 1), value=ignore_index)
+        shift_labels = labels[..., 1:].contiguous()
+
+    flat_logits = logits.view(-1, vocab_size)
+    flat_labels = shift_labels.view(-1).to(flat_logits.device)
+    keep = flat_labels != ignore_index
+    if not keep.any():
+        return flat_logits.sum() * 0.0
+
+    loss = F.cross_entropy(
+        flat_logits[keep].float(), flat_labels[keep], ignore_index=ignore_index, reduction="sum"
+    )
+    if num_items_in_batch is not None:
+        denom = (
+            num_items_in_batch.to(loss.device)
+            if torch.is_tensor(num_items_in_batch)
+            else num_items_in_batch
+        )
+        return loss / denom
+    return loss / keep.sum()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", default="CohereLabs/tiny-aya-global")
@@ -189,6 +232,7 @@ def main() -> None:
     if args.check:
         return
 
+    os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
     import torch
     from peft import LoraConfig, get_peft_model
     from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments
@@ -215,6 +259,7 @@ def main() -> None:
     print(f"tokens: min={min(lengths)} mean={sum(lengths) // len(lengths)} max={max(lengths)}")
 
     model = AutoModelForCausalLM.from_pretrained(args.model, dtype=torch.float16).to("cuda")
+    model.loss_function = masked_causal_lm_loss
     model.config.use_cache = False
     model.gradient_checkpointing_enable()
     model.enable_input_require_grads()
@@ -228,6 +273,7 @@ def main() -> None:
     )
     model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()
+    print("loss: assistant-token cross-entropy (skips masked logits)")
 
     training_args = TrainingArguments(
         output_dir=str(args.out),
