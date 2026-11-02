@@ -86,22 +86,32 @@ def build_conversations(tasks: list[dict]) -> list[dict]:
     return rows
 
 
+def _template_ids(tokenizer, messages: list[dict], add_generation_prompt: bool) -> list[int]:
+    """apply_chat_template returns a BatchEncoding by default in transformers 5."""
+    output = tokenizer.apply_chat_template(
+        messages,
+        tokenize=True,
+        add_generation_prompt=add_generation_prompt,
+        return_dict=False,
+    )
+    if isinstance(output, dict):
+        output = output["input_ids"]
+    if hasattr(output, "tolist"):
+        output = output.tolist()
+    if output and isinstance(output[0], list):
+        output = output[0]
+    return list(output)
+
+
 def encode_row(row: dict, tokenizer, max_len: int):
     """Tokenise once; mask everything except the assistant spans."""
     messages = row["messages"]
-    full_ids = tokenizer.apply_chat_template(messages, tokenize=True, add_generation_prompt=False)
-    if not isinstance(full_ids, list):  # some versions return a tensor
-        full_ids = list(full_ids)
+    full_ids = _template_ids(tokenizer, messages, add_generation_prompt=False)
     labels = [-100] * len(full_ids)
 
     for index in row["targets"]:
-        prefix_ids = tokenizer.apply_chat_template(
-            messages[:index], tokenize=True, add_generation_prompt=True
-        )
-        upto_ids = tokenizer.apply_chat_template(
-            messages[: index + 1], tokenize=True, add_generation_prompt=False
-        )
-        prefix_ids, upto_ids = list(prefix_ids), list(upto_ids)
+        prefix_ids = _template_ids(tokenizer, messages[:index], add_generation_prompt=True)
+        upto_ids = _template_ids(tokenizer, messages[: index + 1], add_generation_prompt=False)
         if full_ids[: len(prefix_ids)] != prefix_ids:
             raise ValueError(
                 f"{row['id']}: chat template is not prefix-stable at assistant turn {index}"
