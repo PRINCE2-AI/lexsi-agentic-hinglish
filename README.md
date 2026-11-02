@@ -53,8 +53,11 @@ hinglish_agent/
   runner.py      agent loop, oracle, metrics
   metrics.py     summary + markdown table
 data/
-  build_tasks.py generates and verifies tasks.jsonl
-  tasks.jsonl    20 Hinglish tasks (generated, do not hand-edit)
+  task_builder.py shared scenario -> expected-fields conversion
+  build_tasks.py  generates and verifies tasks.jsonl
+  tasks.jsonl     20 Hinglish starter tasks (generated, do not hand-edit)
+  build_generated.py  100 train + 24 held-out eval tasks, oracle-verified
+  tasks_train.jsonl / tasks_eval.jsonl
 scripts/
   run_oracle_eval.py  verify the dataset, no GPU
   run_baseline.py     Tiny Aya baseline / tuned evaluation
@@ -81,11 +84,12 @@ Pure-Python checks (Windows/macOS/Linux, no GPU, no model download):
 
 ```bash
 python data/build_tasks.py
+python data/build_generated.py
 python scripts/run_oracle_eval.py
 python tests/test_scaffold.py
 ```
 
-Expected: `oracle check: 20/20 success, 0 tool errors`.
+Expected: `oracle check: 20/20 success, 0 tool errors`, then `train: 100/100` and `eval: 24/24`, no train/eval text overlap.
 
 ### Tiny Aya access
 
@@ -108,12 +112,13 @@ pip install -r requirements.txt
 Then:
 
 ```bash
-# 1) baseline
-python scripts/run_baseline.py --model CohereLabs/tiny-aya-global --limit 20
+# 1) baseline on the held-out split (left column, ~45 min)
+python scripts/run_baseline.py --model CohereLabs/tiny-aya-global \
+    --tasks data/tasks_eval.jsonl --out runs/baseline_eval
 
 # 1b) SFT warm-start on oracle trajectories (installs the JSON + ledger-copy format)
 python scripts/train_sft.py --check
-python scripts/train_sft.py --tasks data/tasks.jsonl --epochs 3 \
+python scripts/train_sft.py --tasks data/tasks_train.jsonl --epochs 3 \
     --out runs/sft --merge-out runs/sft_merged
 
 # 2) GRPO from the SFT model: smoke test first, then a real run
@@ -121,15 +126,15 @@ python scripts/train_grpo.py --check
 python scripts/train_grpo.py --model runs/sft_merged --max-steps 2
 python scripts/train_grpo.py --model runs/sft_merged --max-steps 60 --efficiency
 
-# 3) tuned evaluation
+# 3) tuned evaluation on held-out tasks
 python scripts/run_baseline.py --model CohereLabs/tiny-aya-global \
-    --adapter runs/grpo_tiny_aya --out runs/tuned
+    --adapter runs/sft --tasks data/tasks_eval.jsonl --no-4bit --out runs/sft_eval
 
 # 4) AuditKIT handoff
-python scripts/auditkit_eval.py --trajectories runs/baseline/trajectories.jsonl
+python scripts/auditkit_eval.py --trajectories runs/baseline_eval/trajectories.jsonl
 ```
 
-`--limit 20` is the whole starter set. On a free T4, baseline inference took **2062 s (34 min)** for 20 tasks, and a 2-step GRPO smoke took **786 s (381 s/step)**. So 120 GRPO steps is ~12.7 h — longer than a safe Kaggle session. Plan for 30-step blocks with checkpoints, or 60 steps only when SFT has shortened the trajectories.
+`--limit 20` is the whole starter set. On a free T4, baseline inference took **2062 s (34 min)** for 20 tasks, and the smoke-adapter evaluation took **2247 s (37 min)**; budget ~45 min for 24 held-out tasks each. A 2-step GRPO smoke took **786 s (381 s/step)**, so 60 steps is ~6.4 h — split into 30-step blocks with checkpoints.
 
 ## Metrics
 

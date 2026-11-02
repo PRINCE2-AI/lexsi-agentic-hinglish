@@ -314,9 +314,9 @@ Training details:
 | Precision | fp16 | 4-bit merge is annoying; 6.7 GB fits one T4 with checkpointing |
 | LoRA | r=16, alpha=32, all-linear, dropout 0.05 | same shape as GRPO stage |
 | Seq length | 4096 | the system prompt alone is 4,966 chars (~1.4k tokens); 4-expense tasks reach ~7.8k chars. Skip, never truncate, an overlong target. |
-| Batch | 1 × grad-accum 8 | T4-safe |
-| LR | 2e-4, warmup 10 | standard LoRA SFT; only ~40 optimizer steps on 100 rows |
-| Epochs | 3 | ~300 steps for 100 rows |
+| Batch | 1 × grad-accum 4 | T4-safe; 100 rows × 3 epochs = 75 optimizer steps |
+| LR | 2e-4, warmup 3% | standard LoRA SFT; a fixed warmup of 10 never reaches peak on short runs |
+| Epochs | 3 | ~300 micro-batches for 100 rows |
 | Loss | assistant tokens only (`-100` on system/user) | learn format + ledger copy, not prompts |
 | Save | adapter + merged fp16 model | GRPO needs a plain model path |
 

@@ -214,8 +214,9 @@ def main() -> None:
     parser.add_argument("--epochs", type=float, default=3.0)
     parser.add_argument("--lr", type=float, default=2e-4)
     parser.add_argument("--max-len", type=int, default=4096)
-    parser.add_argument("--grad-accum", type=int, default=8)
+    parser.add_argument("--grad-accum", type=int, default=4)
     parser.add_argument("--no-merge", action="store_true")
+    parser.add_argument("--resume", action="store_true")
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
 
@@ -274,6 +275,7 @@ def main() -> None:
     model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()
     print("loss: assistant-token cross-entropy (skips masked logits)")
+    print(f"plan: ~{int(len(encoded) * args.epochs) // args.grad_accum} optimizer steps")
 
     training_args = TrainingArguments(
         output_dir=str(args.out),
@@ -281,9 +283,9 @@ def main() -> None:
         gradient_accumulation_steps=args.grad_accum,
         num_train_epochs=args.epochs,
         learning_rate=args.lr,
-        warmup_steps=10,
+        warmup_ratio=0.03,
         logging_steps=2,
-        save_steps=10,
+        save_steps=25,
         save_total_limit=2,
         fp16=True,
         optim="adamw_torch",
@@ -298,7 +300,7 @@ def main() -> None:
         train_dataset=TokenDataset(encoded),
         data_collator=make_collator(tokenizer.pad_token_id),
     )
-    result = trainer.train()
+    result = trainer.train(resume_from_checkpoint=True if args.resume else None)
     print(f"done: {result}")
 
     model.save_pretrained(args.out)

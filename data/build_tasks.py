@@ -12,18 +12,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from hinglish_agent.ledger import (  # noqa: E402
-    balance_inr,
-    empty_ledger,
-    public_balances,
-    settle_ledger,
-)
+from data.task_builder import A, finalize  # noqa: E402
 from hinglish_agent.runner import run_oracle, score_episode  # noqa: E402
-from hinglish_agent.tools import execute_tool  # noqa: E402
-
-
-def A(name: str, **parameters) -> dict:
-    return {"tool_name": name, "parameters": parameters}
 
 
 SCENARIOS = [
@@ -234,69 +224,8 @@ SCENARIOS = [
 ]
 
 
-def fmt(value: float) -> str:
-    return f"{float(value):.2f}".rstrip("0").rstrip(".")
-
-
 def build() -> list[dict]:
-    tasks = []
-    for scenario in SCENARIOS:
-        ledger = empty_ledger()
-        for action in scenario["actions"]:
-            arguments = dict(action["parameters"])
-            if action["tool_name"] in {"add_expense", "get_balance", "settle_up"}:
-                arguments["ledger"] = ledger
-            result = execute_tool(action["tool_name"], arguments)
-            if not result.get("ok"):
-                raise RuntimeError(f"{scenario['id']}: {result}")
-            if isinstance(result.get("ledger"), dict):
-                ledger = result["ledger"]
-
-        query = scenario["query"]
-        checks_ledger = ledger["expense_count"] > 0
-        if query["type"] == "balance":
-            amount = balance_inr(ledger, query["person"])
-            answer_text = f"{query['person']} ka balance {amount:.2f} INR hai."
-            contains = [fmt(amount)]
-        elif query["type"] == "settle":
-            transfers = settle_ledger(ledger)
-            if transfers:
-                parts = [f"{t['from']} -> {t['to']} {t['amount_inr']:.2f} INR" for t in transfers]
-                answer_text = "Settlement: " + "; ".join(parts)
-                contains = [fmt(t["amount_inr"]) for t in transfers]
-            else:
-                answer_text = "Sab settled hai, koi transfer nahi chahiye."
-                contains = ["settled"]
-        elif query["type"] == "convert":
-            value = execute_tool(
-                "convert_currency",
-                {
-                    "amount": query["amount"],
-                    "from_currency": query["from"],
-                    "to_currency": query["to"],
-                },
-            )["value"]
-            answer_text = f"{query['amount']} {query['from']} = {value:.2f} {query['to']}."
-            contains = [fmt(value)]
-        else:
-            raise ValueError(f"unknown query type {query['type']}")
-
-        tasks.append(
-            {
-                "id": scenario["id"],
-                "task": scenario["task"],
-                "expected_tools": scenario["expected_tools"],
-                "checks_ledger": checks_ledger,
-                "expected_balances": public_balances(ledger) if checks_ledger else {},
-                "expected_settlements": settle_ledger(ledger) if query["type"] == "settle" else [],
-                "answer_contains": contains,
-                "answer_text": answer_text,
-                "actions": [
-                    {"tool_name": a["tool_name"], "parameters": a["parameters"]} for a in scenario["actions"]
-                ],
-            }
-        )
-    return tasks
+    return [{"id": scenario["id"], **finalize(scenario)} for scenario in SCENARIOS]
 
 
 def main() -> None:
