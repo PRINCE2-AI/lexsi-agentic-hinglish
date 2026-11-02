@@ -274,6 +274,11 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--seed", type=int, default=20261103)
     parser.add_argument("--out-dir", default=str(ROOT / "data"))
+    parser.add_argument(
+        "--freeze",
+        action="store_true",
+        help="rewrite data/hard_eval.sha256; without it a drifted eval file aborts",
+    )
     args = parser.parse_args()
 
     rng = random.Random(args.seed)
@@ -293,15 +298,27 @@ def main() -> None:
         ("tasks_hard_train.jsonl", train_tasks),
     ):
         path = out_dir / filename
-        with path.open("w", encoding="utf-8") as handle:
+        # newline="\n": the frozen hash must be byte-identical on Windows and
+        # Linux, otherwise the pin only holds on the machine that wrote it.
+        with path.open("w", encoding="utf-8", newline="\n") as handle:
             for task in tasks:
                 handle.write(json.dumps(task, ensure_ascii=False) + "\n")
         written[filename] = path
         print(f"wrote {len(tasks)} -> {path}")
 
     digest = hashlib.sha256(written["tasks_hard_eval.jsonl"].read_bytes()).hexdigest()
-    (out_dir / "hard_eval.sha256").write_text(f"{digest}  tasks_hard_eval.jsonl\n", encoding="utf-8")
-    print(f"hard eval sha256: {digest}")
+    pin_path = out_dir / "hard_eval.sha256"
+    if args.freeze or not pin_path.exists():
+        pin_path.write_text(f"{digest}  tasks_hard_eval.jsonl\n", encoding="utf-8", newline="\n")
+        print(f"hard eval sha256: {digest} (frozen)")
+    else:
+        pinned = pin_path.read_text(encoding="utf-8").split()[0]
+        if pinned != digest:
+            raise SystemExit(
+                f"hard eval drifted: pinned {pinned}, regenerated {digest}. "
+                "Fix the generator, or re-freeze deliberately with --freeze."
+            )
+        print(f"hard eval sha256: {digest} (matches pin)")
 
     families = {}
     for task in eval_tasks:
