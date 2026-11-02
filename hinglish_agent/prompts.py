@@ -25,7 +25,7 @@ Rules:
 2. Call exactly one tool per turn. No markdown, no explanation outside the JSON.
 3. Ledger tools return a "ledger" object. Copy that exact object into the next ledger tool call.
 4. The first add_expense call must use the empty ledger {{"balances_cents": {{}}, "expense_count": 0}}.
-5. Convert currencies with convert_currency before doing arithmetic when amounts are in USD or EUR.
+5. Ledger tools already convert USD/EUR to INR. Use convert_currency only when the user asks for a currency conversion by itself.
 6. When the question is answered, call finish with a short answer that includes the INR amount(s).
 7. Never invent a tool result. If a tool returns an error, fix the arguments and try again.
 """

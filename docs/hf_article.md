@@ -9,9 +9,9 @@ Teaching Tiny Aya to split Hinglish expenses without losing the ledger
 
 ## TL;DR
 
-- Baseline Tiny Aya Global fails [X]/20 Hinglish tool-use tasks.
-- After [GRPO / self-heal] on [N] tasks, success goes from [X]% to [Y]%.
-- Tool error rate drops from [X]% to [Y]%, loop collapse from [X]% to [Y]%.
+- Baseline Tiny Aya Global succeeds on **5/20** Hinglish tool-use tasks (25%), with **70%** loop collapse and **9.25** tool calls per task versus the oracle's 3.5.
+- After [SFT warm-start + GRPO] on [N] tasks, success goes from 25% to [Y]%.
+- Tool error rate drops from 11.84% to [Y]%, loop collapse from 70% to [Y]%.
 - Adapter, dataset, logs and Space are linked below.
 
 ## Problem statement
@@ -47,6 +47,7 @@ Aya is multilingual; most agent benchmarks are English. Hinglish expense splitti
 | arr / ter | argument reliability / tool errors | the model can use the schema |
 | rad | redundant calls | cost and latency |
 | lcf | loop collapse | agent gets stuck |
+| strict / strict_rate | bare JSON turns | format is actually usable without a parser |
 | calls / steps | tool calls and turns per task (mean) | trajectory efficiency |
 
 ## Results
@@ -55,14 +56,17 @@ Paste the before/after table from `runs/baseline/summary.json` and `runs/tuned/s
 
 | Metric | Baseline | Tuned |
 |---|---:|---:|
-| success | | |
-| tac | | |
-| arr | | |
-| ter | | |
-| rad | | |
-| lcf | | |
-| avg tool calls / task | | |
-| avg steps / task | | |
+| success | 25.00% | |
+| tac | 45.00% | |
+| arr | 88.16% | |
+| ter | 11.84% | |
+| rad | 29.84% | |
+| lcf | 70.00% | |
+| strict (all turns) | [recompute] | |
+| avg tool calls / task | 9.25 | |
+| avg steps / task | 9.60 | |
+
+Baseline: 20 tasks, Kaggle T4, 4-bit, greedy decoding, 2062 s total. Five tasks pass, and one of those (`t13`) spends 22 calls and 4 errors before the ledger happens to be correct — which is why success is reported next to `calls`, `steps` and `lcf`. This pilot used the earlier currency-rule wording; re-measure with the current prompt before freezing this table.
 
 ## Error analysis
 

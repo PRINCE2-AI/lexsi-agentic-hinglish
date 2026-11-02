@@ -10,7 +10,12 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from hinglish_agent.parser import parse_calls  # noqa: E402
-from hinglish_agent.runner import answer_contains, run_episode, score_episode  # noqa: E402
+from hinglish_agent.runner import (  # noqa: E402
+    answer_contains,
+    run_episode,
+    run_oracle,
+    score_episode,
+)
 
 
 class Scripted:
@@ -50,9 +55,20 @@ def test_agent_loop() -> None:
     ]
     scores = score_episode(run_episode(Scripted(good), task), task)
     assert scores["success"] == 1.0 and scores["tac"] == 1.0 and scores["ter"] == 0.0
+    assert scores["strict"] == 1.0 and scores["strict_rate"] == 1.0
 
     bad = score_episode(run_episode(Scripted(["I cannot help with that."]), task), task)
     assert bad["success"] == 0.0 and bad["lcf"] == 1.0 and bad["ter"] == 1.0
+    assert bad["strict"] == 0.0 and bad["strict_rate"] == 0.0
+
+    fenced = score_episode(
+        run_episode(Scripted(['```json\n[{"tool_name":"finish","parameters":{"answer":"900"}}]\n```']), task),
+        task,
+    )
+    assert fenced["strict"] == 0.0 and fenced["strict_rate"] == 0.0
+
+    oracle = score_episode(run_oracle(task), task)
+    assert oracle["success"] == 1.0 and oracle["strict"] == 1.0
 
     wrong = [
         '[{"tool_name":"add_expense","parameters":{"ledger":{"balances_cents":{},"expense_count":0},"payer":"Rahul","amount":1200,"currency":"INR","participants":["Rahul","Priya"]}}]',
@@ -62,9 +78,28 @@ def test_agent_loop() -> None:
     assert wrong_scores["success"] == 0.0
 
 
+def test_sft_traces() -> None:
+    from scripts.train_sft import build_conversations
+
+    rows = build_conversations(load_tasks())
+    assert len(rows) == 20
+    for row in rows:
+        for index in row["targets"]:
+            message = row["messages"][index]
+            assert message["role"] == "assistant"
+            assert parse_calls(message["content"]) is not None
+        assert parse_calls(row["messages"][row["targets"][-1]]["content"])[0]["tool_name"] == "finish"
+
+    first = rows[0]
+    balance_call = parse_calls(first["messages"][first["targets"][1]]["content"])[0]
+    assert balance_call["tool_name"] == "get_balance"
+    assert balance_call["parameters"]["ledger"]["expense_count"] == 1
+
+
 def main() -> None:
     test_parser()
     test_agent_loop()
+    test_sft_traces()
     print("all scaffold tests passed")
 
 

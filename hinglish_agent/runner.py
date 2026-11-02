@@ -6,11 +6,34 @@ import json
 import re
 
 from .ledger import clean_ledger, empty_ledger, ledgers_match, settle_ledger, settlements_match
-from .parser import parse_calls
+from .parser import format_call, parse_calls
 from .prompts import CORRECTION_PROMPT, build_messages
 from .tools import execute_tool
 
 LEDGER_TOOLS = {"add_expense", "get_balance", "settle_up"}
+
+
+def is_strict_json(text: str) -> bool:
+    """True only for a bare JSON array of well-formed tool calls, no fences, no prose."""
+    if not isinstance(text, str):
+        return False
+    text = text.strip()
+    if not text or text[0] not in "[{" or text[-1] not in "]}":
+        return False
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        return False
+    if isinstance(payload, dict):
+        payload = [payload]
+    if not isinstance(payload, list) or not payload:
+        return False
+    return all(
+        isinstance(item, dict)
+        and item.get("tool_name")
+        and isinstance(item.get("parameters"), dict)
+        for item in payload
+    )
 
 
 def run_episode(call_model, task: dict, max_steps: int = 8) -> dict:
@@ -74,6 +97,7 @@ def run_episode(call_model, task: dict, max_steps: int = 8) -> dict:
 def run_oracle(task: dict) -> dict:
     """Execute the ground-truth actions. Used to verify the dataset itself."""
     steps = []
+    messages = build_messages(task["task"])
     ledger = empty_ledger()
 
     for action in task.get("actions", []):
@@ -86,15 +110,36 @@ def run_oracle(task: dict) -> dict:
         if isinstance(result.get("ledger"), dict):
             ledger = result["ledger"]
         steps.append({"name": action["tool_name"], "arguments": arguments, "result": result})
+        messages.append(
+            {
+                "role": "assistant",
+                "content": format_call({"tool_name": action["tool_name"], "parameters": arguments}),
+            }
+        )
+        messages.append(
+            {
+                "role": "user",
+                "content": json.dumps(
+                    {"tool_results": [{"tool_name": action["tool_name"], "result": result}]},
+                    ensure_ascii=False,
+                ),
+            }
+        )
 
     answer = task["answer_text"]
     result = execute_tool("finish", {"answer": answer})
     steps.append({"name": "finish", "arguments": {"answer": answer}, "result": result})
+    messages.append(
+        {
+            "role": "assistant",
+            "content": format_call({"tool_name": "finish", "parameters": {"answer": answer}}),
+        }
+    )
 
     return {
         "task_id": task.get("id"),
         "task": task["task"],
-        "messages": [{"role": "user", "content": task["task"]}],
+        "messages": messages,
         "steps": steps,
         "final_response": answer,
         "done": True,
@@ -143,6 +188,11 @@ def score_episode(episode: dict, task: dict) -> dict:
     )
     answer_ok = answer_contains(episode.get("final_response", ""), task.get("answer_contains") or [])
 
+    assistant_turns = [m for m in episode.get("messages", []) if m.get("role") == "assistant"]
+    strict_turns = sum(1 for m in assistant_turns if is_strict_json(m.get("content", "")))
+    strict = 1.0 if assistant_turns and strict_turns == len(assistant_turns) else 0.0
+    strict_rate = strict_turns / len(assistant_turns) if assistant_turns else 0.0
+
     if task.get("checks_ledger"):
         success = bool(ledger_ok and settlement_ok)
     else:
@@ -159,6 +209,8 @@ def score_episode(episode: dict, task: dict) -> dict:
         "answer_ok": float(answer_ok),
         "ledger_ok": float(ledger_ok),
         "settlement_ok": float(settlement_ok),
+        "strict": strict,
+        "strict_rate": round(strict_rate, 4),
         "calls": n_calls,
         "errors": len(errors),
         "steps": len(episode["steps"]),

@@ -36,7 +36,7 @@ How each clause is measured, all without an LLM judge:
 
 - Deterministic ledger and five stateless tools (`add_expense`, `convert_currency`, `get_balance`, `settle_up`, `finish`).
 - **20 Hinglish tasks**, all verified against the oracle (`20/20` success, 0 tool errors).
-- Programmatic metrics: `success`, `tac`, `arr`, `ter`, `rad`, `lcf`, plus answer match and trajectory efficiency (`calls`, `steps`).
+- Programmatic metrics: `success`, `tac`, `arr`, `ter`, `rad`, `lcf`, plus answer match, trajectory efficiency (`calls`, `steps`) and strict-JSON rate.
 - Standalone Tiny Aya baseline runner (transformers, 4-bit) that writes AgentTune-compatible `trajectories.jsonl`.
 - GRPO training script using `create_agentic_trainer` with custom rewards.
 - AuditKIT handoff via `episodes_from_agenttune`.
@@ -58,7 +58,9 @@ data/
 scripts/
   run_oracle_eval.py  verify the dataset, no GPU
   run_baseline.py     Tiny Aya baseline / tuned evaluation
+  train_sft.py        oracle-trajectory SFT warm-start
   train_grpo.py       GRPO fine-tuning
+  score_strict.py     recover strict-JSON metrics from saved trajectories
   auditkit_eval.py    load run logs into AuditKIT
 space/
   app.py              Gradio demo
@@ -66,6 +68,7 @@ docs/
   hf_article.md       submission write-up skeleton
   roi.md              ROI comparison template
   demo_script.md      3-minute Demo Day script
+  PLANBOOK.md         full Nov 2–14 operating plan (data, SFT→GRPO, artifacts, risks)
 tests/
   test_scaffold.py    no-dependency sanity tests
 ```
@@ -108,10 +111,15 @@ Then:
 # 1) baseline
 python scripts/run_baseline.py --model CohereLabs/tiny-aya-global --limit 20
 
-# 2) training: smoke test first, then a real run
+# 1b) SFT warm-start on oracle trajectories (installs the JSON + ledger-copy format)
+python scripts/train_sft.py --check
+python scripts/train_sft.py --tasks data/tasks.jsonl --epochs 3 \
+    --out runs/sft --merge-out runs/sft_merged
+
+# 2) GRPO from the SFT model: smoke test first, then a real run
 python scripts/train_grpo.py --check
-python scripts/train_grpo.py --max-steps 10
-python scripts/train_grpo.py --max-steps 120 --efficiency
+python scripts/train_grpo.py --model runs/sft_merged --max-steps 2
+python scripts/train_grpo.py --model runs/sft_merged --max-steps 60 --efficiency
 
 # 3) tuned evaluation
 python scripts/run_baseline.py --model CohereLabs/tiny-aya-global \
@@ -121,7 +129,7 @@ python scripts/run_baseline.py --model CohereLabs/tiny-aya-global \
 python scripts/auditkit_eval.py --trajectories runs/baseline/trajectories.jsonl
 ```
 
-`--limit 20` is the whole starter set. On a free T4, baseline inference is roughly 5–10 minutes for 20 tasks; 120 GRPO steps is a multi-hour job, so run it on Kaggle's 2×T4 (30 h/week) and keep `--max-completion-length 256`.
+`--limit 20` is the whole starter set. On a free T4, baseline inference took **2062 s (34 min)** for 20 tasks, and a 2-step GRPO smoke took **786 s (381 s/step)**. So 120 GRPO steps is ~12.7 h — longer than a safe Kaggle session. Plan for 30-step blocks with checkpoints, or 60 steps only when SFT has shortened the trajectories.
 
 ## Metrics
 
@@ -135,6 +143,9 @@ Programmatic, computed in `hinglish_agent/runner.py`:
 | `ter` | tool error rate: failed calls / total calls |
 | `rad` | redundant actions: repeated identical calls |
 | `lcf` | loop collapse: episode hit max steps without `finish` |
+| `answer_ok` | answer text contains the expected amount |
+| `strict` | every assistant turn is bare JSON (no fences, no prose) |
+| `strict_rate` | fraction of assistant turns that are strict |
 | `calls` | tool calls per task (mean) — efficiency |
 | `steps` | agent turns per task (mean) — efficiency |
 
@@ -142,14 +153,24 @@ Fill this in after your runs:
 
 | Metric | Baseline | Tuned |
 |---|---:|---:|
-| Task success | TBD | TBD |
-| tac | TBD | TBD |
-| arr | TBD | TBD |
-| ter | TBD | TBD |
-| rad | TBD | TBD |
-| lcf | TBD | TBD |
-| Avg tool calls / task | TBD | TBD |
-| Avg steps / task | TBD | TBD |
+| Task success | 25.00% | TBD |
+| tac | 45.00% | TBD |
+| arr | 88.16% | TBD |
+| ter | 11.84% | TBD |
+| rad | 29.84% | TBD |
+| lcf | 70.00% | TBD |
+| Strict JSON (all turns) | TBD* | TBD |
+| Avg tool calls / task | 9.25 | TBD |
+| Avg steps / task | 9.60 | TBD |
+
+Measured on Kaggle (T4, 4-bit, greedy) over all 20 tasks in 2062 s; raw rows are in `runs/baseline/`. **Pilot caveat:** this run used the earlier prompt wording that told the model to call `convert_currency` before USD/EUR arithmetic, even though ledger tools already convert. That rule is now clarified, so re-run the baseline once with the current `prompts.py` before freezing the final table. The oracle is 100% with 3.5 calls and 3.5 steps, so the baseline is slow and loopy even when it lands the right ledger by accident. Fill the tuned column from `runs/tuned/summary.json` — do not estimate.
+
+\* The baseline predates the strict metric. Recover it from the saved conversation without a GPU:
+
+```bash
+python scripts/score_strict.py --trajectories runs/baseline/trajectories.jsonl \
+    --summary runs/baseline/summary.json
+```
 
 The oracle table should be perfect; use it as a sanity check, not as a result.
 
@@ -158,6 +179,7 @@ The oracle table should be perfect; use it as a sanity check, not as a result.
 - Tools are **stateless**: every ledger tool takes and returns the ledger object. Parallel GRPO rollouts cannot leak state.
 - The GRPO reward is format + expected tool + answer number; `--efficiency` adds a no-duplicate-calls reward for the *Efficient trajectories* statement. The real quality signal is the post-hoc ledger check, so do not tune rewards to chase `success` on the eval set.
 - Baseline must be measured **before** training on the same 20 tasks. If you change tasks after seeing baseline results, re-run both.
+- The Nov 2 smoke on the base model logged `frac_reward_zero_std=1`: both completions in each group got the same reward, so GRPO had no advantage. That is why the plan warms the model up with oracle-trajectory SFT before GRPO.
 - `max_steps=10` only proves the pipeline works. It is not a result.
 - TRL loads the policy in float32 unless told otherwise, which is ~13.4 GB for a 3.35B model and OOMs a 16 GB T4. The script now passes `model_init_kwargs={"dtype": torch.float16}` by default (`--dtype bfloat16` on Ampere+).
 - If GRPO still OOMs on a T4, use `--max-completion-length 128 --max-steps-per-turn 2`, keep `--generations 2`, and `--batch-size 1 --grad-accum 4`. Do not switch to 8B/32B models on free hardware.
@@ -204,7 +226,7 @@ Set `MODEL_ID` and, for the tuned demo, `ADAPTER_ID=<you>/tiny-aya-hinglish-lora
 - `agenttune train` CLI has no `--tools` flag; agentic training is Python API only.
 - `RougeMetric`/`BLEU` and `DistilledJudge` silently return `0.0` when optional deps are missing. This repo avoids them.
 - AuditKIT reads `trajectories.jsonl` directly; do not convert formats.
-- `max_len` for Tiny Aya must be unset or `>= 512` (its system preamble is ~366 tokens).
+- `max_len` for Tiny Aya must be unset or `>= 512`; our fallback prompt with tool schemas is ~1.4k tokens, so SFT runs at `--max-len 4096`.
 - On Colab, `pip uninstall -y torchao` before importing SafeTune. Not needed here, but applies if you add Track 2 tools.
 
 ## Credits

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-METRIC_KEYS = ("success", "tac", "arr", "ter", "rad", "lcf", "answer_ok")
+METRIC_KEYS = ("success", "tac", "arr", "ter", "rad", "lcf", "answer_ok", "strict", "strict_rate")
 COUNT_KEYS = ("calls", "errors", "steps")
 
 
@@ -30,6 +30,8 @@ def markdown_table(before: dict, after: dict | None = None) -> str:
         "rad": "Redundant actions (rad)",
         "lcf": "Loop collapse (lcf)",
         "answer_ok": "Answer contains amount",
+        "strict": "Strict JSON (all turns)",
+        "strict_rate": "Strict JSON turns",
         "calls": "Avg tool calls / task",
         "steps": "Avg steps / task",
     }

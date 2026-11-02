@@ -1,0 +1,268 @@
+"""SFT warm-start on oracle trajectories, then merge for GRPO.
+
+Why this exists: the Nov 2 GRPO smoke on the base model logged
+`frac_reward_zero_std=1` — every completion group got the same reward, so GRPO
+had no advantage to learn from. This script installs the output format and the
+ledger-copy behaviour first; `train_grpo.py` then optimises success/efficiency.
+
+Run (GPU, after `pip install -r requirements.txt` and `hf auth login`):
+
+    python scripts/train_sft.py --check
+    python scripts/train_sft.py --limit 20 --epochs 1 --out runs/sft_smoke
+    python scripts/train_sft.py --tasks data/tasks_train.jsonl --epochs 3 \
+        --out runs/sft --merge-out runs/sft_merged
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from hinglish_agent.ledger import empty_ledger  # noqa: E402
+from hinglish_agent.parser import format_call  # noqa: E402
+from hinglish_agent.prompts import build_messages  # noqa: E402
+from hinglish_agent.runner import LEDGER_TOOLS  # noqa: E402
+from hinglish_agent.tools import execute_tool  # noqa: E402
+
+
+def load_tasks(path: Path) -> list[dict]:
+    with path.open(encoding="utf-8") as handle:
+        return [json.loads(line) for line in handle if line.strip()]
+
+
+def build_conversations(tasks: list[dict]) -> list[dict]:
+    """Replay the oracle and record the exact messages the agent saw."""
+    rows = []
+    for task in tasks:
+        ledger = empty_ledger()
+        messages = build_messages(task["task"])
+        targets: list[int] = []
+
+        for action in task["actions"]:
+            arguments = dict(action["parameters"])
+            if action["tool_name"] in LEDGER_TOOLS:
+                arguments["ledger"] = ledger
+            result = execute_tool(action["tool_name"], arguments)
+            if not result.get("ok"):
+                raise RuntimeError(f"{task['id']}: {result}")
+
+            messages.append(
+                {
+                    "role": "assistant",
+                    "content": format_call(
+                        {"tool_name": action["tool_name"], "parameters": arguments}
+                    ),
+                }
+            )
+            targets.append(len(messages) - 1)
+
+            if isinstance(result.get("ledger"), dict):
+                ledger = result["ledger"]
+            messages.append(
+                {
+                    "role": "user",
+                    "content": json.dumps(
+                        {"tool_results": [{"tool_name": action["tool_name"], "result": result}]},
+                        ensure_ascii=False,
+                    ),
+                }
+            )
+
+        messages.append(
+            {
+                "role": "assistant",
+                "content": format_call(
+                    {"tool_name": "finish", "parameters": {"answer": task["answer_text"]}}
+                ),
+            }
+        )
+        targets.append(len(messages) - 1)
+        rows.append({"id": task["id"], "messages": messages, "targets": targets})
+    return rows
+
+
+def encode_row(row: dict, tokenizer, max_len: int):
+    """Tokenise once; mask everything except the assistant spans."""
+    messages = row["messages"]
+    full_ids = tokenizer.apply_chat_template(messages, tokenize=True, add_generation_prompt=False)
+    if not isinstance(full_ids, list):  # some versions return a tensor
+        full_ids = list(full_ids)
+    labels = [-100] * len(full_ids)
+
+    for index in row["targets"]:
+        prefix_ids = tokenizer.apply_chat_template(
+            messages[:index], tokenize=True, add_generation_prompt=True
+        )
+        upto_ids = tokenizer.apply_chat_template(
+            messages[: index + 1], tokenize=True, add_generation_prompt=False
+        )
+        prefix_ids, upto_ids = list(prefix_ids), list(upto_ids)
+        if full_ids[: len(prefix_ids)] != prefix_ids:
+            raise ValueError(
+                f"{row['id']}: chat template is not prefix-stable at assistant turn {index}"
+            )
+        start, end = len(prefix_ids), len(upto_ids)
+        if end <= start:
+            raise ValueError(f"{row['id']}: empty assistant span at turn {index}")
+        labels[start:end] = full_ids[start:end]
+
+    if len(full_ids) > max_len:
+        raise ValueError(
+            f"{row['id']}: {len(full_ids)} tokens > --max-len {max_len}; shorten the task"
+        )
+    if all(label == -100 for label in labels):
+        raise ValueError(f"{row['id']}: no assistant tokens to train on")
+    return {"input_ids": full_ids, "labels": labels}
+
+
+class TokenDataset:
+    def __init__(self, rows: list[dict]):
+        self.rows = rows
+
+    def __len__(self) -> int:
+        return len(self.rows)
+
+    def __getitem__(self, index: int) -> dict:
+        return self.rows[index]
+
+
+def make_collator(pad_token_id: int):
+    import torch
+
+    def collate(batch: list[dict]) -> dict:
+        width = max(len(item["input_ids"]) for item in batch)
+        input_ids, labels, attention = [], [], []
+        for item in batch:
+            pad = width - len(item["input_ids"])
+            input_ids.append(item["input_ids"] + [pad_token_id] * pad)
+            labels.append(item["labels"] + [-100] * pad)
+            attention.append([1] * len(item["input_ids"]) + [0] * pad)
+        return {
+            "input_ids": torch.tensor(input_ids, dtype=torch.long),
+            "labels": torch.tensor(labels, dtype=torch.long),
+            "attention_mask": torch.tensor(attention, dtype=torch.long),
+        }
+
+    return collate
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", default="CohereLabs/tiny-aya-global")
+    parser.add_argument("--tasks", default=str(ROOT / "data" / "tasks.jsonl"))
+    parser.add_argument("--out", default=str(ROOT / "runs" / "sft"))
+    parser.add_argument("--merge-out", default=str(ROOT / "runs" / "sft_merged"))
+    parser.add_argument("--limit", type=int, default=0)
+    parser.add_argument("--epochs", type=float, default=3.0)
+    parser.add_argument("--lr", type=float, default=2e-4)
+    parser.add_argument("--max-len", type=int, default=4096)
+    parser.add_argument("--grad-accum", type=int, default=8)
+    parser.add_argument("--no-merge", action="store_true")
+    parser.add_argument("--check", action="store_true")
+    args = parser.parse_args()
+
+    tasks = load_tasks(Path(args.tasks))
+    if args.limit:
+        tasks = tasks[: args.limit]
+    conversations = build_conversations(tasks)
+
+    assistant_turns = sum(len(row["targets"]) for row in conversations)
+    longest = max(len(json.dumps(row["messages"], ensure_ascii=False)) for row in conversations)
+    print(f"rows: {len(conversations)}  assistant turns: {assistant_turns}  longest chars: {longest}")
+    print(f"first id: {conversations[0]['id']}  targets: {conversations[0]['targets']}")
+
+    if args.check:
+        return
+
+    import torch
+    from peft import LoraConfig, get_peft_model
+    from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments
+
+    if not torch.cuda.is_available():
+        raise SystemExit("SFT needs CUDA; run this on Kaggle/Colab, not the local Windows shell.")
+
+    tokenizer = AutoTokenizer.from_pretrained(args.model)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
+    encoded, skipped = [], []
+    for row in conversations:
+        try:
+            encoded.append(encode_row(row, tokenizer, args.max_len))
+        except ValueError as exc:
+            print(f"skip: {exc}")
+            skipped.append(row["id"])
+    if not encoded:
+        raise SystemExit(f"no trainable rows at --max-len {args.max_len}; skipped {skipped}")
+    if skipped:
+        print(f"warning: skipped {len(skipped)} overlong rows: {skipped}")
+    lengths = [len(item["input_ids"]) for item in encoded]
+    print(f"tokens: min={min(lengths)} mean={sum(lengths) // len(lengths)} max={max(lengths)}")
+
+    model = AutoModelForCausalLM.from_pretrained(args.model, dtype=torch.float16).to("cuda")
+    model.config.use_cache = False
+    model.gradient_checkpointing_enable()
+    model.enable_input_require_grads()
+
+    peft_config = LoraConfig(
+        r=16,
+        lora_alpha=32,
+        lora_dropout=0.05,
+        target_modules="all-linear",
+        task_type="CAUSAL_LM",
+    )
+    model = get_peft_model(model, peft_config)
+    model.print_trainable_parameters()
+
+    training_args = TrainingArguments(
+        output_dir=str(args.out),
+        per_device_train_batch_size=1,
+        gradient_accumulation_steps=args.grad_accum,
+        num_train_epochs=args.epochs,
+        learning_rate=args.lr,
+        warmup_steps=10,
+        logging_steps=2,
+        save_steps=10,
+        save_total_limit=2,
+        fp16=True,
+        optim="adamw_torch",
+        report_to="none",
+        remove_unused_columns=False,
+        dataloader_pin_memory=False,
+    )
+
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=TokenDataset(encoded),
+        data_collator=make_collator(tokenizer.pad_token_id),
+    )
+    result = trainer.train()
+    print(f"done: {result}")
+
+    model.save_pretrained(args.out)
+    tokenizer.save_pretrained(args.out)
+    print(f"adapter saved -> {args.out}")
+
+    if not args.no_merge:
+        model = model.to("cpu")
+        torch.cuda.empty_cache()
+        merged = model.merge_and_unload()
+        merged.save_pretrained(args.merge_out, safe_serialization=True)
+        tokenizer.save_pretrained(args.merge_out)
+        print(f"merged model saved -> {args.merge_out}")
+
+    print("\nNext: GRPO from the SFT model")
+    print(
+        f"python scripts/train_grpo.py --model {args.merge_out} "
+        f"--tasks {args.tasks} --max-steps 60 --efficiency"
+    )
+
+
+if __name__ == "__main__":
+    main()
