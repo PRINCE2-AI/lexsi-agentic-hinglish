@@ -111,6 +111,25 @@ model knew what to do and dropped it when writing the answer.
 Reweighting the same 40 hard rows into an SFT mix fixed that in 92 steps (+33.3 points).
 The bottleneck was coverage of the answer shape, not the RL stage.
 
+## Why these choices
+
+- **SFT memorizes, RL generalizes** (Chu et al., ICML 2025, arXiv:2501.17161): the frozen
+  hard-30 split is the unseen-variant test. SFT scores 100% on the template-matched eval-24
+  and 63.33% on hard-30 — the paper's SFT drop, reproduced on Hinglish tool use.
+- **ToolRL** (Qian et al., arXiv:2504.13958): reward is decomposed into format, tool-name,
+  parameter-name, parameter-value and answer terms instead of a binary hit, and there is no
+  length reward. The `empty_balance` family is ToolRL's relevance/irrelevance case: the
+  correct action is to add nothing.
+- **APIGen** (arXiv:2406.18518) and **ToolACE** (arXiv:2409.00920): every task is
+  oracle-verified before use, the eval file is SHA-256 pinned, and the hard split is
+  organised into complexity families so failures can be attributed.
+- **τ-bench** (arXiv:2406.12045): success is the final ledger state, not string similarity.
+- **DeepSeekMath** (arXiv:2402.03300) for GRPO, **Tiny Aya** (arXiv:2603.11510) for the model.
+
+What we did **not** run, so no claim is made about it: cold-start GRPO without SFT (the
+control that would test whether SFT is necessary here), a Hammer-style schema-shift eval,
+and verification-iteration repair beyond the parse-error correction prompt.
+
 ## Limitations
 
 - hard-30 has 30 tasks; counts are reported next to percentages, and the CIs above are wide.
