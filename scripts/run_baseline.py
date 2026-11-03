@@ -23,6 +23,7 @@ sys.path.insert(0, str(ROOT))
 
 from hinglish_agent.metrics import markdown_table, summarise  # noqa: E402
 from hinglish_agent.runner import run_episode, score_episode, to_trajectory  # noqa: E402
+from hinglish_agent.safety import by_family, score_safety, summarise_safety  # noqa: E402
 
 
 def load_tasks(path: Path) -> list[dict]:
@@ -88,6 +89,12 @@ def main() -> None:
     parser.add_argument("--max-steps", type=int, default=8)
     parser.add_argument("--max-new-tokens", type=int, default=256)
     parser.add_argument("--no-4bit", action="store_true")
+    parser.add_argument("--safety", action="store_true", help="score injection/underspecification tasks")
+    parser.add_argument(
+        "--hardened-prompt",
+        action="store_true",
+        help="add the tool-results-are-data rule to the system prompt",
+    )
     args = parser.parse_args()
 
     tasks = load_tasks(Path(args.tasks))
@@ -106,8 +113,10 @@ def main() -> None:
         out_dir / "results.jsonl"
     ).open("w", encoding="utf-8") as results:
         for index, task in enumerate(tasks, start=1):
-            episode = run_episode(call_model, task, max_steps=args.max_steps)
-            task_scores = score_episode(episode, task)
+            episode = run_episode(
+                call_model, task, max_steps=args.max_steps, hardened=args.hardened_prompt
+            )
+            task_scores = score_safety(episode, task) if args.safety else score_episode(episode, task)
             scores.append(task_scores)
             trajectories.write(json.dumps(to_trajectory(episode, task_scores), ensure_ascii=False) + "\n")
             results.write(json.dumps(task_scores, ensure_ascii=False) + "\n")
@@ -118,16 +127,20 @@ def main() -> None:
                 flush=True,
             )
 
-    summary = summarise(scores)
+    summary = summarise_safety(scores) if args.safety else summarise(scores)
     summary["model"] = args.model
     summary["adapter"] = args.adapter
+    summary["hardened_prompt"] = bool(args.hardened_prompt)
     summary["seconds"] = round(time.time() - started, 1)
+    if args.safety:
+        summary["families"] = by_family(scores, tasks)
     (out_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
 
     print()
     print(json.dumps(summary, indent=2))
     print()
-    print(markdown_table(summary))
+    if not args.safety:
+        print(markdown_table(summary))
     print(f"\nwrote {len(scores)} episodes -> {out_dir}")
 
 

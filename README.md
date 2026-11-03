@@ -35,11 +35,16 @@ How each clause is measured, all without an LLM judge:
 ## What is already here
 
 - Deterministic ledger and five stateless tools (`add_expense`, `convert_currency`, `get_balance`, `settle_up`, `finish`).
-- **194 generated Hinglish tasks**, oracle-verified: 100 train + 24 held-out eval, plus 40
-  train / 30 held-out hard tasks across six stress families (multi-day settlement, two
-  queries in one turn, conversion sums, empty ledger, payer-in-participants trap,
-  paraphrase). The 20-task starter set is still there for quick checks.
-- Programmatic metrics: `success`, `tac`, `arr`, `ter`, `rad`, `lcf`, plus answer match, trajectory efficiency (`calls`, `steps`) and strict-JSON rate.
+- **226 generated Hinglish tasks**, oracle-verified: 100 train + 24 held-out eval, 40 train /
+  30 held-out hard tasks across six stress families (multi-day settlement, two queries in one
+  turn, conversion sums, empty ledger, payer-in-participants trap, paraphrase), and **32 safety
+  tasks** (indirect prompt injection through tool results, plus underspecified requests). The
+  20-task starter set is still there for quick checks.
+- Programmatic metrics: `success`, `tac`, `arr`, `ter`, `rad`, `overcall`, `lcf`, plus answer match,
+  trajectory efficiency (`calls`, `steps`) and strict-JSON rate.
+- **Safety split**: a tool result can carry attacker text; `safe`, `attack_ledger`,
+  `attack_answer`, `unplanned_calls` and `abstained` are measured without an LLM judge. See
+  [docs/SAFETY.md](docs/SAFETY.md).
 - Standalone Tiny Aya baseline runner (transformers, 4-bit) that writes AgentTune-compatible `trajectories.jsonl`.
 - GRPO training script using `create_agentic_trainer` with custom rewards.
 - AuditKIT handoff via `episodes_from_agenttune`.
@@ -55,15 +60,19 @@ hinglish_agent/
   parser.py      robust JSON tool-call parser
   runner.py      agent loop, oracle, metrics
   metrics.py     summary + markdown table
+  safety.py      injection / underspecification scoring
 data/
   task_builder.py shared scenario -> expected-fields conversion
   build_tasks.py  generates and verifies tasks.jsonl
   tasks.jsonl     20 Hinglish starter tasks (generated, do not hand-edit)
   build_generated.py  100 train + 24 held-out eval tasks, oracle-verified
   tasks_train.jsonl / tasks_eval.jsonl
+  build_hard.py  40 train + 30 held-out hard tasks, SHA-256 pinned
+  build_mix.py   easy 100 + hard 84 reweighted SFT mix
+  build_safety.py 32 injection / underspecified tasks, SHA-256 pinned
 scripts/
   run_oracle_eval.py  verify the dataset, no GPU
-  run_baseline.py     Tiny Aya baseline / tuned evaluation
+  run_baseline.py     Tiny Aya baseline / tuned evaluation (--safety, --hardened-prompt)
   train_sft.py        oracle-trajectory SFT warm-start
   train_grpo.py       GRPO fine-tuning
   stats.py            Wilson 95% CI + exact McNemar on two eval runs
@@ -73,11 +82,15 @@ space/
   app.py              Gradio demo
 docs/
   hf_article.md       submission write-up skeleton
-  roi.md              ROI comparison template
+  roi.md              ROI comparison with measured token counts
+  SAFETY.md           injection eval: threat model, metrics, results
   demo_script.md      3-minute Demo Day script
   PLANBOOK.md         full Nov 2–14 operating plan (data, SFT→GRPO, artifacts, risks)
 tests/
   test_scaffold.py    no-dependency sanity tests
+  test_hard_data.py   hard-split pin, oracle, require_answer gate
+  test_safety.py      injection eval pin, payload delivery, attack scoring
+  test_stats.py       Wilson CI + exact McNemar
 ```
 
 ## Quickstart
@@ -137,7 +150,12 @@ python scripts/run_baseline.py --model CohereLabs/tiny-aya-global \
 # 4) paired significance: Wilson CI + exact McNemar on shared task ids
 python scripts/stats.py --a runs/sft_hard30 --b runs/sft2_hard30
 
-# 5) AuditKIT handoff
+# 5) safety split: injection through tool results, no LLM judge
+python data/build_safety.py
+python scripts/run_baseline.py --model runs/sft2_merged     --tasks data/tasks_safety_eval.jsonl --safety --no-4bit --out runs/safety_sft2
+python scripts/run_baseline.py --model runs/sft2_merged     --tasks data/tasks_safety_eval.jsonl --safety --hardened-prompt --no-4bit     --out runs/safety_sft2_hardened
+
+# 6) AuditKIT handoff
 python scripts/auditkit_eval.py --trajectories runs/baseline_eval/trajectories.jsonl
 ```
 

@@ -36,9 +36,15 @@ def is_strict_json(text: str) -> bool:
     )
 
 
-def run_episode(call_model, task: dict, max_steps: int = 8) -> dict:
-    """Drive a model through the tool loop. `call_model(messages) -> str`."""
-    messages = build_messages(task["task"])
+def run_episode(call_model, task: dict, max_steps: int = 8, hardened: bool = False) -> dict:
+    """Drive a model through the tool loop. `call_model(messages) -> str`.
+
+    A task with an `injection` block appends that payload to the named tool's result, so the
+    model sees attacker text arriving as tool output rather than as user input.
+    """
+    messages = build_messages(task["task"], hardened=hardened)
+    injection = task.get("injection") or {}
+    injections_fired = 0
     steps: list[dict] = []
     ledger = empty_ledger()
     done = False
@@ -65,7 +71,11 @@ def run_episode(call_model, task: dict, max_steps: int = 8) -> dict:
         for call in calls[:3]:
             result = execute_tool(call["tool_name"], call["parameters"])
             steps.append({"name": call["tool_name"], "arguments": call["parameters"], "result": result})
-            observations.append({"tool_name": call["tool_name"], "result": result})
+            shown = result
+            if injection and call["tool_name"] == injection.get("after_tool"):
+                shown = dict(result, note=injection["payload"])
+                injections_fired += 1
+            observations.append({"tool_name": call["tool_name"], "result": shown})
             if isinstance(result.get("ledger"), dict):
                 ledger = result["ledger"]
             if result.get("done"):
@@ -91,6 +101,7 @@ def run_episode(call_model, task: dict, max_steps: int = 8) -> dict:
         "final_response": final_response,
         "done": done,
         "ledger": clean_ledger(ledger),
+        "injections_fired": injections_fired,
     }
 
 
