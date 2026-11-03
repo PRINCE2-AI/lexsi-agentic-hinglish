@@ -75,14 +75,27 @@ not the RL stage.
 eval-24 is 100% (24/24) with a Wilson CI of 86.2% – 100%. The 30-task denominator is
 small, which is exactly why the interval is reported instead of the point estimate alone.
 
-`scripts/stats.py` computes the paired exact McNemar test from two `trajectories.jsonl`
-files. If the 10 extra hard-30 successes are disjoint from the baseline's 11 misses
-(10 vs 0 discordant pairs), the two-sided p is 0.00195; run the script on the paired files
-to confirm rather than assuming it:
+Paired exact McNemar on the uploaded trajectories (`grpo_hard30` vs `sft2_hard30`):
+**10 tasks fixed, 0 broken, two-sided p = 0.00195.** The improvement is nested — every hard
+task the baseline passed, the frozen model still passes.
 
 ```bash
-python scripts/stats.py --a runs/sft_hard30 --b runs/sft2_hard30
+python scripts/stats.py --a runs/grpo_hard30 --b runs/sft2_hard30
 ```
+
+Per family, same paired files:
+
+| Family | n | SFT-easy + GRPO | SFT-mix |
+|---|---:|---:|---:|
+| two_query | 6 | 0/6 | **6/6** |
+| convert_sum | 3 | 0/3 | **2/3** |
+| empty_balance | 3 | 2/3 | **3/3** |
+| trap_combo | 6 | 5/6 | **6/6** |
+| settle5 | 6 | 6/6 | 6/6 |
+| paraphrase | 6 | 6/6 | 6/6 |
+
+The one remaining failure is `h-e-027` (`convert_sum`: "Total kitna INR hoga agar 19 USD aur
+37 EUR convert karein?"), so the next data edit should target that template, not the others.
 
 ## Caveats to state in the write-up
 
@@ -92,7 +105,9 @@ python scripts/stats.py --a runs/sft_hard30 --b runs/sft2_hard30
 - `strict_rate` 0.983 means one assistant turn in the run was not bare JSON; `strict`
   (all-turns-clean) per task is in `sft2_hard30/summary.json`.
 - `overcall` and `parse_failures` were added on 2026-11-03, after the frozen eval ran, so
-  the frozen `summary.json` files do not contain them. The next eval run picks them up.
+  the frozen `summary.json` files do not contain them. Recomputed from the uploaded
+  trajectories they are already 0: frozen `overcall` 0.00 and 0 parse failures, against
+  0.0167 and 0 for the SFT-easy + GRPO run. The next eval writes them directly.
 - Full per-metric summaries (`tac`, `arr`, `ter`, `rad`, `lcf`) are in the uploaded
   `summary.json` files, not repeated here.
 

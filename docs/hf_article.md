@@ -77,12 +77,24 @@ hard-train row appears in the hard-eval set, so repetition cannot leak eval rows
 | oracle | 100% (30/30) | 100% (24/24) | 100% | 3.57 |
 
 Wilson 95% intervals: 63.33% → 45.5–78.1%; 96.67% → 83.3–99.4%; eval-24 100% → 86.2–100%.
-If the 10 extra hard-30 successes are disjoint from the baseline misses, the paired exact
-McNemar p is 0.00195 (`scripts/stats.py` recomputes it from the paired trajectories).
+The paired exact McNemar on the uploaded trajectories is **10 tasks fixed, 0 broken,
+p = 0.00195** — no hard task regressed.
 
-Zero tool errors, zero redundant calls and zero loop collapse in every tuned run. The
-frozen model matches the oracle on calls per task, which is why the secondary statement
-("efficient trajectories") is reported on the same row as success.
+Per family:
+
+| Family | n | SFT-easy + GRPO | SFT-mix |
+|---|---:|---:|---:|
+| two_query | 6 | 0/6 | 6/6 |
+| convert_sum | 3 | 0/3 | 2/3 |
+| empty_balance | 3 | 2/3 | 3/3 |
+| trap_combo | 6 | 5/6 | 6/6 |
+| settle5 | 6 | 6/6 | 6/6 |
+| paraphrase | 6 | 6/6 | 6/6 |
+
+Zero tool errors, zero redundant calls, zero unnecessary calls (`overcall` 0.00) and zero
+loop collapse in the frozen run. It matches the oracle on calls per task, which is why the
+secondary statement ("efficient trajectories") is reported on the same row as success.
+The single remaining miss is `h-e-027`, a two-currency sum.
 
 ## What did not work
 
