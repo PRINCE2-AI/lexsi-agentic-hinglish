@@ -35,7 +35,10 @@ How each clause is measured, all without an LLM judge:
 ## What is already here
 
 - Deterministic ledger and five stateless tools (`add_expense`, `convert_currency`, `get_balance`, `settle_up`, `finish`).
-- **20 Hinglish tasks**, all verified against the oracle (`20/20` success, 0 tool errors).
+- **194 generated Hinglish tasks**, oracle-verified: 100 train + 24 held-out eval, plus 40
+  train / 30 held-out hard tasks across six stress families (multi-day settlement, two
+  queries in one turn, conversion sums, empty ledger, payer-in-participants trap,
+  paraphrase). The 20-task starter set is still there for quick checks.
 - Programmatic metrics: `success`, `tac`, `arr`, `ter`, `rad`, `lcf`, plus answer match, trajectory efficiency (`calls`, `steps`) and strict-JSON rate.
 - Standalone Tiny Aya baseline runner (transformers, 4-bit) that writes AgentTune-compatible `trajectories.jsonl`.
 - GRPO training script using `create_agentic_trainer` with custom rewards.
@@ -154,30 +157,22 @@ Programmatic, computed in `hinglish_agent/runner.py`:
 | `calls` | tool calls per task (mean) — efficiency |
 | `steps` | agent turns per task (mean) — efficiency |
 
-Fill this in after your runs:
+## Frozen results (Nov 3, 2026)
 
-| Metric | Baseline | Tuned |
-|---|---:|---:|
-| Task success | 25.00% | TBD |
-| tac | 45.00% | TBD |
-| arr | 88.16% | TBD |
-| ter | 11.84% | TBD |
-| rad | 29.84% | TBD |
-| lcf | 70.00% | TBD |
-| Strict JSON (all turns) | TBD* | TBD |
-| Avg tool calls / task | 9.25 | TBD |
-| Avg steps / task | 9.60 | TBD |
+Submission candidate is the `sft2` adapter. Provenance, configs, caveats and repro
+commands: [docs/RESULTS.md](docs/RESULTS.md).
 
-Measured on Kaggle (T4, 4-bit, greedy) over all 20 tasks in 2062 s; raw rows are in `runs/baseline/`. **Pilot caveat:** this run used the earlier prompt wording that told the model to call `convert_currency` before USD/EUR arithmetic, even though ledger tools already convert. That rule is now clarified, so re-run the baseline once with the current `prompts.py` before freezing the final table. The oracle is 100% with 3.5 calls and 3.5 steps, so the baseline is slow and loopy even when it lands the right ledger by accident. Fill the tuned column from `runs/tuned/summary.json` — do not estimate.
+| Model | hard-30 success | eval-24 success | answer_ok (hard) | calls (hard) |
+|---|---:|---:|---:|---:|
+| SFT-easy (100 rows, 3 epochs) | 63.33% | 100% | 66.67% | 3.47 |
+| SFT-easy + GRPO (30 steps) | 63.33% | 100% | 66.67% | 3.47 |
+| **SFT-mix (184 rows, 2 epochs)** | **96.67%** | **100%** | **96.67%** | **3.57** |
 
-\* The baseline predates the strict metric. Recover it from the saved conversation without a GPU:
-
-```bash
-python scripts/score_strict.py --trajectories runs/baseline/trajectories.jsonl \
-    --summary runs/baseline/summary.json
-```
-
-The oracle table should be perfect; use it as a sanity check, not as a result.
+Oracle ceiling on hard-30 is 30/30 at 3.57 calls. All runs: Kaggle T4 x2, greedy,
+`--no-4bit`, 0 tool errors. GRPO moved nothing at 30 steps because the graded reward was
+saturated; reweighting the hard rows into SFT is what fixed two_query, convert_sum and
+empty_balance. Full per-metric summaries live in the uploaded `summary.json` files under
+`primce/lexsi-runs`.
 
 ## Training notes
 
