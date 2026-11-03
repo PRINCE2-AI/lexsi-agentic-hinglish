@@ -33,7 +33,7 @@ the hard-eval set aborts `data/build_mix.py`, so the repetition cannot leak eval
 
 ## Training runs
 
-| Stage | Data | Epochs / steps | Wall time | Notes |
+| Stage | Data | Epochs / steps | Train time | Notes |
 |---|---|---|---:|---|
 | SFT-easy | 100 easy rows | 3 epochs, 75 steps | 1595 s | LoRA r=16, all-linear, fp16, lr 2e-4 |
 | GRPO | 184 mix rows | 30 steps (T4 profile caps 60 → 30) | 10 686 s | lr 1e-6, graded + efficiency rewards, 2 generations |
