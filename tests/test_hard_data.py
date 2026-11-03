@@ -60,6 +60,27 @@ def test_oracle_is_clean() -> None:
             assert scores["success"] == 1.0, (task["id"], scores)
             assert scores["ter"] == 0.0, (task["id"], scores)
             assert scores["strict"] == 1.0, (task["id"], scores)
+            assert scores["overcall"] == 0.0, (task["id"], scores)
+            assert scores["parse_failures"] == 0, (task["id"], scores)
+
+
+def test_overcall_and_parse_failures() -> None:
+    task = load("tasks_hard_eval.jsonl")[0]
+    episode = run_oracle(task)
+
+    extra = dict(
+        episode,
+        steps=episode["steps"] + [{"name": "get_balance", "arguments": {}, "result": {"ok": True}}],
+    )
+    assert score_episode(extra, task)["overcall"] > 0.0
+
+    broken = dict(
+        episode,
+        steps=episode["steps"] + [{"name": None, "arguments": {}, "result": {"ok": False}}],
+    )
+    broken_scores = score_episode(broken, task)
+    assert broken_scores["parse_failures"] == 1, broken_scores
+    assert broken_scores["calls"] == len(episode["steps"]), broken_scores
 
 
 def test_require_answer_gates_success() -> None:
@@ -81,6 +102,7 @@ def main() -> None:
     test_counts_and_families()
     test_no_leakage()
     test_oracle_is_clean()
+    test_overcall_and_parse_failures()
     test_require_answer_gates_success()
     print("all hard-data tests passed")
 

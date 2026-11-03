@@ -64,6 +64,26 @@ Reweighting the same 40 hard rows into an SFT run fixed it in 92 steps: +33.3 po
 hard-30 with eval-24 unchanged. The bottleneck was data coverage of the answer shape,
 not the RL stage.
 
+## Statistics
+
+| Model | hard-30 success | Wilson 95% CI |
+|---|---:|---|
+| SFT-easy | 63.33% (19/30) | 45.5% – 78.1% |
+| SFT-easy + GRPO | 63.33% (19/30) | 45.5% – 78.1% |
+| **SFT-mix (frozen)** | **96.67% (29/30)** | **83.3% – 99.4%** |
+
+eval-24 is 100% (24/24) with a Wilson CI of 86.2% – 100%. The 30-task denominator is
+small, which is exactly why the interval is reported instead of the point estimate alone.
+
+`scripts/stats.py` computes the paired exact McNemar test from two `trajectories.jsonl`
+files. If the 10 extra hard-30 successes are disjoint from the baseline's 11 misses
+(10 vs 0 discordant pairs), the two-sided p is 0.00195; run the script on the paired files
+to confirm rather than assuming it:
+
+```bash
+python scripts/stats.py --a runs/sft_hard30 --b runs/sft2_hard30
+```
+
 ## Caveats to state in the write-up
 
 - hard-30 rows are **held-out instances** (new amounts, names, currencies) of the same six
@@ -71,6 +91,8 @@ not the RL stage.
 - eval-24 is in-distribution with easy-train, which is why it stays at 100%.
 - `strict_rate` 0.983 means one assistant turn in the run was not bare JSON; `strict`
   (all-turns-clean) per task is in `sft2_hard30/summary.json`.
+- `overcall` and `parse_failures` were added on 2026-11-03, after the frozen eval ran, so
+  the frozen `summary.json` files do not contain them. The next eval run picks them up.
 - Full per-metric summaries (`tac`, `arr`, `ter`, `rad`, `lcf`) are in the uploaded
   `summary.json` files, not repeated here.
 

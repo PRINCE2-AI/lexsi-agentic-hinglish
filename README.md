@@ -66,6 +66,7 @@ scripts/
   run_baseline.py     Tiny Aya baseline / tuned evaluation
   train_sft.py        oracle-trajectory SFT warm-start
   train_grpo.py       GRPO fine-tuning
+  stats.py            Wilson 95% CI + exact McNemar on two eval runs
   score_strict.py     recover strict-JSON metrics from saved trajectories
   auditkit_eval.py    load run logs into AuditKIT
 space/
@@ -133,7 +134,10 @@ python scripts/train_grpo.py --model runs/sft_merged --max-steps 60 --efficiency
 python scripts/run_baseline.py --model CohereLabs/tiny-aya-global \
     --adapter runs/sft --tasks data/tasks_eval.jsonl --no-4bit --out runs/sft_eval
 
-# 4) AuditKIT handoff
+# 4) paired significance: Wilson CI + exact McNemar on shared task ids
+python scripts/stats.py --a runs/sft_hard30 --b runs/sft2_hard30
+
+# 5) AuditKIT handoff
 python scripts/auditkit_eval.py --trajectories runs/baseline_eval/trajectories.jsonl
 ```
 
@@ -150,12 +154,14 @@ Programmatic, computed in `hinglish_agent/runner.py`:
 | `arr` | argument reliability: `1 - ter` |
 | `ter` | tool error rate: failed calls / total calls |
 | `rad` | redundant actions: repeated identical calls |
+| `overcall` | unnecessary calls: `max(0, calls - oracle calls) / oracle calls` |
 | `lcf` | loop collapse: episode hit max steps without `finish` |
 | `answer_ok` | answer text contains the expected amount |
 | `strict` | every assistant turn is bare JSON (no fences, no prose) |
 | `strict_rate` | fraction of assistant turns that are strict |
 | `calls` | tool calls per task (mean) — efficiency |
 | `steps` | agent turns per task (mean) — efficiency |
+| `parse_failures` | assistant turns with no parseable tool call, per task |
 
 ## Frozen results (Nov 3, 2026)
 

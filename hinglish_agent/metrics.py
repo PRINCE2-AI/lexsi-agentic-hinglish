@@ -2,8 +2,19 @@
 
 from __future__ import annotations
 
-METRIC_KEYS = ("success", "tac", "arr", "ter", "rad", "lcf", "answer_ok", "strict", "strict_rate")
-COUNT_KEYS = ("calls", "errors", "steps")
+METRIC_KEYS = (
+    "success",
+    "tac",
+    "arr",
+    "ter",
+    "rad",
+    "overcall",
+    "lcf",
+    "answer_ok",
+    "strict",
+    "strict_rate",
+)
+COUNT_KEYS = ("calls", "errors", "steps", "parse_failures")
 
 
 def summarise(scores: list[dict]) -> dict:
@@ -28,12 +39,15 @@ def markdown_table(before: dict, after: dict | None = None) -> str:
         "arr": "Argument reliability (arr)",
         "ter": "Tool error rate (ter)",
         "rad": "Redundant actions (rad)",
+        "overcall": "Unnecessary calls (overcall)",
         "lcf": "Loop collapse (lcf)",
         "answer_ok": "Answer contains amount",
         "strict": "Strict JSON (all turns)",
         "strict_rate": "Strict JSON turns",
         "calls": "Avg tool calls / task",
+        "errors": "Tool errors / task",
         "steps": "Avg steps / task",
+        "parse_failures": "Parse failures / task",
     }
     header = "| Metric | Baseline | Tuned |\n|---|---:|---:|"
     lines = [header]
@@ -41,7 +55,7 @@ def markdown_table(before: dict, after: dict | None = None) -> str:
         left = f"{before.get(key, 0.0):.2%}"
         right = f"{after.get(key, 0.0):.2%}" if after else "-"
         lines.append(f"| {labels[key]} | {left} | {right} |")
-    for key in ("calls", "steps"):
+    for key in COUNT_KEYS:
         left = f"{before.get(key, 0.0):.2f}"
         right = f"{after.get(key, 0.0):.2f}" if after else "-"
         lines.append(f"| {labels[key]} | {left} | {right} |")

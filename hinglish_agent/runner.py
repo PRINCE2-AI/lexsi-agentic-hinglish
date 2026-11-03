@@ -178,6 +178,10 @@ def score_episode(episode: dict, task: dict) -> dict:
     rad = (len(keys) - len(set(keys))) / len(keys) if keys else 0.0
     lcf = 0.0 if episode.get("done") else 1.0
 
+    oracle_calls = len(task.get("actions") or []) + 1
+    overcall = max(0, n_calls - oracle_calls) / oracle_calls if oracle_calls else 0.0
+    parse_failures = sum(1 for step in episode["steps"] if not step.get("name"))
+
     expected_balances = task.get("expected_balances") or {}
     expected_settlements = task.get("expected_settlements") or []
     ledger_ok = ledgers_match(episode["ledger"], expected_balances)
@@ -207,6 +211,7 @@ def score_episode(episode: dict, task: dict) -> dict:
         "arr": round(arr, 4),
         "ter": round(ter, 4),
         "rad": round(rad, 4),
+        "overcall": round(overcall, 4),
         "lcf": lcf,
         "answer_ok": float(answer_ok),
         "ledger_ok": float(ledger_ok),
@@ -215,6 +220,7 @@ def score_episode(episode: dict, task: dict) -> dict:
         "strict_rate": round(strict_rate, 4),
         "calls": n_calls,
         "errors": len(errors),
+        "parse_failures": parse_failures,
         "steps": len(episode["steps"]),
     }
 
