@@ -37,7 +37,7 @@ def load_model(model_id: str, adapter: str | None, four_bit: bool):
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     kwargs = {"device_map": "auto"}
     if torch.cuda.is_available():
-        kwargs["torch_dtype"] = torch.float16
+        kwargs["dtype"] = torch.float16
         if four_bit:
             from transformers import BitsAndBytesConfig
 
@@ -47,7 +47,7 @@ def load_model(model_id: str, adapter: str | None, four_bit: bool):
                 bnb_4bit_quant_type="nf4",
             )
     else:
-        kwargs["torch_dtype"] = torch.float32
+        kwargs["dtype"] = torch.float32
         print("WARNING: no CUDA device. This will be very slow; use Colab or Kaggle for real runs.")
 
     model = AutoModelForCausalLM.from_pretrained(model_id, **kwargs)

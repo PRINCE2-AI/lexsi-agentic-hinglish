@@ -56,7 +56,27 @@ def build_dataset(tasks: list[dict]):
 
 
 def _text(value) -> str:
-    return value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
+    """Flatten an AgentTune completion into the text the model produced.
+
+    Agentic GRPO hands reward functions list[list[dict]] message lists, while
+    the plain path hands strings; json.dumps on a message list escapes the
+    quotes, so every parser saw garbage and every reward was 0.
+    """
+    if isinstance(value, str):
+        return value
+    if isinstance(value, dict):
+        content = value.get("content")
+        if isinstance(content, str):
+            return content
+        return _text(content if content is not None else value.get("text", ""))
+    if isinstance(value, (list, tuple)):
+        if any(isinstance(item, dict) and "role" in item for item in value):
+            return "\n".join(
+                _text(item) for item in value
+                if isinstance(item, dict) and item.get("role") == "assistant"
+            )
+        return "\n".join(_text(item) for item in value)
+    return str(value)
 
 
 def format_reward(completions, **kwargs):
