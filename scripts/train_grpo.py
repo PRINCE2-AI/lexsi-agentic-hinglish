@@ -121,7 +121,12 @@ def main() -> None:
     parser.add_argument("--generations", type=int, default=2)
     parser.add_argument("--lr", type=float, default=1e-6)
     parser.add_argument("--max-completion-length", type=int, default=256)
-    parser.add_argument("--max-steps-per-turn", type=int, default=3)
+    parser.add_argument(
+        "--max-steps-per-turn",
+        type=int,
+        default=8,
+        help="tool-calling iterations per rollout; oracle episodes need 2-6 (max 6)",
+    )
     parser.add_argument("--efficiency", action="store_true", help="add a no-duplicate-calls reward")
     parser.add_argument(
         "--reward-mode",
@@ -134,6 +139,12 @@ def main() -> None:
         choices=["float16", "bfloat16"],
         default="float16",
         help="model dtype; TRL defaults to float32, which OOMs a 16 GB T4",
+    )
+    parser.add_argument(
+        "--t4-profile",
+        choices=["auto", "off"],
+        default="auto",
+        help="auto: cap rollout size on <20 GB GPUs; 8 turns of 256 tokens OOMs a 16 GB T4",
     )
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
@@ -162,6 +173,21 @@ def main() -> None:
 
     import torch
     from agenttune.core.backend_factory import create_agentic_trainer
+
+    if args.t4_profile == "auto" and torch.cuda.is_available():
+        gpu_gb = torch.cuda.get_device_properties(0).total_memory / 1024**3
+        if gpu_gb < 20:
+            for name, cap in (
+                ("max_steps_per_turn", 5),
+                ("max_completion_length", 192),
+                ("max_steps", 30),
+            ):
+                if getattr(args, name) > cap:
+                    print(
+                        f"t4 profile: {name} {getattr(args, name)} -> {cap} "
+                        f"({gpu_gb:.1f} GB GPU; 8x256-token rollouts OOM at backward)"
+                    )
+                    setattr(args, name, cap)
 
     if args.reward_mode == "graded":
         reward_funcs = [graded_reward]
