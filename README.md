@@ -76,6 +76,7 @@ scripts/
   train_sft.py        oracle-trajectory SFT warm-start
   train_grpo.py       GRPO fine-tuning
   stats.py            Wilson 95% CI + exact McNemar on two eval runs
+  safety_table.py     render the injection comparison table from saved runs
   score_strict.py     recover strict-JSON metrics from saved trajectories
   auditkit_eval.py    load run logs into AuditKIT
 space/
