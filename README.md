@@ -77,6 +77,7 @@ scripts/
   train_grpo.py       GRPO fine-tuning
   stats.py            Wilson 95% CI + exact McNemar on two eval runs
   safety_table.py     render the injection comparison table from saved runs
+  deploy_space.py     create/refresh the Gradio Space with the right layout
   score_strict.py     recover strict-JSON metrics from saved trajectories
   auditkit_eval.py    load run logs into AuditKIT
 space/
@@ -85,6 +86,8 @@ docs/
   hf_article.md       submission write-up skeleton
   roi.md              ROI comparison with measured token counts
   SAFETY.md           injection eval: threat model, metrics, results
+  SUBMIT.md           what judges check, in order, with the exact commands
+  MODEL_CARD.md       ready-to-paste README for the adapter repo
   demo_script.md      3-minute Demo Day script
   PLANBOOK.md         full Nov 2–14 operating plan (data, SFT→GRPO, artifacts, risks)
 tests/
