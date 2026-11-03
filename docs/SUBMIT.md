@@ -71,9 +71,7 @@ honest GRPO line — it is the part that makes the rest credible.
 
 ```bash
 git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
-python data/build_hard.py && python data/build_safety.py
-python tests/test_hard_data.py && python tests/test_safety.py && python tests/test_stats.py
-python scripts/run_oracle_eval.py --tasks data/tasks_hard_eval.jsonl
+python scripts/verify_all.py
 ```
 
 No GPU, no token, no model download. Expected: pin matches, 30/30 oracle success, all tests pass.

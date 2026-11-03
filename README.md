@@ -78,6 +78,7 @@ scripts/
   stats.py            Wilson 95% CI + exact McNemar on two eval runs
   safety_table.py     render the injection comparison table from saved runs
   deploy_space.py     create/refresh the Gradio Space with the right layout
+  verify_all.py       every no-GPU check in one command (judges start here)
   score_strict.py     recover strict-JSON metrics from saved trajectories
   auditkit_eval.py    load run logs into AuditKIT
 space/
@@ -88,6 +89,7 @@ docs/
   SAFETY.md           injection eval: threat model, metrics, results
   SUBMIT.md           what judges check, in order, with the exact commands
   MODEL_CARD.md       ready-to-paste README for the adapter repo
+  DATASET_CARD.md     ready-to-paste README for primce/lexsi-runs
   demo_script.md      3-minute Demo Day script
   PLANBOOK.md         full Nov 2–14 operating plan (data, SFT→GRPO, artifacts, risks)
 tests/
@@ -104,13 +106,13 @@ One-click Colab (T4 GPU): [notebooks/colab_grpo.ipynb](notebooks/colab_grpo.ipyn
 Pure-Python checks (Windows/macOS/Linux, no GPU, no model download):
 
 ```bash
-python data/build_tasks.py
-python data/build_generated.py
-python scripts/run_oracle_eval.py
-python tests/test_scaffold.py
+python scripts/verify_all.py
 ```
 
-Expected: `oracle check: 20/20 success, 0 tool errors`, then `train: 100/100` and `eval: 24/24`, no train/eval text overlap.
+That single command regenerates the hard and safety splits, checks both SHA-256 pins, runs every
+test suite and replays the oracle. It prints `all 9 checks passed` when the dataset and the scoring
+are consistent.
+
 
 ### Tiny Aya access
 
