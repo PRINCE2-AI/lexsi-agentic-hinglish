@@ -1,32 +1,64 @@
 # Demo Day script (3 minutes)
 
-## 0:00–0:20 — Problem
+Numbers below are the frozen ones from `docs/RESULTS.md` (2026-11-03). Do not improvise new ones.
 
-"Tiny Aya is multilingual, but it cannot reliably carry a ledger across tool calls in Hinglish. We measured it."
+## 0:00-0:20 — Problem
 
-## 0:20–0:50 — Baseline failure
+"Tiny Aya is multilingual. Ask it to split a dinner bill in Hinglish, and it will look confident and
+get the ledger wrong. This is a money answer, so 'roughly right' is a failure. We measured it."
 
-Show one baseline trace: wrong participant split or stale ledger copy. Point at the exact failed step and the tool error.
+## 0:20-0:50 — Baseline failure
 
-## 0:50–1:30 — Tuned success
+Open `runs/base_hard30/trajectories.jsonl`, one failing episode. Point at the exact step: stale
+ledger copy, wrong split, or the same `get_balance` called three times.
 
-Same prompt, tuned adapter. Show the tool trace: add_expense → convert → get_balance → finish, with the ledger intact. Point at the final ledger matching the expected state.
+Say: "Base model on the 30-task hard split: success **X%**, 70% of episodes never finish, 9.25 tool
+calls per task where the oracle needs 3.5."
 
-## 1:30–2:10 — Numbers
+## 0:50-1:20 — Tuned success
 
-Show the before/after table. Say the sample size out loud: "20 tasks, success X to Y". Mention tool error rate and loop collapse; those are the reliability metrics, not just accuracy.
+Same prompt, `sft2_adapter`. Show the trace: `add_expense` -> `convert_currency` -> `get_balance` ->
+`finish`. Point at the final ledger JSON matching the expected state exactly.
 
-## 2:10–2:40 — How
+Say: "**29 of 30**, 3.57 tool calls, zero tool errors."
 
-AgentTune GRPO with stateless tools, AuditKIT for evaluation, Tiny Aya 3.35B 4-bit. One sentence on why stateless tools matter for parallel rollouts.
+## 1:20-2:10 — Numbers
 
-## 2:40–3:00 — Close
+Show the table from the README. Say the sample size out loud.
 
-"Agent reliability is a safety property: an agent that mis-copies state gives confidently wrong money answers. The adapter, dataset, logs and Space are public."
+- Base, 20 easy tasks: 25% success.
+- Easy-SFT, 30 hard tasks: 63.33%.
+- Easy-SFT + GRPO, same 30 tasks: **63.33% — zero delta.**
+- SFT on the reweighted mix: **96.67%**, and 100% on the 24-task in-distribution split.
+- Paired McNemar on the 30 shared tasks: 10 fixed, 0 broken, **p = 0.00195**.
+
+Then the honest line, which is the part judges remember: "GRPO did not help. The reward was already
+saturated — tool names were right, the answers were incomplete — so every rollout in a group got the
+same reward and there was no advantage to learn from. The gain came from the data, not the optimizer."
+
+## 2:10-2:40 — How
+
+Oracle-verified trajectories (APIGen-style), 6 difficulty families, SHA-256-pinned frozen eval,
+success checked against the final ledger state (tau-bench-style), official AgentTune + AuditKIT,
+Tiny Aya 3.35B. Stateless tools: every ledger tool takes and returns the ledger, so parallel
+rollouts cannot leak state.
+
+## 2:40-3:00 — Close
+
+"Agent reliability is a safety property: an agent that mis-copies state gives confidently wrong
+money answers at scale. Adapter, dataset, frozen eval, trajectories and the Space are public."
 
 ## Q&A prep
 
-- Why not a bigger model? Free compute and the point is a small open-weights model.
-- Why not prompt engineering? We measured the prompt-only baseline first; it is the before column.
-- Is 20 tasks enough? It is a starter set; report counts and add tasks if asked.
-- What would you do with $200 credits? Expand to 100 tasks and run three seeds.
+- **Why not a bigger model?** Free compute, and the point is a small open-weights model that fits on
+  commodity hardware. 3.35B merged runs on one T4.
+- **Why not prompt engineering?** Prompt-only is the before column. It was measured first.
+- **Is 30 tasks enough?** No — that is why every number carries a Wilson interval (~83-99% for
+  29/30) and a paired test. Expanding to 90 tasks is the first thing more compute buys.
+- **Why is eval-24 at 100%?** It is in-distribution, and we say so. It is a regression check, not
+  the headline. The headline is hard-30.
+- **Isn't this just SFT?** Yes, and the track asks for RL. We ran GRPO; it moved nothing, and we
+  published that. What we have not run is cold-start GRPO with no SFT warm start — that is the
+  control that would answer the question properly.
+- **What would you do with $200 of compute?** 90 hard tasks, three seeds, and one schema-shift eval
+  (rename tools and parameters) to see whether the adapter learned the task or the format.

@@ -1,13 +1,40 @@
-# ROI comparison template (optional but preferred by judges)
+# ROI comparison (optional but preferred by judges)
 
-Use current prices on the day you submit. Label every assumption. Do not copy these placeholders as facts.
+Two numbers here are measured from the frozen run logs; everything else is labelled as an
+assumption so a reader can re-price it. Do not present the assumed rows as measured.
+
+Measured inputs come from `runs/sft2_hard30/trajectories.jsonl` (30 tasks, greedy):
+3.57 assistant turns per request, 6257 characters of billed input across the episode, 661
+characters of output. At ~3.6 chars/token that is **~1,738 input tokens and ~184 output tokens
+per request**. Verify with:
+
+```bash
+python - <<'PY'
+import json, statistics
+
+rows = [json.loads(l) for l in open("runs/sft2_hard30/trajectories.jsonl", encoding="utf-8")]
+conv = [r["metadata"]["conversation"] for r in rows]
+
+def billed(c):
+    last = max(i for i, m in enumerate(c) if m["role"] == "assistant")
+    return (
+        sum(len(m["content"]) for m in c[:last]),
+        sum(len(m["content"]) for m in c if m["role"] == "assistant"),
+    )
+
+inputs, outputs = zip(*(billed(c) for c in conv))
+print(round(statistics.mean(inputs)), round(statistics.mean(outputs)))  # 6257 661
+PY
+```
 
 ## Scenario
 
-- Monthly agent requests: [10,000]
-- Average input tokens per request: [800]
-- Average output tokens per request: [200]
-- Average tool-call turns per request: [3]
+| Input | Value | Source |
+|---|---:|---|
+| Monthly agent requests | 10,000 | assumption, edit to your volume |
+| Input tokens / request | 1,738 | measured (see above) |
+| Output tokens / request | 184 | measured |
+| Turns / request | 3.57 | measured |
 
 ## Closed-source API
 
@@ -15,31 +42,54 @@ Use current prices on the day you submit. Label every assumption. Do not copy th
 monthly_cost = requests * (input_tokens * input_price + output_tokens * output_price) / 1_000_000
 ```
 
-Fill current per-million prices for the API you compare against: [input price], [output price].
-Result: [$X/month].
+Price **assumed** at \$3 / M input and \$15 / M output — replace with the live price of the API you
+compare against on submission day, and rerun the arithmetic:
+
+```
+10,000 * (1,738 * 3 + 184 * 15) / 1_000_000 = $79.74 / month
+```
 
 ## Self-hosted Tiny Aya
 
 ```
-gpu_hours = requests * seconds_per_request * turns / 3600
+gpu_hours = requests * seconds_per_request / 3600
 monthly_cost = gpu_hours * gpu_hour_price
 ```
 
-- GPU: [T4 / L4 / A10G], [$ per hour]
-- Throughput measured on your machine: [tokens/sec]
-- Seconds per request measured: [X]
-- Result: [$Y/month]
+GPU price **assumed** at \$0.35/h (T4-class, on-demand). The model is a 3.35B LoRA merge served in
+fp16/4-bit, so a single T4-class card serves one request at a time at the latencies below.
+
+| Model | s / request | GPU-hours / month | Cost / month |
+|---|---:|---:|---:|
+| Base Tiny Aya (measured, 4-bit, 20 tasks / 2062 s) | 103.1 | 286.4 | \$100.24 |
+| SFT-mix (measured, fill from `runs/sft2_hard30_v2/summary.json`: `seconds / 30`) | TBD | TBD | TBD |
+
+The honest headline: **at base-model latency, self-hosting is more expensive than the API.**
+Base needs 9.25 tool calls per task and loops in 70% of episodes, and GPU time scales with turns.
+The tuned adapter is cheaper *because* it drops to 3.57 calls, not because the model is smaller.
 
 ## Break-even
 
 ```
-break_even_requests = fixed_monthly_cost / (api_cost_per_request - self_host_cost_per_request)
+break_even_cost_ratio = self_host_cost_per_request / api_cost_per_request
 ```
 
-Result: [N requests/month].
+- API: \$0.00797 per request.
+- Self-host at base latency: \$0.01002 per request -> 1.26x the API. Not worth it.
+- Self-host at tuned latency: fill once the measured run lands.
+
+Break-even monthly volume only matters if there is a fixed cost (dedicated GPU reservation,
+monitoring, engineering). With a serverless GPU there is none, so the decision is the per-request
+ratio above.
 
 ## Honest caveats
 
-- Tiny Aya is less capable than frontier APIs; this is a cost/reliability trade-off, not a quality parity claim.
-- Self-hosting includes engineering time, monitoring and cold-start latency; add them or say you excluded them.
-- LoRA adapter hosting is cheaper than full-model hosting; state which one you priced.
+- Tiny Aya is less capable than a frontier API. Paired with tool schemas it answers a closed
+  ledger question; it is not a general assistant. This is a cost and reliability trade-off, not a
+  quality parity claim.
+- Self-hosting includes engineering time, monitoring, cold-start latency and an eval harness.
+  None of that is priced above. Add it or state that it is excluded.
+- Latency was measured on a shared Kaggle T4 with greedy decoding, one process, batch size 1.
+  Prompt caching and batching would change both columns.
+- LoRA-adapter hosting (what the Space does) is cheaper than merging and re-serving, but adds a
+  PEFT dependency; the numbers above price the merged model that was actually evaluated.

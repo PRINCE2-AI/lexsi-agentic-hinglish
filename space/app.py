@@ -4,7 +4,8 @@ Local:
     python space/app.py
 
 Hugging Face Space:
-    MODEL_ID=CohereLabs/tiny-aya-global ADAPTER_ID=<you>/tiny-aya-hinglish-lora python app.py
+    MODEL_ID=CohereLabs/tiny-aya-global ADAPTER_ID=<you>/tiny-aya-hinglish-lora \
+        ADAPTER_SUBFOLDER=sft2_adapter python app.py
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ from hinglish_agent.runner import run_episode  # noqa: E402
 
 MODEL_ID = os.getenv("MODEL_ID", "CohereLabs/tiny-aya-global")
 ADAPTER_ID = os.getenv("ADAPTER_ID", "").strip() or None
+ADAPTER_SUBFOLDER = os.getenv("ADAPTER_SUBFOLDER", "sft2_adapter").strip() or None
 MAX_NEW_TOKENS = int(os.getenv("MAX_NEW_TOKENS", "256"))
 
 _CACHE: dict = {}
@@ -63,7 +65,7 @@ def _load():
     if ADAPTER_ID:
         from peft import PeftModel
 
-        model = PeftModel.from_pretrained(model, ADAPTER_ID)
+        model = PeftModel.from_pretrained(model, ADAPTER_ID, subfolder=ADAPTER_SUBFOLDER)
     model.eval()
     _CACHE["model"] = model
     _CACHE["tokenizer"] = tokenizer
