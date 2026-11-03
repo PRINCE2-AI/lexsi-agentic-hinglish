@@ -84,11 +84,13 @@ def format_reward(completions, **kwargs):
 
 
 def tool_reward(completions, expected_tools=None, **kwargs):
+    from hinglish_agent.rewards import _extract_calls
+
     if expected_tools is None:
         return [0.0 for _ in completions]
     scores = []
     for item, expected in zip(completions, expected_tools):
-        names = {call["tool_name"] for call in (parse_calls(_text(item)) or [])}
+        names = {call.get("tool_name") for call in _extract_calls(_text(item))}
         scores.append(1.0 if expected and all(name in names for name in expected) else 0.0)
     return scores
 
@@ -111,11 +113,16 @@ def graded_reward(completions, oracle_actions=None, answer_contains=None, **kwar
 
 
 def efficiency_reward(completions, **kwargs):
-    """Reward turns whose calls are all distinct; duplicate calls get no credit."""
+    """Reward completions whose tool calls are all distinct; duplicate calls get no credit."""
+    from hinglish_agent.rewards import _extract_calls
+
     scores = []
     for item in completions:
-        calls = parse_calls(_text(item)) or []
-        keys = [json.dumps([call["tool_name"], call["arguments"]], sort_keys=True, default=str) for call in calls]
+        calls = _extract_calls(_text(item))
+        keys = [
+            json.dumps([call.get("tool_name"), call.get("parameters", {})], sort_keys=True, default=str)
+            for call in calls
+        ]
         scores.append(1.0 if keys and len(keys) == len(set(keys)) else 0.0)
     return scores
 
