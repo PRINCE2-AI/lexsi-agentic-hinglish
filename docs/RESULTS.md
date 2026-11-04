@@ -11,6 +11,15 @@ the abstention slice. The adapter that ships is therefore undecided until `sft4`
 pairs) is evaluated; this file is updated in place when it lands, and the table above is the
 current measurement, not the decision.
 
+**Wording split (2026-11-04, 17:10 UTC).** Masking person names and matching hard-90 against the
+training file shows the lost 12 tasks are lost on *new wording*, not new instances. On the 85 hard-90
+tasks whose masked wording never appears in training, `sft2` is 75/85 (88.24%) and `sft3` is 63/85
+(74.12%); on the 5 that do appear both are 5/5. All 11 of the difference is `empty_balance`: 4/4 seen
+versus 0/11 unseen for `sft3`, against 4/4 and 11/11 for `sft2`. The `sft3` failures are not silence —
+they emit the `ambiguous_share` abstention answer verbatim ("Wo teesra banda … Batao, phir split
+karunga") on a question whose ledger is merely empty. Reproduce with
+`python scripts/template_split.py --run sft3_hard90 --train data/tasks_train_mix2.jsonl`.
+
 Every number here comes from a `summary.json` written by a GPU run and uploaded to
 `primce/lexsi-runs`; nothing is estimated.
 

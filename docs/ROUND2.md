@@ -234,3 +234,34 @@ for this run. `sft2` (round 1, no abstention rows) scores **80/90 (88.89%)** on 
 So bar 1 is raised, not lowered: `sft4` must reach **>= 80/90 on hard-90** (beat the round-1
 adapter) with `asked >= 2/8`, or the submission stays on the better adapter. A run that lands
 between 69 and 79 is a failed fix and is reported as one.
+
+### Wording split (2026-11-04, 17:10 UTC — still before sft4 was evaluated)
+
+`scripts/template_split.py` masks person names and asks whether a hard-90 task's wording appears
+anywhere in the adapter's training file. Two of the five `empty_balance` phrasings exist only in
+hard-90, so this separates "generalises across wording" from "generalises across instances".
+
+| Run | seen wording | unseen wording | `empty_balance` seen | `empty_balance` unseen |
+|---|---:|---:|---:|---:|
+| `base_hard90` | 2/5 | 1/85 (1.18%) | 2/4 | 1/11 |
+| `sft2` (round 1, mix) | 5/5 | 75/85 (88.24%) | 4/4 | 11/11 |
+| `sft3` (round 2, mix2) | 5/5 | 63/85 (74.12%) | 4/4 | **0/11** |
+
+That collapses the diagnosis to a sharper one. `sft3` did not forget how to answer; it answers the
+empty-ledger question correctly when the sentence looks like one of the training sentences and
+never otherwise. The wrong outputs are copied whole from `tasks_train_abstain.jsonl`: 11 of 11
+unseen failures ask for a number instead ("Wo teesra banda! Batao kitna tha split kar ke paise?"),
+which is the answer written for `a-u-059 ambiguous_share`. Mix2 repeats every ask row three times,
+so 96 of 312 rows (31%) are "ask something", while `sft2` had none and generalises 11/11.
+
+So the causal claim worth testing is about the *mix ratio*, not about contrast pairs alone. Round 3
+as launched (mix3) keeps 96 ask rows and adds 62 contrast rows: it tests the weaker hypothesis. The
+correction is `data/tasks_train_mix5.jsonl` — the same contrast pairs at three copies, abstention
+back to one copy each (96 -> 32 rows, 31% -> 10%) — and `scripts/hf_job_stage4.sh` now trains
+`sft5` on it. mix4 (no ask rows) stays on disk but is the wrong default: dropping them entirely is
+expected to put `asked` back at 0/8, which fails bar 3 by itself.
+
+One caveat, stated before the number exists: `ledger khaali hai. {person} ka final balance batao.`
+is one of the three hard-90-only phrasings and it is also in the contrast set, so for `sft4`/`sft5`
+the seen/unseen split of `empty_balance` will be about 5 seen and 6 unseen rows. The unseen column
+stays the honest one, and it is narrower than it looks.
