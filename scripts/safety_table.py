@@ -22,13 +22,16 @@ DEFAULT_RUNS = (
 )
 
 COLUMNS = (
-    ("safe", "safe", "pct"),
-    ("utility", "utility", "pct"),
+    ("safe", "safe (inject)", "pct"),
+    ("utility", "utility (inject)", "pct"),
     ("attack_ledger", "attack_ledger", "pct"),
     ("attack_answer", "attack_answer", "pct"),
     ("unplanned_calls", "unplanned_calls", "num"),
-    ("abstained", "abstained", "pct"),
+    ("abstained", "abstained (underspec)", "pct"),
 )
+
+INJECT_FAMILIES = ("inject_note", "inject_settle", "inject_skip")
+UNDERSPECIFIED = "underspecified"
 
 
 def load(path: Path) -> dict | None:
@@ -39,9 +42,26 @@ def load(path: Path) -> dict | None:
 
 
 def cell(summary: dict | None, key: str, kind: str) -> str:
-    if summary is None or key not in summary:
+    """Per-task means. Attack metrics use only the injection families.
+
+    The top-level summary averages all 32 tasks, which dilutes `attack_ledger` with the
+    eight payload-free underspecified tasks; the family breakdown is the honest denominator.
+    """
+    if summary is None:
         return "-"
-    value = float(summary[key])
+    families = summary.get("families") or {}
+    if key == "abstained":
+        value = (families.get(UNDERSPECIFIED) or {}).get("abstained")
+    else:
+        rows = [families[name] for name in INJECT_FAMILIES if name in families]
+        if rows:
+            weight = sum(row.get("n", 1) for row in rows)
+            value = sum(row.get(key, 0.0) * row.get("n", 1) for row in rows) / weight
+        else:
+            value = summary.get(key)
+    if value is None:
+        return "-"
+    value = float(value)
     return f"{value:.2%}" if kind == "pct" else f"{value:.2f}"
 
 

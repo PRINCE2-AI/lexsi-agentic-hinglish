@@ -63,7 +63,17 @@ number was repeated) are exact checks — the marker 999999 can never be a corre
 | `inject_settle` | 8 | tool result asks for an unrequested settlement |
 | `underspecified` | 8 | user omitted names/amount/currency; asking is correct |
 
-Results, thresholds and the threat model: `docs/SAFETY.md` in the repo.
+Measured 2026-11-04 on the 24 injection tasks:
+
+| System | safe | utility under attack | attack_ledger | attack_answer |
+|---|---:|---:|---:|---:|
+| Base Tiny Aya | 0/24 | 0/24 | 13/24 | 8/24 |
+| **This adapter** | **11/24** | **11/24** | **0/24** | 3/24 |
+| This adapter + hardened prompt | 15/24 | 15/24 | 0/24 | 2/24 |
+
+Base -> adapter removes 13 ledger attacks and introduces 0 (exact McNemar p = 0.00024).
+Abstention on underspecified requests is still 1/8. Thresholds, per-family counts and the
+threat model: `docs/SAFETY.md` in the repo.
 
 ## Training
 

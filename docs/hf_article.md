@@ -12,6 +12,9 @@
   saturated and the run was too short to move an answer-shape failure.
 - SFT on the reweighted mix (184 rows): **96.67%** on hard-30, **100%** on eval-24, **3.57**
   calls per task — exactly the oracle's call count.
+- Indirect injection through tool results: base writes attacker money into the ledger in
+  **13/24** tasks, the frozen adapter in **0/24** (p = 0.00024). Abstention on
+  underspecified requests stays at **1/8**.
 - Adapter, dataset, run logs and Space are linked at the end.
 
 ## Problem statement
@@ -124,6 +127,47 @@ model knew what to do and dropped it when writing the answer.
 Reweighting the same 40 hard rows into an SFT mix fixed that in 92 steps (+33.3 points).
 The bottleneck was coverage of the answer shape, not the RL stage.
 
+## Safety: what happens when a tool result lies
+
+Every Track 3 entry reports task success. This repo also asks the question that matters for
+an agent that moves money: what does it do when the tool output carries attacker text? The
+method is AgentDojo's indirect injection (arXiv:2406.13352) applied to one deterministic
+ledger. A tool result gains a `note` asking for an absurd **999999 INR** expense, or asking
+the agent to skip a tool and answer 999999. Because 999999 can never be a correct amount,
+"did the attack land" is an equality check on the final ledger and the final answer — no
+LLM judge.
+
+32 tasks: `inject_note` 8, `inject_settle` 8, `inject_skip` 8, and `underspecified` 8
+(the user omits names/amount/currency; asking is the correct behaviour). Results on the 24
+injection tasks:
+
+| System | safe | utility under attack | attack_ledger | attack_answer |
+|---|---:|---:|---:|---:|
+| Base Tiny Aya | 0/24 | 0/24 | **13/24 (54.2%)** | 8/24 (33.3%) |
+| SFT-mix (`sft2`) | 11/24 (45.8%) | 11/24 | **0/24** | 3/24 (12.5%) |
+| SFT-mix + hardened prompt | 15/24 (62.5%) | 15/24 | **0/24** | 2/24 (8.3%) |
+
+Paired exact McNemar: base → `sft2` removes **13 ledger attacks, introduces 0,
+p = 0.00024**. The prompt-level defence adds 4 safe tasks in one direction
+(p = 0.125 — directional, not significant at n = 24).
+
+Three honest readings:
+
+- **Fine-tuning fixed the money-moving failure, not injection as a whole.** Zero written
+  attacks, but the tuned model still repeats 999999 in prose on 3 of 24 tasks, and it solves
+  11/24 under attack versus 29/30 on the clean hard-30. An injection that does not move
+  money still costs tasks; without a no-payload control on these exact 24, treat that gap
+  as a warning sign rather than a measured tax.
+- **Abstention did not improve.** On the 8 underspecified tasks the tuned model invents a
+  split 7 times and abstains once — the same as base on invention. It was trained on fully
+  specified tasks, so it learned to complete a ledger, not to ask for missing fields. The
+  hardened prompt changes nothing here.
+- **The defence is cheap and measurable, not proven.** A two-rule system prompt
+  (`HARDENED_RULES`) is the whole mitigation. It never regressed a task and never let money
+  move, but a 4-task gain on 24 items is not statistical evidence. The architectural fix —
+  treating tool output as data by construction — is unmeasured.
+
+
 ## Why these choices
 
 - **SFT memorizes, RL generalizes** (Chu et al., ICML 2025, arXiv:2501.17161): the frozen
@@ -141,7 +185,8 @@ The bottleneck was coverage of the answer shape, not the RL stage.
 
 What we did **not** run, so no claim is made about it: cold-start GRPO without SFT (the
 control that would test whether SFT is necessary here), a Hammer-style schema-shift eval,
-and verification-iteration repair beyond the parse-error correction prompt.
+verification-iteration repair beyond the parse-error correction prompt, a no-payload control
+on the 24 injection tasks, and an adaptive attacker that can see the eval.
 
 ## Limitations
 
@@ -152,6 +197,8 @@ and verification-iteration repair beyond the parse-error correction prompt.
 - Fixed offline FX rates, fixed six-person name universe, no free-form tools.
 - One assistant turn in the frozen run was not bare JSON (`strict_rate` 0.983); task-level
   `strict` is in the uploaded summary.
+- The injection split is 32 tasks, the payloads are English-leaning, and the defence is one
+  prompt variant. The prompt gain (4 tasks, p = 0.125) is directional, not significant.
 
 ## Reproduce
 
@@ -167,6 +214,16 @@ python scripts/run_baseline.py --model runs/sft2_merged \
 python scripts/run_baseline.py --model runs/sft2_merged \
     --tasks data/tasks_eval.jsonl --no-4bit --out runs/sft2_eval
 python scripts/stats.py --a runs/base_hard30 --b runs/sft2_hard30
+
+python data/build_safety.py
+python scripts/run_baseline.py --model CohereLabs/tiny-aya-global \
+    --tasks data/tasks_safety_eval.jsonl --safety --no-4bit --out runs/safety_base
+python scripts/run_baseline.py --model runs/sft2_merged \
+    --tasks data/tasks_safety_eval.jsonl --safety --no-4bit --out runs/safety_sft2
+python scripts/run_baseline.py --model runs/sft2_merged \
+    --tasks data/tasks_safety_eval.jsonl --safety --hardened-prompt --no-4bit \
+    --out runs/safety_sft2_hardened
+python scripts/safety_table.py
 ```
 
 ## Artifacts

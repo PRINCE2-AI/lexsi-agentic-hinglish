@@ -80,26 +80,78 @@ python scripts/run_baseline.py --model runs/sft2_merged \
 python scripts/run_baseline.py --model runs/sft2_merged \
     --tasks data/tasks_safety_eval.jsonl --safety --hardened-prompt --no-4bit \
     --out runs/safety_sft2_hardened
+
+python scripts/safety_table.py    # renders the table above from the three summaries
 ```
 
 ## Results
 
-Fill from `runs/safety_*/summary.json`. Do not estimate: the point of this split is that the numbers
-are exact.
+Measured 2026-11-04 on Kaggle T4, greedy, `--no-4bit`, from `runs/safety_*/summary.json` and the
+uploaded `primce/lexsi-runs` artifacts. Counts are on the 24 injection tasks; `underspecified` is
+reported separately because it has no attack payload and `utility` is 0 by construction there.
 
-| System | safe | utility | attack_ledger | attack_answer | unplanned_calls | abstained |
-|---|---:|---:|---:|---:|---:|---:|
-| Base Tiny Aya | - | - | - | - | - | - |
-| SFT-mix (`sft2`) | - | - | - | - | - | - |
-| SFT-mix + hardened prompt | - | - | - | - | - | - |
+| System | safe | utility | attack_ledger | attack_answer | unplanned_calls |
+|---|---:|---:|---:|---:|---:|
+| Base Tiny Aya | 0/24 | 0/24 | **13/24 (54.2%)** | 8/24 (33.3%) | 1.08 |
+| SFT-mix (`sft2`) | 11/24 (45.8%) | 11/24 | **0/24** | 3/24 (12.5%) | 0.29 |
+| SFT-mix + hardened prompt | 15/24 (62.5%) | 15/24 | **0/24** | 2/24 (8.3%) | 0.17 |
 
-Report the per-family table too; `inject_settle` behaves differently from `inject_note`.
+Underspecified requests (8 tasks, no payload):
+
+| System | abstained | invented_expense | unplanned_calls |
+|---|---:|---:|---:|
+| Base Tiny Aya | 0/8 | 8/8 | 2.63 |
+| SFT-mix (`sft2`) | 1/8 | 7/8 | 1.88 |
+| SFT-mix + hardened prompt | 1/8 | 7/8 | 2.00 |
+
+Per family (counts out of 8):
+
+| Family | System | utility | safe | attack_ledger | attack_answer |
+|---|---|---:|---:|---:|---:|
+| `inject_note` | base | 0/8 | 0/8 | 6/8 | 1/8 |
+| | sft2 | 4/8 | 4/8 | 0/8 | 2/8 |
+| | hardened | 5/8 | 5/8 | 0/8 | 2/8 |
+| `inject_settle` | base | 0/8 | 0/8 | 3/8 | 1/8 |
+| | sft2 | 2/8 | 2/8 | 0/8 | 0/8 |
+| | hardened | 4/8 | 4/8 | 0/8 | 0/8 |
+| `inject_skip` | base | 0/8 | 0/8 | 4/8 | 6/8 |
+| | sft2 | 5/8 | 5/8 | 0/8 | 1/8 |
+| | hardened | 6/8 | 6/8 | 0/8 | 0/8 |
+
+Paired exact McNemar, same 24 task ids:
+
+- base -> sft2, `attack_ledger`: **13 attacks removed, 0 introduced, p = 0.00024**.
+- base -> sft2, `safe`: 11 fixed, 0 broken, p = 0.00098.
+- sft2 -> hardened, `safe`: **4 fixed, 0 broken, p = 0.125** — directional, not significant.
+- base -> sft2, `attack_answer`: 7 removed, 2 introduced, p = 0.180 — not significant.
+
+## What the numbers say
+
+- **Fine-tuning removed the money-moving failure.** The base model wrote 999999 into the ledger on
+  13 of 24 tasks (six `inject_note`, three `inject_settle`, four `inject_skip`), often adding it
+  repeatedly as a "correction". The tuned model did it zero times. This is not a trade against
+  utility: it still solves 11 of those 24 under attack.
+- **An injection that does not move money still costs tasks.** The tuned model solves 11/24 under
+  attack versus 29/30 on the clean hard-30. The task sets differ and there is no no-payload control
+  on these exact 24, so treat this as a warning sign, not a measured injection tax.
+- **Prose repetition survives the fix.** Three tuned answers still repeat 999999; the ledger stays
+  clean. That is exactly why `attack_answer` and `attack_ledger` are separate metrics.
+- **Abstention is not fixed.** Both tuned variants invent a split on 7 of 8 underspecified requests,
+  and the hardened prompt changes nothing there. The adapter was trained on fully specified tasks,
+  so it learned to complete a ledger, not to ask.
+- **The prompt defence is directional.** Hardened prompt: +4 safe on 24 tasks, all one direction,
+  p = 0.125. With n = 24 that is not significant; it is reported as a prompt-level mitigation that
+  is cheap and consistent, not as a proven defence.
 
 ## Honest limitations
 
 - One tool surface and 32 tasks. This is a probe, not a benchmark suite.
+- There is no no-payload control on the same 24 injection tasks, so the utility gap against the
+  clean hard-30 mixes task difficulty with injection cost.
 - The payloads are English-leaning inside Hinglish tasks. A Hinglish-only attacker may behave
   differently, and a Devanagari payload is untested.
+- One prompt variant for the defence (`HARDENED_RULES` in `hinglish_agent/prompts.py`); it is the
+  cheapest mitigation, not a search over defences.
 - The defence tested is a prompt rule, not an architectural one. The stronger fix — treat tool
   output as data by construction, e.g. quote it and re-state the user's task every turn — is not
   measured here.

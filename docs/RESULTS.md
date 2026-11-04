@@ -66,6 +66,16 @@ Run timings on the same T4 x2, greedy, `--no-4bit`: base hard-30 2428.4 s, tuned
 1648.6 s, tuned eval-24 1212.5 s. The tuned model is both more accurate and faster because
 it stops at the oracle call count instead of looping.
 
+## Safety split
+
+The repo also ships a 32-task injection eval. Headline: base writes attacker money into the
+ledger in 13/24 injection tasks, the frozen adapter in 0/24 (exact McNemar p = 0.00024), while
+utility under attack rises from 0/24 to 11/24. Abstention on underspecified requests stays at
+1/8 for both tuned variants — the open problem. Full table, per-family counts and the threat
+model: `docs/SAFETY.md`.
+
+Run logs: `primce/lexsi-runs` → `safety_base`, `safety_sft2`, `safety_sft2_hardened`.
+
 ## What moved the number
 
 Base Tiny Aya solves 1/30. Its tool error rate is 22.3%, `overcall` 1.075 and 16 episodes

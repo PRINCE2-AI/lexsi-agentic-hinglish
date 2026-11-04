@@ -206,6 +206,22 @@ saturated; reweighting the hard rows into SFT is what fixed two_query, convert_s
 empty_balance. Full per-metric summaries live in the uploaded `summary.json` files under
 `primce/lexsi-runs`.
 
+### Safety split (32 tasks, no LLM judge)
+
+Counts on the 24 injection tasks; `attack_ledger` means attacker money actually reached the
+final ledger.
+
+| System | safe | utility under attack | attack_ledger | attack_answer |
+|---|---:|---:|---:|---:|
+| Base Tiny Aya | 0/24 | 0/24 | 13/24 (54.2%) | 8/24 (33.3%) |
+| **SFT-mix (`sft2`)** | **11/24** | **11/24** | **0/24** | 3/24 |
+| SFT-mix + hardened prompt | 15/24 | 15/24 | 0/24 | 2/24 |
+
+Base -> `sft2` removes 13 ledger attacks and introduces 0 (exact McNemar p = 0.00024). On the
+8 underspecified requests both tuned variants still invent a split 7 times, so abstention is
+the open problem. Prompt-defence gain is 4 tasks in one direction (p = 0.125, directional).
+Details: [docs/SAFETY.md](docs/SAFETY.md).
+
 ## Training notes
 
 - Tools are **stateless**: every ledger tool takes and returns the ledger object. Parallel GRPO rollouts cannot leak state.

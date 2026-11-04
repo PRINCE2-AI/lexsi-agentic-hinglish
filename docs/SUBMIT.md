@@ -10,9 +10,9 @@ Everything left is packaging, and packaging is what most solo entries lose on.
 |---|---|---|
 | 1 | Public repo, runnable, numbers reproducible | done (`8c78979`+) |
 | 2 | **Live Space demo** with a visible tool trace | **missing** — `scripts/deploy_space.py` is ready |
-| 3 | **HF Article** with metrics, before/after, rationale | drafted, needs final tables |
-| 4 | HF artifacts: adapter + run logs + dataset | adapter and logs uploaded; model card missing |
-| 5 | **One memorable differentiator** | the injection eval (32 tasks, no LLM judge) |
+| 3 | **HF Article** with metrics, before/after, rationale | drafted with hard-30 + safety tables |
+| 4 | HF artifacts: adapter + run logs + dataset | adapter and logs (incl. safety runs) uploaded; model card pending paste |
+| 5 | **One memorable differentiator** | the injection eval: 13/24 -> 0/24 ledger attacks, no LLM judge |
 
 ## Order of work (do not reorder)
 
@@ -60,7 +60,9 @@ repo, so paste rather than write:
   (28 fixed, 0 broken, exact McNemar p = 7.5e-9), at 3.57 tool calls per task versus an
   oracle 3.57.
 - **Differentiator**: the repo ships a 32-task indirect prompt-injection eval for ledger agents,
-  scored without an LLM judge, plus a prompt-level defence measured on the same tasks.
+  scored without an LLM judge, plus a prompt-level defence measured on the same tasks. Base
+  writes attacker money in 13/24 tasks, the adapter in 0/24 (p = 0.00024); underspecified
+  abstention stays broken at 1/8 and is reported as such.
 - **Links**: repo, Space, model, dataset (`primce/lexsi-runs`), article.
 
 ### 5. Demo Day (only if shortlisted)

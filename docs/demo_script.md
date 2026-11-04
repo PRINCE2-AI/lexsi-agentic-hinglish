@@ -64,3 +64,7 @@ money answers at scale. Adapter, dataset, frozen eval, trajectories and the Spac
   control that would answer the question properly.
 - **What would you do with $200 of compute?** 90 hard tasks, three seeds, and one schema-shift eval
   (rename tools and parameters) to see whether the adapter learned the task or the format.
+- **Is the agent safe?** We measured it: 32-task indirect-injection split with no LLM judge. Base
+  writes attacker money in 13/24 tasks; the frozen adapter in 0/24 (p = 0.00024). It still invents
+  a split on 7 of 8 underspecified requests, and we say that out loud — abstention is the next
+  training target, not a solved problem.
