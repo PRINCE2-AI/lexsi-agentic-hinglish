@@ -56,6 +56,13 @@ SEED_RUNS = {
     "hard-90": ["sft3_hard90", "sft3_seed123_hard90", "sft3_seed7_hard90"],
 }
 
+AUDITKIT = [
+    ("auditkit_base_hard30", "Base - hard-30"),
+    ("auditkit_sft2_hard30", "SFT-mix - hard-30"),
+    ("auditkit_sft3_hard30", "SFT-mix2 - hard-30"),
+    ("auditkit_sft3_hard90", "SFT-mix2 - hard-90"),
+]
+
 
 def download() -> None:
     from huggingface_hub import snapshot_download
@@ -168,6 +175,28 @@ def seed_spread() -> None:
         )
 
 
+def auditkit_table() -> None:
+    print("\n| Run | n | AuditKIT success | agreement with project scorer "
+          "| ledger tool_f1 | ledger validity | full tool_f1_name | loop rate |")
+    print("|---|---:|---:|---:|---:|---:|---:|---:|")
+    for name, label in AUDITKIT:
+        path = RUNS / name / "summary.json"
+        if not path.exists():
+            print(f"| {label} | - | - | - | - | - | - | - |")
+            continue
+        row = json.loads(path.read_text(encoding="utf-8"))
+        ledger = row.get("ledger_route", {})
+        full = row.get("full_route", {})
+        print(
+            f"| {label} | {row.get('n')} "
+            f"| {fmt_rate(round(row.get('success', 0) * row.get('n', 0)), row.get('n'))} "
+            f"| {num(row.get('agreement_with_own_scorer'), 4)} "
+            f"| {num(ledger.get('tool_call_f1'), 4)} | {num(ledger.get('tool_call_validity'), 4)} "
+            f"| {num(full.get('tool_call_f1_name'), 4)} "
+            f"| {num(ledger.get('agent_loop_detection'), 4)} |"
+        )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--local", action="store_true", help="do not touch the network")
@@ -180,6 +209,7 @@ def main() -> None:
     safety_table()
     paired()
     seed_spread()
+    auditkit_table()
     families(args.family)
 
 

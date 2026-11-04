@@ -10,8 +10,12 @@ here to give them a learnable share of the rollouts.
     -> data/tasks_train_mix.jsonl  (184 rows: easy 100 + hard 84)
 
     python data/build_mix.py --abstain --out data/tasks_train_mix2.jsonl
-    -> ads the abstention split (`data/build_abstain.py`) so SFT also sees what
+    -> adds the abstention split (`data/build_abstain.py`) so SFT also sees what
        "info missing, ask" looks like
+
+    python data/build_mix.py --abstain --contrast --out data/tasks_train_mix3.jsonl
+    -> also adds the minimal pairs from `data/build_contrast.py`: an empty ledger
+       is answerable (0 INR), only a missing field is a reason to ask
 """
 
 from __future__ import annotations
@@ -52,11 +56,23 @@ def main() -> None:
         help="append the abstention split from data/build_abstain.py",
     )
     parser.add_argument("--abstain-copies", type=int, default=3)
+    parser.add_argument(
+        "--contrast",
+        nargs="?",
+        const=str(ROOT / "data" / "tasks_train_contrast.jsonl"),
+        default=None,
+        help="append the minimal-pair split from data/build_contrast.py",
+    )
+    parser.add_argument("--contrast-copies", type=int, default=2)
     args = parser.parse_args()
 
     easy = load("tasks_train.jsonl")
     hard = load("tasks_hard_train.jsonl")
-    hard_eval = {task["task"].strip().lower() for task in load("tasks_hard_eval.jsonl")}
+    hard_eval = {
+        task["task"].strip().lower()
+        for name in ("tasks_hard_eval.jsonl", "tasks_hard90_eval.jsonl")
+        for task in load(name)
+    }
 
     rows = list(easy)
     for task in hard:
@@ -75,6 +91,18 @@ def main() -> None:
                 raise SystemExit(f"abstention row leaks into hard eval: {task['id']}")
             repeats = args.abstain_copies if task.get("abstain") else 1
             rows.extend([task] * repeats)
+
+    if args.contrast:
+        contrast = [
+            json.loads(line)
+            for line in Path(args.contrast).read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        for task in contrast:
+            if task["task"].strip().lower() in hard_eval:
+                raise SystemExit(f"contrast row leaks into hard eval: {task['id']}")
+            copies = args.contrast_copies if task.get("family") == "contrast_empty" else 1
+            rows.extend([task] * copies)
 
     with Path(args.out).open("w", encoding="utf-8", newline="\n") as handle:
         for row in rows:

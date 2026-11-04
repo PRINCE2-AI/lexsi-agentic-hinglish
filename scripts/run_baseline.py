@@ -91,6 +91,11 @@ def main() -> None:
     parser.add_argument("--no-4bit", action="store_true")
     parser.add_argument("--safety", action="store_true", help="score injection/underspecification tasks")
     parser.add_argument(
+        "--families",
+        default="",
+        help="comma-separated family filter, e.g. empty_balance,convert_sum",
+    )
+    parser.add_argument(
         "--hardened-prompt",
         action="store_true",
         help="add the tool-results-are-data rule to the system prompt",
@@ -98,6 +103,11 @@ def main() -> None:
     args = parser.parse_args()
 
     tasks = load_tasks(Path(args.tasks))
+    if args.families:
+        wanted = {name.strip() for name in args.families.split(",") if name.strip()}
+        tasks = [task for task in tasks if task.get("family") in wanted]
+        if not tasks:
+            raise SystemExit(f"no tasks matched --families {args.families}")
     if args.limit:
         tasks = tasks[: args.limit]
 
@@ -131,6 +141,7 @@ def main() -> None:
     summary["model"] = args.model
     summary["adapter"] = args.adapter
     summary["hardened_prompt"] = bool(args.hardened_prompt)
+    summary["families_filter"] = args.families or None
     summary["seconds"] = round(time.time() - started, 1)
     if args.safety:
         summary["families"] = by_family(scores, tasks)
