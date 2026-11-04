@@ -20,11 +20,25 @@ STEPS = [
     ("safety split pin + oracle", ["data/build_safety.py"]),
     ("abstention split oracle", ["data/build_abstain.py"]),
     ("hard-90 split pin + oracle", ["data/build_hard90.py"]),
-    ("mix2 leak check", ["data/build_mix.py", "--abstain", "--out", "data/tasks_train_mix2.jsonl"]),
     ("contrast split oracle", ["data/build_contrast.py"]),
+    ("mix2 leak check", ["data/build_mix.py", "--abstain", "--out", "data/tasks_train_mix2.jsonl"]),
     (
         "mix3 leak check",
         ["data/build_mix.py", "--abstain", "--contrast", "--out", "data/tasks_train_mix3.jsonl"],
+    ),
+    (
+        "mix4 leak check",
+        [
+            "data/build_mix.py", "--abstain", "--abstain-copies", "0",
+            "--contrast", "--contrast-copies", "3", "--out", "data/tasks_train_mix4.jsonl",
+        ],
+    ),
+    (
+        "mix5 leak check",
+        [
+            "data/build_mix.py", "--abstain", "--abstain-copies", "1",
+            "--contrast", "--contrast-copies", "3", "--out", "data/tasks_train_mix5.jsonl",
+        ],
     ),
     ("hard-data tests", ["tests/test_hard_data.py"]),
     ("safety tests", ["tests/test_safety.py"]),

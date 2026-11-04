@@ -59,6 +59,7 @@ SEED_RUNS = {
 AUDITKIT = [
     ("auditkit_base_hard30", "Base - hard-30"),
     ("auditkit_sft2_hard30", "SFT-mix - hard-30"),
+    ("auditkit_sft2_hard90", "SFT-mix - hard-90"),
     ("auditkit_sft3_hard30", "SFT-mix2 - hard-30"),
     ("auditkit_sft3_hard90", "SFT-mix2 - hard-90"),
 ]

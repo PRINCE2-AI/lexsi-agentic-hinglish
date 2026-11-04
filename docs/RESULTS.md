@@ -11,7 +11,7 @@ the abstention slice. The adapter that ships is therefore undecided until `sft4`
 pairs) is evaluated; this file is updated in place when it lands, and the table above is the
 current measurement, not the decision.
 
-**Wording split (2026-11-04, 17:10 UTC).** Masking person names and matching hard-90 against the
+**Wording split (2026-11-04, 16:30 UTC).** Masking person names and matching hard-90 against the
 training file shows the lost 12 tasks are lost on *new wording*, not new instances. On the 85 hard-90
 tasks whose masked wording never appears in training, `sft2` is 75/85 (88.24%) and `sft3` is 63/85
 (74.12%); on the 5 that do appear both are 5/5. All 11 of the difference is `empty_balance`: 4/4 seen
@@ -136,16 +136,22 @@ drops the model's `finish` call and compares the ledger calls against the oracle
 | hard-30 | base | 0.0333 | 0.1875 | 0.1547 | 0.3194 | 0.3270 | 0.4333 | 1.000 |
 | hard-30 | sft3 | 1.000 | 1.000 | 1.000 | 1.000 | 0.000 | 1.000 | 1.000 |
 | hard-90 | sft3 | 0.7778 | 0.8114 | 0.8130 | 0.8102 | 0.0109 | 0.9875 | 0.9889 |
+| hard-90 | sft2 | 0.9333 | 0.9463 | 0.9444 | 0.9500 | 0.0000 | 1.0000 | 0.9889 |
 
 Full route (with `finish`, name-only): base hard-30 exact 0.100, F1 0.448; sft3 hard-30 all
-1.000; sft3 hard-90 exact 0.8222, F1 0.9210, precision 0.9593, recall 0.9015.
+1.000; sft3 hard-90 exact 0.8222, F1 0.9210; sft2 hard-90 exact 0.9444, F1 0.9681.
+
+The independent scorer separates the two round-2 schedulers the same way the task metric does:
+on hard-90 `sft2` is exact on 0.933 of the ledger calls where `sft3` is exact on 0.778, with no
+redundant call and no loop in either. That is the "ask instead of checking" failure showing up as
+a missing `get_balance`, not as a malformed call — validity stays at 0.99 for both.
 
 `agreement_with_own_scorer` is 1.000 on hard-30 and 0.9889 (89/90) on hard-90, so AuditKIT
 reproduces the project's own deterministic scorer rather than redefining success. Its
 diagnostics add the before/after the track asks for: exact-call accuracy 0.033 → 1.000, tool-call
 F1 0.188 → 1.000, redundant calls 0.327 → 0.000 on the same 30 tasks. (AuditKIT counts 69/90
-successes on hard-90 against the project's 68; the one disagreement is a parse-failure task where
-the final ledger still matches.)
+successes on hard-90 against the project's 68, and 81/90 for `sft2` against 80; in both cases the
+one disagreement is a parse-failure task where the final ledger still matches.)
 
 ### Safety split (32 tasks, 24 with a payload)
 
