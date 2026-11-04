@@ -1,30 +1,31 @@
 # How this entry wins
 
 A solo entry beats better-resourced teams by having **no empty rubric cell** and **one thing
-nobody else did**. Model quality is already settled: 96.67% on the hard split with a paired test.
-Everything left is packaging, and packaging is what most solo entries lose on.
+nobody else did**. Model quality is settled and measured twice: 96.67% on the 30-task hard split
+and 75.56% on a 90-task holdout, both with paired tests, three seeds, and an independent AuditKIT
+pass. Everything left is packaging, and packaging is what most solo entries lose on.
 
 ## The five things that decide it
 
 | # | What judges check | Status |
 |---|---|---|
-| 1 | Public repo, runnable, numbers reproducible | done (`8c78979`+) |
-| 2 | **Live Space demo** with a visible tool trace | **live**: https://huggingface.co/spaces/primce/hinglish-expense-agent (T4 small) |
+| 1 | Public repo, runnable, numbers reproducible | done: `python scripts/verify_all.py` → 13/13, no GPU or token |
+| 2 | **Live Space demo** with a visible tool trace | **live**: https://huggingface.co/spaces/primce/hinglish-expense-agent (T4 small, sft3 adapter) |
 | 3 | **HF Article** with metrics, before/after, rationale | **live**: https://huggingface.co/spaces/primce/hinglish-track3-article (static Space; Hub Articles need PRO) |
-| 4 | HF artifacts: adapter + run logs + dataset | adapter and logs (incl. safety runs) uploaded; model card pending paste |
-| 5 | **One memorable differentiator** | the injection eval: 13/24 -> 0/24 ledger attacks, no LLM judge |
+| 4 | HF artifacts: adapter + run logs + dataset | adapter (`sft3_adapter` + two seed adapters), all run logs, **and the required HF Collection** |
+| 5 | **One memorable differentiator** | the injection eval: 13/24 → 0/24 ledger attacks, no LLM judge, on a track where the required toolkit (AuditKIT) usually only scores tool calls |
 
 ### The four attack lines a strong reviewer will use
 
-| Attack | Answer today | Answer after the round-2 runs |
-|---|---|---|
-| "Track says RL, your win is SFT" | "GRPO ran; it moved 0/30 because 2 generations on a 96% policy gives zero reward variance at 30 steps." | GRPO with an abstention-aware reward, 40 steps, lr 3e-6, delta reported on safety and success (`docs/ROUND2.md`) |
-| "30 tasks, 1 seed" | "Wilson 83–99%; limits are stated." | hard-90 (15/family, own pin) + seed-42 vs seed-123 |
-| "Abstention is still 1/8" | "Reported as open, not as solved." | 32 underspecified rows as minimal pairs in the SFT mix; target `asked ≥ 6/8` without losing hard-30 |
-| "Your article is a Space, not an HF blog" | "Hub Articles need PRO or a Team org on this account; the static Space renders the same markdown." | unchanged — this one is an account tier, not a repo gap |
+| Attack | Answer today |
+|---|---|
+| "Track says RL, your win is SFT" | "GRPO ran twice. Round 1 moved 0/30 because two generations on a 96% policy give zero reward variance. Round 2 uses an abstention-aware reward, 40 steps, lr 3e-6, and the delta is reported on both axes whichever way it points (`docs/ROUND2.md`)." |
+| "30 tasks, 1 seed" | "90-task holdout at 15 per family (75.56%), paired against base at p = 9.2e-19, plus three seeds: 80.00 / 93.33 / 96.67 on hard-30 and 75.56 / 83.33 / 75.56 on hard-90. The spread is in the write-up, and seed 7 is better than the shipped seed." |
+| "Abstention is still 1/8" | "It is 2/8 now, against a pre-registered bar of 6/8 — missed, and printed as missed. `attack_ledger` stays 0/24 and hard-30 stays 29/30 on the way." |
+| "Your article is a Space, not an HF blog" | "Hub Articles need PRO or a Team org on this account; the static Space renders the same markdown from the same file." |
 
-Say the first three out loud before a judge does. The fourth one is unwinnable without a
-subscription, and stating the constraint is cheaper than being caught by it.
+Say all four out loud before a judge does. The fourth is unwinnable without a subscription, and
+stating the constraint is cheaper than being caught by it.
 
 ## Order of work (do not reorder)
 
@@ -39,17 +40,18 @@ Then Space → Settings → Hardware → **T4 small** (the free CPU tier cannot 
 Wait for "Running". Open it, run the default question, confirm the tool trace and the final ledger
 render. If the build fails, the log will name the missing package: add it to `space/requirements.txt`.
 
-The Space defaults to the frozen adapter. That matters: a judge who opens it sees the tuned agent,
-not the failing baseline.
+The Space defaults to the shipped adapter (`ADAPTER_SUBFOLDER=sft3_adapter`). That matters: a judge
+who opens it sees the tuned agent, not the failing baseline.
 
 ### 2. Model card (5 min)
 
 `docs/MODEL_CARD.md` is ready to paste as the README of `primce/tiny-aya-hinglish-lora`.
-The base-model hard-30 row is filled (3.33%, 1/30) from the 2026-11-04 run.
+The base-model rows are filled from the 2026-11-04 runs (hard-30 3.33%, hard-90 3.33%).
 
-Then tag the frozen adapter so the exact bytes are named:
+Then tag the shipped adapter so the exact bytes are named:
 
 ```bash
+python -c "from huggingface_hub import HfApi; HfApi().create_tag('primce/tiny-aya-hinglish-lora', tag='sft3-submission', repo_type='model')"
 python -c "from huggingface_hub import HfApi; HfApi().create_tag('primce/tiny-aya-hinglish-lora', tag='sft2-frozen', repo_type='model')"
 ```
 
@@ -64,23 +66,27 @@ the page come from the same file, never hand-edited HTML.
 
 ### 4. Submission form (10 min, hard deadline)
 
-Fill it on the day the form is confirmed open, not on Nov 13. Answers that already exist in the
-repo, so paste rather than write:
+Everything the form asks for already exists as a file. Paste, do not write:
 
 - **Track**: 3, Agentic fine-tuning.
 - **Model**: Cohere Labs Tiny Aya (`CohereLabs/tiny-aya-global`), LoRA, 3.35B.
-- **One-line result**: 3.33% -> 96.67% task success on a frozen 30-task hard split
-  (28 fixed, 0 broken, exact McNemar p = 7.5e-9), at 3.57 tool calls per task versus an
-  oracle 3.57.
+- **One-line result**: 3.33% → 96.67% task success on a frozen 30-task hard split (28 fixed,
+  0 broken, exact McNemar p = 7.5e-9) and 3.33% → 75.56% on a 90-task holdout (66 fixed, 1
+  broken, p = 9.2e-19), at the oracle call count.
+- **Toolkits**: AgentTune (GRPO stage, `scripts/train_grpo.py`) and AuditKIT 1.1.3
+  (`scripts/auditkit_eval.py`), scored without a judge model: exact-call accuracy 0.033 → 1.000
+  and tool-call F1 0.188 → 1.000 on the same 30 tasks.
 - **Differentiator**: the repo ships a 32-task indirect prompt-injection eval for ledger agents,
   scored without an LLM judge, plus a prompt-level defence measured on the same tasks. Base
-  writes attacker money in 13/24 tasks, the adapter in 0/24 (p = 0.00024); underspecified
-  abstention stays broken at 1/8 and is reported as such.
+  writes attacker money in 13/24 tasks, the adapter in 0/24 (p = 0.00024); abstention moves 0/8 →
+  2/8 against a pre-registered 6/8 bar and is reported as missed.
+- **Write-up**: `submission/README.md` in this repo.
 - **Links**: https://github.com/PRINCE2-AI/lexsi-agentic-hinglish ,
   https://huggingface.co/spaces/primce/hinglish-expense-agent ,
   https://huggingface.co/primce/tiny-aya-hinglish-lora ,
   https://huggingface.co/datasets/primce/lexsi-runs ,
-  https://huggingface.co/spaces/primce/hinglish-track3-article
+  https://huggingface.co/spaces/primce/hinglish-track3-article ,
+  https://huggingface.co/collections/primce/lexsi-track-3-hinglish-expense-agent-6aeb3207e10dfc7dda6329d6
 
 ### 5. Demo Day (only if shortlisted)
 

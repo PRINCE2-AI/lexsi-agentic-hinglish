@@ -5,7 +5,7 @@ Local:
 
 Hugging Face Space:
     MODEL_ID=CohereLabs/tiny-aya-global ADAPTER_ID=<you>/tiny-aya-hinglish-lora \
-        ADAPTER_SUBFOLDER=sft2_adapter python app.py
+        ADAPTER_SUBFOLDER=sft3_adapter python app.py
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ from hinglish_agent.runner import run_episode  # noqa: E402
 
 MODEL_ID = os.getenv("MODEL_ID", "CohereLabs/tiny-aya-global")
 ADAPTER_ID = os.getenv("ADAPTER_ID", "primce/tiny-aya-hinglish-lora").strip() or None
-ADAPTER_SUBFOLDER = os.getenv("ADAPTER_SUBFOLDER", "sft2_adapter").strip() or None
+ADAPTER_SUBFOLDER = os.getenv("ADAPTER_SUBFOLDER", "sft3_adapter").strip() or None
 MAX_NEW_TOKENS = int(os.getenv("MAX_NEW_TOKENS", "256"))
 
 _CACHE: dict = {}
@@ -128,8 +128,10 @@ with gr.Blocks(title="Hinglish Expense Agent") as demo:
         "# Hinglish Expense-Splitting Agent\n"
         "Tiny Aya + AgentTune, Track 3. The agent calls tools, carries the ledger, "
         "and answers in Hinglish. Amounts in INR; USD = 83 INR, EUR = 90 INR.\n\n"
-        "Frozen adapter: **96.67%** success on 30 unseen hard tasks. "
-        "Set `ADAPTER_ID` to an empty value to run the base model instead."
+        "Shipped adapter: **96.67%** (29/30) on unseen hard tasks and **75.56%** (68/90) on a "
+        "90-task holdout, scored on the final ledger with no LLM judge. It also ignores "
+        "injected instructions in tool results: 0/24 ledger attacks against the base model's "
+        "13/24. Set `ADAPTER_ID` to an empty value to run the base model instead."
     )
     with gr.Row():
         with gr.Column(scale=2):

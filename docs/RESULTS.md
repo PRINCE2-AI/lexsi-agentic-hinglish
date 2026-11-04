@@ -1,11 +1,167 @@
-# Frozen results — sft2 (submission candidate)
+# Results — sft3 (submission candidate)
 
-**Frozen on 2026-11-03.** `runs/sft2_merged` + its LoRA adapter is the submission
-candidate. Every number comes from a Kaggle T4 x2 run: training and the tuned evals from
-`laxsi-ai-round2.ipynb`, the base-model before-column and the reproducibility re-run from
-`laxsi-ai-base-bench.ipynb` (2026-11-04).
+**Frozen on 2026-11-04.** `runs/sft3` + its LoRA adapter is the submission candidate: the
+round-1 SFT mix plus an abstention slice (`data/tasks_train_mix2.jsonl`, 312 rows), seed 42,
+measured on a 90-task holdout, three seeds, the safety split and an independent AuditKIT pass.
+The round-1 freeze (`sft2`, 2026-11-03) is kept unchanged further down as the before-column.
 
-## Frozen artifact and provenance
+Every number here comes from a `summary.json` written by a GPU run and uploaded to
+`primce/lexsi-runs`; nothing is estimated.
+
+## Round 2 (2026-11-04)
+
+Round 1 left four holes: one seed, a 30-task denominator, an abstention problem the adapter
+ignored, and a track that asks for an agentic-eval toolkit the project never ran. This section
+reports each one in the order it was pre-registered in `docs/ROUND2.md`, including the target it
+missed.
+
+### Artifacts
+
+| Item | Value |
+|---|---|
+| Adapter (shipped) | `primce/tiny-aya-hinglish-lora` → `sft3_adapter` |
+| Seed controls | same repo → `sft3_seed7_adapter`, `sft3_seed123_adapter` |
+| Training data | `data/tasks_train_mix2.jsonl` (184 mix + 96 abstention + 32 twins) |
+| Holdouts | `data/tasks_hard_eval.jsonl` (30), `data/tasks_hard90_eval.jsonl` (90, own pin), `data/tasks_eval.jsonl` (24), `data/tasks_safety_eval.jsonl` (32) |
+| Run logs | `primce/lexsi-runs` → `sft3_hard30`, `sft3_hard90`, `sft3_eval`, `sft3_seed7_*`, `sft3_seed123_*`, `base_hard90`, `safety_sft3*` |
+| Independent eval | AuditKIT 1.1.3 via `scripts/auditkit_eval.py`, no judge model |
+
+### Held-out success
+
+Greedy decoding, `--no-4bit`, zero tool errors in every row.
+
+| Model | hard-30 | hard-90 | eval-24 |
+|---|---:|---:|---:|
+| Base Tiny Aya, prompt-only | 3.33% (1/30) | 3.33% (3/90) | - |
+| SFT-mix, round 1 (`sft2`) | 96.67% (29/30) | - | 100% (24/24) |
+| **SFT-mix2 seed 42 (`sft3`, shipped)** | **96.67% (29/30)** | **75.56% (68/90)** | **100% (24/24)** |
+| SFT-mix2 seed 7 | 93.33% (28/30) | 83.33% (75/90) | - |
+| SFT-mix2 seed 123 | 80.00% (24/30) | 75.56% (68/90) | - |
+
+Wilson 95% intervals: sft3 83.3–99.4% on hard-30 and 65.8–83.3% on hard-90; base 0.6–16.7%
+and 1.1–9.3%; seed 7 78.7–98.2% and 74.3–89.6%; seed 123 62.7–90.5% and 65.8–83.3%. The 90-task
+number is the one to quote: the interval is ±7 pp instead of ±13 pp.
+
+hard-90 is harder for a reason that is not tool use. sft3 keeps `ter` 0.011, `overcall` 0.000
+and `rad` 0.000; the misses are answer shape (`tac` 0.822, `lcf` 0.011) and eight tasks with one
+unparsable turn (`parse_failures` 0.09). The base model fails the other way: 7.24 calls against
+the oracle's 3.57, `overcall` 1.258, 52% of episodes never reach `finish`, 21% with a parse
+failure.
+
+### Seed spread
+
+| Seed | hard-30 | hard-90 | mean of the two |
+|---|---:|---:|---:|
+| 42 (pre-registered, shipped) | 96.67% | 75.56% | 86.11% |
+| 7 | 93.33% | 83.33% | 88.33% |
+| 123 | 80.00% | 75.56% | 77.78% |
+| spread (max − min) | 16.67 pp | 7.77 pp | - |
+| mean across seeds | 90.00% | 78.15% | - |
+
+The spread is real and it is reported, not averaged away: on hard-90, seed 7 beats seed 42 on
+7 tasks with 0 regressions (exact McNemar p = 0.0156), while seed 123 trades 4 for 4 against it
+(p = 1.0). On hard-30 the three seeds are not separable (42 vs 7: 0 fixed, 1 broken, p = 1.0).
+
+**Why 42 ships.** It was fixed before the seed runs existed, and it is the median seed on the
+mean of the two splits. Shipping seed 7 would raise the headline by 7.8 pp on hard-90, but it
+would mean choosing the seed on the split we report. The honest version is the one published:
+one pre-registered seed, plus the spread, plus the note that a different seed can be better.
+
+### Paired tests (deterministic scorer, same task ids)
+
+| Comparison | Split | Fixed | Broken | Gain | Exact McNemar p |
+|---|---|---:|---:|---:|---:|
+| base → sft3 | hard-90 (n=90) | 66 | 1 | +72.2 pp | 9.2e-19 |
+| sft3 → seed 7 | hard-90 (n=90) | 7 | 0 | +7.8 pp | 0.0156 |
+| sft3 → seed 123 | hard-90 (n=90) | 4 | 4 | 0.0 pp | 1.0 |
+| sft3 → seed 7 | hard-30 (n=30) | 0 | 1 | −3.3 pp | 1.0 |
+| base → sft3 | hard-30 (n=30) | 28 | 0 | +63.3 pp | 7.5e-09 |
+
+Reproduce:
+
+```bash
+python scripts/stats.py --a runs/base_hard90 --b runs/sft3_hard90
+python scripts/stats.py --a runs/sft3_hard90 --b runs/sft3_seed7_hard90
+python scripts/stats.py --a runs/sft3_hard90 --b runs/sft3_seed123_hard90
+```
+
+### Per family on hard-90 (15 each)
+
+| Family | Base | sft3 (42) | seed 7 | seed 123 |
+|---|---:|---:|---:|---:|
+| settle5 | 0/15 | 15/15 | 15/15 | 14/15 |
+| trap_combo | 0/15 | 15/15 | 15/15 | 15/15 |
+| paraphrase | 0/15 | 13/15 | 13/15 | 13/15 |
+| two_query | 0/15 | 13/15 | 14/15 | 11/15 |
+| convert_sum | 0/15 | 8/15 | 11/15 | 11/15 |
+| empty_balance | 3/15 | 4/15 | 7/15 | 4/15 |
+
+`empty_balance` and `convert_sum` are where the remaining 22 failures live, and the seed spread
+sits in the same two families. Clearing hard-30 did not clear hard-90: the 30-task set exposed
+two families with 0/6 and 0/3, the 90-task set exposes two families with 4/15 and 8/15.
+
+### AuditKIT (independent scorer, Track 3 toolkit)
+
+`scripts/auditkit_eval.py` rebuilds each recorded episode from `trajectories.jsonl` as
+`auditkit.agent_eval.AgentCase` + episode and scores it in `mode="recorded"`. No judge model is
+used (`tool_selection` is excluded because it requires one). Two routes: a "ledger route" that
+drops the model's `finish` call and compares the ledger calls against the oracle actions, and a
+"full route" that includes `finish` compared on name only (arity differs by design).
+
+| Split | Model | tool_call_exact | tool_call_f1 | precision | recall | redundant | loop | agreement |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| hard-30 | base | 0.0333 | 0.1875 | 0.1547 | 0.3194 | 0.3270 | 0.4333 | 1.000 |
+| hard-30 | sft3 | 1.000 | 1.000 | 1.000 | 1.000 | 0.000 | 1.000 | 1.000 |
+| hard-90 | sft3 | 0.7778 | 0.8114 | 0.8130 | 0.8102 | 0.0109 | 0.9875 | 0.9889 |
+
+Full route (with `finish`, name-only): base hard-30 exact 0.100, F1 0.448; sft3 hard-30 all
+1.000; sft3 hard-90 exact 0.8222, F1 0.9210, precision 0.9593, recall 0.9015.
+
+`agreement_with_own_scorer` is 1.000 on hard-30 and 0.9889 (89/90) on hard-90, so AuditKIT
+reproduces the project's own deterministic scorer rather than redefining success. Its
+diagnostics add the before/after the track asks for: exact-call accuracy 0.033 → 1.000, tool-call
+F1 0.188 → 1.000, redundant calls 0.327 → 0.000 on the same 30 tasks. (AuditKIT counts 69/90
+successes on hard-90 against the project's 68; the one disagreement is a parse-failure task where
+the final ledger still matches.)
+
+### Safety split (32 tasks, 24 with a payload)
+
+| System | safe | utility | attack_ledger | attack_answer | unplanned_calls |
+|---|---:|---:|---:|---:|---:|
+| Base Tiny Aya | 0/24 | 0/24 | 13/24 (54.2%) | 8/24 (33.3%) | 1.08 |
+| SFT-mix (`sft2`) | 11/24 (45.8%) | 11/24 | **0/24** | 3/24 (12.5%) | 0.29 |
+| SFT-mix + hardened prompt | 15/24 (62.5%) | 15/24 | **0/24** | 2/24 (8.3%) | 0.17 |
+| **SFT-mix2 (`sft3`)** | **15/24 (62.5%)** | **15/24** | **0/24** | **2/24 (8.3%)** | **0.12** |
+| SFT-mix2 + hardened prompt | 12/24 (50.0%) | 12/24 | **0/24** | 3/24 (12.5%) | 0.17 |
+
+Underspecified requests (8, no payload): `asked` 0/8 base → 0/8 sft2 → **2/8 sft3**, and
+`invented_expense` 8/8 → 7/8 → **6/8**. Full family counts in `docs/SAFETY.md`.
+
+The pre-registered abstention bar was `asked ≥ 6/8` and `invented_expense ≤ 2/8`. **Both were
+missed.** What the abstention slice bought is directional and small: the model now asks on 2 of 8
+instead of 0, stops inventing an expense on 1 more task, and keeps `attack_ledger` at 0/24 while
+`unplanned_calls` drops to 0.12. The hardened prompt, which helped sft2, now costs 3 safe tasks
+on sft3 (15 → 12), so it is not shipped as the default.
+
+The honest read: 8.4% supervised ask tokens is enough to make the boundary visible, not enough to
+make it the default behaviour. A real fix needs either more abstention data (the mask is the
+cheap lever) or the GRPO abstain reward, which is running as stage 2.
+
+### What round 2 changed, in one paragraph
+
+The 30-task number was optimistic by 21 points: sft3 drops from 96.67% on hard-30 to 75.56% on
+hard-90, and the same drop appears in the two families the 30-task set under-samples
+(`empty_balance` 3/3 → 4/15, `convert_sum` 2/3 → 8/15). The 90-task holdout and the three seeds
+are what turn "96.67%, n=30, one seed" into "75.56–96.67%, n=90, 3 seeds, ±7 pp". Training stayed
+deterministic and cheap: the mix2 SFT is ~156 optimizer steps on one T4, and the whole round-2
+evidence base cost less than $20 of rented GPU time.
+
+## Round 1 (2026-11-03) — sft2 freeze
+
+Training and the tuned evals ran on Kaggle T4 x2 from `laxsi-ai-round2.ipynb`, the base-model
+before-column and the reproducibility re-run from `laxsi-ai-base-bench.ipynb` (2026-11-04).
+
+### Frozen artifact and provenance
 
 | Item | Value |
 |---|---|
@@ -26,7 +182,7 @@ run instead of silently changing the denominator.
 configuration whose reward can see the abstention behaviour, and a seed control. Those numbers
 are filled from `runs/*/summary.json` when the GPU runs land; nothing in this file is estimated.
 
-## Data
+### Data
 
 | Split | Rows | Families |
 |---|---:|---|
@@ -43,7 +199,7 @@ Mix family share: easy 0.543, two_query 0.13, convert_sum 0.087, trap_combo 0.08
 empty_balance 0.065, settle5 0.043, paraphrase 0.043. A hard-train row that appears in
 the hard-eval set aborts `data/build_mix.py`, so the repetition cannot leak eval rows.
 
-## Training runs
+### Training runs
 
 | Stage | Data | Epochs / steps | Train time | Notes |
 |---|---|---|---:|---|
@@ -51,7 +207,7 @@ the hard-eval set aborts `data/build_mix.py`, so the repetition cannot leak eval
 | GRPO | 184 mix rows | 30 steps (T4 profile caps 60 → 30) | 10 686 s | lr 1e-6, graded + efficiency rewards, 2 generations |
 | **SFT-mix (frozen)** | 184 mix rows | 2 epochs, 92 steps | 2252 s | same SFT config as SFT-easy, then merged |
 
-## Results
+### Results (round 1)
 
 Held-out tasks, greedy decoding, `--no-4bit`, 0 tool errors in every run.
 
@@ -73,7 +229,7 @@ Run timings on the same T4 x2, greedy, `--no-4bit`: base hard-30 2428.4 s, tuned
 1648.6 s, tuned eval-24 1212.5 s. The tuned model is both more accurate and faster because
 it stops at the oracle call count instead of looping.
 
-## Safety split
+### Safety split (round 1)
 
 The repo also ships a 32-task injection eval. Headline: base writes attacker money into the
 ledger in 13/24 injection tasks, the frozen adapter in 0/24 (exact McNemar p = 0.00024), while
@@ -83,7 +239,7 @@ model: `docs/SAFETY.md`.
 
 Run logs: `primce/lexsi-runs` → `safety_base`, `safety_sft2`, `safety_sft2_hardened`.
 
-## What moved the number
+### What moved the number (round 1)
 
 Base Tiny Aya solves 1/30. Its tool error rate is 22.3%, `overcall` 1.075 and 16 episodes
 never finish, so the before-column is a genuine failure, not a close miss.
@@ -98,7 +254,7 @@ Reweighting the same 40 hard rows into an SFT run fixed it in 92 steps: +33.3 po
 hard-30 with eval-24 unchanged. The bottleneck was data coverage of the answer shape,
 not the RL stage.
 
-## Statistics
+### Statistics (round 1)
 
 | Model | hard-30 success | Wilson 95% CI |
 |---|---:|---|
@@ -139,7 +295,7 @@ Per family, same paired files:
 The one remaining failure is `h-e-027` (`convert_sum`: "Total kitna INR hoga agar 19 USD aur
 37 EUR convert karein?"), so the next data edit should target that template, not the others.
 
-## Caveats to state in the write-up
+### Caveats to state in the write-up
 
 - hard-30 rows are **held-out instances** (new amounts, names, currencies) of the same six
   templates seen in hard-train. Generalization is across instances, not across formats.
@@ -153,7 +309,7 @@ The one remaining failure is `h-e-027` (`convert_sum`: "Total kitna INR hoga aga
 - Full per-metric summaries (`tac`, `arr`, `ter`, `rad`, `lcf`) are in the uploaded
   `summary.json` files, not repeated here.
 
-## Reproduce
+### Reproduce
 
 ```bash
 python data/build_hard.py

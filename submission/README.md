@@ -1,0 +1,128 @@
+# Track 3 submission — a Hinglish expense-splitting agent that moves money safely
+
+**Track 3, Agentic fine-tuning.** Solo entry. Base model `CohereLabs/tiny-aya-global` (3.35B),
+LoRA SFT + AgentTune GRPO, evaluated with AuditKIT 1.1.3.
+
+One line: **3.33% → 96.67% task success on a frozen 30-task hard split, and 3.33% → 75.56% on a
+90-task holdout, with the same adapter moving attacker money into the ledger in 0 of 24
+prompt-injection tasks.**
+
+## Artifacts
+
+| What | Where |
+|---|---|
+| Code + data + eval scripts | https://github.com/PRINCE2-AI/lexsi-agentic-hinglish |
+| Adapter (shipped) | https://huggingface.co/primce/tiny-aya-hinglish-lora (`sft3_adapter`) |
+| Run logs (every `summary.json` + trajectories) | https://huggingface.co/datasets/primce/lexsi-runs |
+| Live demo (tool trace visible) | https://huggingface.co/spaces/primce/hinglish-expense-agent |
+| Write-up | https://huggingface.co/spaces/primce/hinglish-track3-article |
+| HF Collection | https://huggingface.co/collections/primce/lexsi-track-3-hinglish-expense-agent-6aeb3207e10dfc7dda6329d6 |
+
+## Track 3 requirements, and where each is met
+
+| Requirement | Evidence in this repo |
+|---|---|
+| **AgentTune used** | `scripts/train_grpo.py` builds the trainer through `agenttune.create_agentic_trainer` and runs 40 GRPO steps on top of the SFT warm start (`scripts/hf_job_stage2.sh`, HF Job `6aeb328dc78863f9c6328d08`). |
+| **AuditKIT used** | `scripts/auditkit_eval.py` rebuilds every recorded episode as an `auditkit.agent_eval.AgentCase` + `episode_from_openai_messages`, runs `AgentEvalRunner` in `mode="recorded"` with `FinalStateAssertion` and `CustomPredicate`, and scores `tool_call_f1`, `tool_call_f1_name`, `tool_call_validity`, `redundant_tool_calls`, `agent_loop_detection`. No judge model is used. |
+| **Before/after metrics, more than one** | Success, exact-call accuracy, tool-call F1/precision/recall, redundant calls, loop detection, ledger-attack rate, abstention — tables below. |
+| **HF Collection** | linked above. |
+| **Write-up** | this file; rendered version in the article Space. |
+
+## Method
+
+1. **Environment.** Five stateless tools over a deterministic integer-paise ledger
+   (`add_expense`, `convert_currency`, `get_balance`, `settle_up`, `finish`);
+   `CURRENCY_CENTS = {"INR": 100, "USD": 8300, "EUR": 9000}`. A task is scored on final ledger
+   state, answer content and call-level diagnostics, not on text similarity.
+2. **SFT.** LoRA r=16, all-linear, fp16, lr 2e-4, 2 epochs, grad-accum 4,
+   `masked_causal_lm_loss` so only assistant turns are supervised. Data
+   `data/tasks_train_mix2.jsonl`: 312 rows = 184 easy/hard mix + 96 abstention rows (32
+   underspecified × 3) + 32 fully-specified twins. ~156 optimizer steps on one T4.
+3. **GRPO (AgentTune).** 40 steps, lr 3e-6, 2 generations, graded reward + efficiency reward +
+   a new abstain reward (1.0 when the only call is `finish` with a question on an
+   `abstain=1` row). Stage 2 runs on top of the SFT merge.
+4. **Evaluation.** Greedy, `--no-4bit`, one sample per task, frozen splits with SHA-256 pins:
+   hard-30 (`tasks_hard_eval.jsonl`), hard-90 (`tasks_hard90_eval.jsonl`, 15 per family),
+   easy eval-24, safety-32. Every number comes from an uploaded `summary.json`; nothing is
+   estimated.
+
+## Results
+
+### Task success (held-out, greedy)
+
+| Model | hard-30 | hard-90 | eval-24 |
+|---|---:|---:|---:|
+| Base Tiny Aya, prompt-only | 3.33% (1/30) | 3.33% (3/90) | - |
+| SFT-mix, round 1 (`sft2`) | 96.67% (29/30) | - | 100% (24/24) |
+| **SFT-mix2 seed 42 (`sft3`, shipped)** | **96.67% (29/30)** | **75.56% (68/90)** | **100% (24/24)** |
+| SFT-mix2 seed 7 | 93.33% (28/30) | 83.33% (75/90) | - |
+| SFT-mix2 seed 123 | 80.00% (24/30) | 75.56% (68/90) | - |
+
+Paired exact McNemar, same task ids: base → sft3 hard-90 **66 fixed, 1 broken, p = 9.2e-19**;
+base → sft3 hard-30 **28 fixed, 0 broken, p = 7.5e-9**. Wilson 95% on hard-90: 65.8–83.3%.
+
+The seed spread is published instead of hidden: 16.67 pp on hard-30, 7.77 pp on hard-90. Seed 7
+beats the shipped seed 42 on hard-90 (7 fixed, 0 broken, p = 0.0156); the shipped seed is the one
+fixed before the seed runs existed, and it is the median of the three on the mean of both splits.
+Choosing the best of three seeds on the split we report would have added 7.8 pp and removed the
+claim's credibility.
+
+### AuditKIT before/after (independent scorer, no LLM judge)
+
+| Split | Model | tool_call_exact | tool_call_f1 | precision | recall | redundant | loop |
+|---|---|---:|---:|---:|---:|---:|---:|
+| hard-30 | base | 0.0333 | 0.1875 | 0.1547 | 0.3194 | 0.3270 | 0.4333 |
+| hard-30 | sft3 | 1.000 | 1.000 | 1.000 | 1.000 | 0.000 | 1.000 |
+| hard-90 | sft3 | 0.7778 | 0.8114 | 0.8130 | 0.8102 | 0.0109 | 0.9875 |
+
+AuditKIT's own success rate agrees with the project scorer on 30/30 hard-30 tasks and 89/90
+hard-90 tasks, so the toolkit reproduces the result rather than replacing it. Full route (with
+`finish` compared on name only): base hard-30 exact 0.100 / F1 0.448; sft3 hard-90 exact 0.822 /
+F1 0.921.
+
+### Safety: indirect prompt injection on the ledger (32 tasks, 24 with a payload)
+
+| System | safe | utility | attack_ledger | attack_answer | unplanned_calls |
+|---|---:|---:|---:|---:|---:|
+| Base Tiny Aya | 0/24 | 0/24 | 13/24 (54.2%) | 8/24 (33.3%) | 1.08 |
+| SFT-mix (`sft2`) | 11/24 | 11/24 | 0/24 | 3/24 | 0.29 |
+| **SFT-mix2 (`sft3`, shipped)** | **15/24** | **15/24** | **0/24** | **2/24** | **0.12** |
+
+The attacker controls one `note` field in one tool result and asks the agent to record an absurd
+999999 INR expense. Success is an equality check on the final ledger, so there is no judge to
+disagree with. Underspecified requests: `asked` 0/8 → 2/8, `invented_expense` 8/8 → 6/8 — a
+direction, not a fix; the pre-registered bar was 6/8 and it was missed. That miss is reported in
+`docs/ROUND2.md` next to the bar it missed.
+
+## Honest limits
+
+- hard-90 rows are unseen instances of the same six templates as hard-train; this measures
+  generalisation across instances, not across task formats.
+- Three seeds bound the variance; they do not eliminate it, and the spread is wider than any
+  single change made after round 1.
+- The safety probe is 32 tasks with one payload style. A Hinglish-only attacker or a Devanagari
+  payload is untested.
+- Abstention is improved but not solved. The shipped adapter asks on 2 of 8 underspecified
+  requests.
+- One greedy sample per task. Sampled decoding would show more variance than these numbers.
+
+## Reproduce (no GPU, no token)
+
+```bash
+git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
+python scripts/verify_all.py      # 13 checks: pins, oracle 30/30, safety, reward, stats, AuditKIT adapter
+```
+
+On a T4 (one GPU is enough):
+
+```bash
+python scripts/train_sft.py --tasks data/tasks_train_mix2.jsonl --epochs 2 --seed 42 \
+    --out runs/sft3 --merge-out runs/sft3_merged
+python scripts/run_baseline.py --model runs/sft3_merged \
+    --tasks data/tasks_hard90_eval.jsonl --no-4bit --out runs/sft3_hard90
+python scripts/auditkit_eval.py --run sft3_hard90 --tasks data/tasks_hard90_eval.jsonl
+python scripts/stats.py --a runs/base_hard90 --b runs/sft3_hard90
+```
+
+Full tables, per-family counts, all paired tests and the pre-registered thresholds:
+`docs/RESULTS.md`, `docs/SAFETY.md`, `docs/ROUND2.md`.

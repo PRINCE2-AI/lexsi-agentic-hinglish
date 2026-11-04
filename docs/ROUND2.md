@@ -6,9 +6,9 @@ each one counts as closed. Every number that lands here comes from `runs/*/summa
 
 | # | Weakness | Judge's reading | Fix | Status |
 |---|---|---|---|---|
-| 1 | Track says RL; the winning run is SFT, GRPO moved 0 | "track miss" | reward the behaviour SFT could not learn, unlock the step cap, 4x the LR | code + data ready, GPU run queued (`notebooks/kaggle_grpo_v2.ipynb`) |
-| 2 | hard-30, 1 seed, CI 83–99% | "too small to believe" | hard-90 holdout, own pin, plus an explicit seed control | data ready, GPU runs queued (`notebooks/kaggle_sft3_eval.ipynb`) |
-| 3 | Abstention 1/8 | "safety probe still open" | 32 underspecified rows as minimal pairs in the SFT mix | data ready, GPU run queued (same notebook) |
+| 1 | Track says RL; the winning run is SFT, GRPO moved 0 | "track miss" | reward the behaviour SFT could not learn, unlock the step cap, 4x the LR | running on HF Jobs (`6aeb328d…`); outcome appended below when it lands |
+| 2 | hard-30, 1 seed, CI 83–99% | "too small to believe" | hard-90 holdout, own pin, plus an explicit seed control | **closed**: hard-90 for base + 3 seeds, paired tests, spread published |
+| 3 | Abstention 1/8 | "safety probe still open" | 32 underspecified rows as minimal pairs in the SFT mix | **shipped in sft3**: asked 2/8 against a 6/8 bar — missed, reported as a direction |
 | 4 | Article is a static Space, not an HF blog | "format not met" | blocked at the account level, not by the repo | substituted; see below |
 
 ## 1. GRPO: why the first run moved nothing
@@ -132,13 +132,65 @@ is better than a broken link or a silent omission.
 
 ## Run order
 
-One Kaggle session per notebook, T4 x2, `HF_TOKEN` in Add-ons → Secrets.
+Both stages run on rented single-GPU boxes through Hugging Face Jobs (`$0.40–0.60/h`, prepaid
+credits, no card), and the same scripts run unchanged on a Kaggle T4 or any laptop with a GPU.
+The notebooks in `notebooks/` are the interactive version of the same two stages.
 
-| Night | Notebook | Cells that matter | Wall clock |
+```bash
+# stage 1: train sft3 on the abstention mix, then measure it everywhere
+hf jobs run --flavor t4-medium --timeout 9h --secrets HF_TOKEN -e BASE90=1 \
+  -e REPO=https://github.com/PRINCE2-AI/lexsi-agentic-hinglish.git -- \
+  pytorch/pytorch:2.6.0-cuda12.4-cudnn9-runtime bash -lc \
+  'apt-get update -qq >/dev/null; apt-get install -y -qq git >/dev/null
+   cd /tmp && git clone -q $REPO work && cd work
+   pip install -q "transformers>=5.15" peft accelerate datasets "huggingface_hub>=0.30"
+   bash scripts/hf_job_stage1.sh'
+
+# stage 2: GRPO on top of sft3 (agenttune needs Python >= 3.12)
+hf jobs run --flavor t4-medium --timeout 8h --secrets HF_TOKEN \
+  -e REPO=https://github.com/PRINCE2-AI/lexsi-agentic-hinglish.git -- \
+  python:3.12 bash -lc \
+  'apt-get update -qq >/dev/null; apt-get install -y -qq git >/dev/null
+   cd /tmp && git clone -q $REPO work && cd work
+   pip install -q -r requirements.txt
+   bash scripts/hf_job_stage2.sh'
+```
+
+Two image facts, learned the hard way and worth keeping: the `pytorch/pytorch` images have no
+`git` (install it), and `agenttune` requires Python 3.12 while the torch 2.6 images ship 3.11, so
+stage 1 uses the pytorch image with a light install and stage 2 uses `python:3.12` with the full
+`requirements.txt` (torch 2.11 + cu130 works on a T4, sm_75, verified).
+
+| Stage | Steps | Wall clock | Cost at t4-medium |
 |---|---|---|---:|
-| 1 | `notebooks/kaggle_sft3_eval.ipynb` | train sft3 → hard-30/eval-24/safety → hard-90 → sft2 hard-90 → base hard-90 | 3.8 h to 7.8 h depending on how far it gets |
-| 2 | `notebooks/kaggle_grpo_v2.ipynb` | GRPO 40 steps → safety → hard-30 → hard-90 | 6.5 h |
+| 1 | verify → train sft3 → hard-30, eval-24, safety ×2 → hard-90 → sft2 on hard-90 → base on hard-90 | 7.8 h | ~$4.70 |
+| 2 | verify → merge sft3 → GRPO 40 steps → safety → hard-30 → hard-90 | 6.5 h | ~$3.90 |
 
-Both notebooks end with the same paste-back block: the summary keys per run, the per-family
-breakdown, and the upload confirmations for `primce/lexsi-runs` and the adapter folders. Docs are
-filled from that block, never from memory.
+Every step uploads its own folder, so a job that hits its timeout still publishes everything it
+finished. `scripts/job_upload.py` prints the summary keys and the per-family breakdown; docs are
+filled from that output, never from memory.
+
+## Outcome
+
+| # | Pre-registered bar | Measured | Verdict |
+|---|---|---|---|
+| 1 | report both axes whichever direction: abstention up with hard-30 flat is the RL win; a zero delta with a diagnosis is the honest result | job `6aeb328dc78863f9c6328d08`, GRPO 40 steps on `sft3_merged` | in flight at the time of writing; appended here and in `RESULTS.md` when the eval lands |
+| 2 | hard-90 for base + sft3 + seeds, paired McNemar, spread published if it is wider than the mix effect | base 3/90, sft3 68/90 (p = 9.2e-19), seeds 80.00 / 93.33 / 96.67 on hard-30 and 75.56 / 83.33 / 75.56 on hard-90 | **closed**, and the spread (16.67 pp / 7.77 pp) is published |
+| 3 | `asked >= 6/8`, `invented_expense <= 2/8`, `attack_ledger 0/24`, hard-30 `>= 28/30` | asked 2/8, invented 6/8, attack 0/24, hard-30 29/30 | **both abstention bars missed**, both guard rails held |
+| 4 | a real HF blog post | the same markdown, rendered by a Space and linked from the submission | substituted; the reason is an account limit, stated in one line |
+
+What the misses cost, and what they bought:
+
+- **The seed spread is wider than anything we changed.** On hard-30 the three seeds span 16.67 pp,
+  and seed 7 beats the shipped seed 42 on hard-90 by 7 tasks to 0 (p = 0.0156). Shipping seed 7
+  would put a better number on the card; it would also mean picking the seed on the split that is
+  reported. The shipped seed is the pre-registered one, which happens to be the median across both
+  splits — so the published number is a defensible estimate, not the best of three draws.
+- **The abstention slice is a direction, not a fix.** `asked` 0/8 -> 2/8, `invented_expense`
+  7/8 -> 6/8, `attack_ledger` still 0/24, hard-30 still 29/30. At 8.4% supervised ask-tokens the
+  policy can produce the behaviour but does not prefer it. The GRPO abstain reward (item 1) is the
+  next lever, which is why item 1 matters even if its task-success delta is zero.
+- **hard-30 was optimistic by 21 points.** The 90-task holdout moved the headline from 96.67% to
+  75.56% and narrowed the interval from ±13 pp to ±7 pp. `empty_balance` (4/15) and `convert_sum`
+  (8/15) are the next data edits; they are also where the seed spread lives, so more rows there
+  would buy both accuracy and stability.

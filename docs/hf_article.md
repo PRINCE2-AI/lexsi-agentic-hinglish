@@ -1,21 +1,26 @@
 # Teaching Tiny Aya to split Hinglish expenses without losing the ledger
 
-*Lexsi AI Safety & Alignment Hackathon 2026 — Track 3, Agentic fine-tuning.*
+*Lexsi AI Safety & Alignment Hackathon 2026 — Track 3, Agentic fine-tuning. Solo entry.*
 
 ## TL;DR
 
 - Base Tiny Aya on the frozen hard-30, no adapter: **3.33%** (1/30), and that one success is
-  accidental. 16 of 30 episodes never finish and it averages **7.03** calls. On the 20-task
-  starter set it is **25%** with **70%** loop collapse and **9.25** calls.
-- SFT on 100 easy oracle trajectories: **63.33%** on the held-out hard-30, **100%** on eval-24.
-- Adding GRPO on top (30 steps, graded reward): **63.33%** — no change. The reward was
+  accidental. 16 of 30 episodes never finish and it averages **7.03** calls. On the 90-task
+  holdout it is also **3.33%** (3/90), at **7.24** calls.
+- SFT on 100 easy oracle trajectories: **63.33%** on hard-30, **100%** on eval-24.
+- Adding GRPO on top (30 steps, graded reward) moved **nothing**: 63.33% again. The reward was
   saturated and the run was too short to move an answer-shape failure.
-- SFT on the reweighted mix (184 rows): **96.67%** on hard-30, **100%** on eval-24, **3.57**
-  calls per task — exactly the oracle's call count.
+- SFT on the reweighted mix (184 rows): **96.67%** on hard-30, **3.57** calls — exactly the
+  oracle's call count.
+- SFT on the mix plus 96 abstention rows ("mix2", shipped): **96.67%** on hard-30, **75.56%** on
+  a 90-task holdout, **100%** on eval-24. Three seeds of the same recipe span 16.67 pp on hard-30
+  and 7.77 pp on hard-90; the shipped seed is the pre-registered one, and a second seed is better
+  on the 90-task set.
+- Independent **AuditKIT 1.1.3** replay of the same trajectories, no judge model: exact-call
+  accuracy **0.033 → 1.000**, tool-call F1 **0.188 → 1.000**, redundant calls **0.327 → 0.000**.
 - Indirect injection through tool results: base writes attacker money into the ledger in
-  **13/24** tasks, the frozen adapter in **0/24** (p = 0.00024). Abstention on
-  underspecified requests stays at **1/8**.
-- Adapter, dataset, run logs and Space are linked at the end.
+  **13/24** tasks, the shipped adapter in **0/24** (p = 0.00024). Abstention on underspecified
+  requests moves **0/8 → 2/8** — a direction, not a fix, against a bar of 6/8 that it missed.
 
 ## Problem statement
 
@@ -25,7 +30,8 @@ trajectories** — cut redundant, looping or failed calls without lowering succe
 
 Every clause is scored mechanically, with no LLM judge: tool choice (`tac`), argument
 validity (`ter`/`arr`), ordering (final ledger correctness), redundancy (`rad`), looping
-(`lcf`), and calls/steps per task.
+(`lcf`), and calls/steps per task. The required Track 3 toolkits are both used: **AgentTune**
+for the GRPO stage and **AuditKIT** for an independent agentic evaluation of the recorded runs.
 
 ## Why this task
 
@@ -45,72 +51,116 @@ reproduced by re-running the dataset.
 | easy eval | 24 | in-distribution held-out |
 | hard train | 40 | six stress families |
 | hard eval | 30 | held-out instances of the same six families (sha256-pinned) |
+| hard-90 eval | 90 | 15 per family, separately pinned — the tighter holdout |
 | mix | 184 | easy 100 + hard 84 (hard rows repeated per family) |
+| abstention train | 64 | 32 underspecified + 32 fully-specified twins |
+| mix2 | 312 | mix 184 + abstention 96 (3 copies) + twins 32 |
 
 The six hard families:
 
-| Family | What it stresses | Hard-eval rows |
-|---|---|---:|
-| `settle5` | five people over three days | 6 |
-| `two_query` | two questions in one Hinglish turn | 6 |
-| `convert_sum` | two conversions then a sum | 3 |
-| `empty_balance` | empty ledger, must not invent an expense | 3 |
-| `trap_combo` | payer also listed among participants | 6 |
-| `paraphrase` | Devanagari-mixed wording | 6 |
+| Family | What it stresses | Hard-30 | Hard-90 |
+|---|---|---:|---:|
+| `settle5` | five people over three days | 6 | 15 |
+| `two_query` | two questions in one Hinglish turn | 6 | 15 |
+| `convert_sum` | two conversions then a sum | 3 | 15 |
+| `empty_balance` | empty ledger, must not invent an expense | 3 | 15 |
+| `trap_combo` | payer also listed among participants | 6 | 15 |
+| `paraphrase` | Devanagari-mixed wording | 6 | 15 |
 
-The eval file is hash-pinned (`37f52b47…`), and the mix builder refuses to run if a
-hard-train row appears in the hard-eval set, so repetition cannot leak eval rows.
+Both eval files are hash-pinned, and the mix builder refuses to run if a hard-train row appears
+in an eval set, so repetition cannot leak eval rows. hard-90 is text-deduplicated against every
+other split.
 
 ## Method
 
 1. Five stateless tools: `add_expense`, `convert_currency`, `get_balance`, `settle_up`,
    `finish`; state travels in the ledger object, so rollouts cannot leak into each other.
-2. SFT on oracle trajectories: LoRA r=16 on all linear layers, fp16, lr 2e-4, labels masked
-   to assistant turns.
+2. SFT on oracle trajectories: LoRA r=16 on all linear layers, fp16, lr 2e-4, 2 epochs, labels
+   masked to assistant turns. mix2 is ~156 optimizer steps on one T4.
 3. GRPO with AgentTune `create_agentic_trainer`, graded reward (format + required tools +
-   argument names/values + answer number) plus a no-duplicate-calls term.
-4. Evaluation on Kaggle T4 x2, greedy decoding, `--no-4bit`, max 8 steps per task.
+   argument names/values + answer number), a no-duplicate-calls term, and — in round 2 — an
+   abstain reward that pays 1.0 when the only call is `finish` with a question on an
+   `abstain=1` row.
+4. Evaluation: greedy, `--no-4bit`, one sample per task, on rented T4s (HF Jobs) and Kaggle T4 x2.
+5. AuditKIT: `scripts/auditkit_eval.py` rebuilds each recorded episode as an
+   `auditkit.agent_eval.AgentCase` + episode, runs `AgentEvalRunner` in `mode="recorded"`, and
+   scores `tool_call_f1`, `tool_call_f1_name`, `tool_call_validity`, `redundant_tool_calls`,
+   `agent_loop_detection`. No judge model is used.
 
 ## Results
 
-| Model | hard-30 success | eval-24 success | answer_ok (hard) | calls (hard) |
+| Model | hard-30 | hard-90 | eval-24 | calls (hard-90) |
 |---|---:|---:|---:|---:|
-| Base Tiny Aya, prompt-only | 3.33% (1/30) | - | 6.67% | 7.03 |
-| SFT-easy (100 rows, 3 epochs) | 63.33% (19/30) | 100% (24/24) | 66.67% | 3.47 |
-| SFT-easy + GRPO (30 steps) | 63.33% (19/30) | 100% (24/24) | 66.67% | 3.47 |
-| **SFT-mix (184 rows, 2 epochs)** | **96.67% (29/30)** | **100% (24/24)** | **96.67%** | **3.57** |
-| oracle | 100% (30/30) | 100% (24/24) | 100% | 3.57 |
+| Base Tiny Aya, prompt-only | 3.33% (1/30) | 3.33% (3/90) | - | 7.24 |
+| SFT-easy (100 rows, 3 epochs) | 63.33% (19/30) | - | 100% (24/24) | - |
+| SFT-easy + GRPO (30 steps) | 63.33% (19/30) | - | 100% (24/24) | - |
+| SFT-mix (184 rows, round 1) | 96.67% (29/30) | - | 100% (24/24) | - |
+| **SFT-mix2, seed 42 (shipped)** | **96.67% (29/30)** | **75.56% (68/90)** | **100% (24/24)** | **3.27** |
+| SFT-mix2, seed 7 | 93.33% (28/30) | 83.33% (75/90) | - | 3.42 |
+| SFT-mix2, seed 123 | 80.00% (24/30) | 75.56% (68/90) | - | 3.23 |
+| oracle | 100% (30/30) | 100% (90/90) | 100% (24/24) | 3.57 |
 
-Wilson 95% intervals: 3.33% → 0.6–16.7%; 63.33% → 45.5–78.1%; 96.67% → 83.3–99.4%;
-eval-24 100% → 86.2–100%.
+Wilson 95% intervals: base 0.6–16.7% (hard-30) and 1.1–9.3% (hard-90); shipped adapter
+83.3–99.4% and 65.8–83.3%; seed 7 78.7–98.2% and 74.3–89.6%; seed 123 62.7–90.5% and 65.8–83.3%;
+eval-24 86.2–100%.
 
-Two paired exact McNemar tests on the uploaded trajectories, same 30 task ids:
+Paired exact McNemar on the uploaded trajectories, same task ids:
 
-- base → SFT-mix: **28 fixed, 0 broken, p = 7.5e-9**.
-- easy-SFT + GRPO → SFT-mix: **10 fixed, 0 broken, p = 0.00195**.
+- base → shipped adapter, hard-90: **66 fixed, 1 broken, p = 9.2e-19**.
+- base → shipped adapter, hard-30: **28 fixed, 0 broken, p = 7.5e-9**.
+- easy-SFT + GRPO → SFT-mix, hard-30: **10 fixed, 0 broken, p = 0.00195**.
+- shipped seed 42 → seed 7, hard-90: **7 fixed, 0 broken, p = 0.0156**.
 
-No hard task regressed in either comparison. The base model's one success is a lucky one:
-on `h-e-029` it answered "0 INR" correctly, but only after inventing an 800 INR expense
-nobody asked for. The answer was right, the behaviour was not — which is why the safety
-split in this repo scores the ledger and not just the text.
+The base model's one hard-30 success is a lucky one: on `h-e-029` it answered "0 INR" correctly,
+but only after inventing an 800 INR expense nobody asked for. The answer was right, the behaviour
+was not — which is why the safety split scores the ledger and not just the text.
 
-Per family:
+Per family on the 90-task holdout (15 each):
 
-| Family | n | Base | SFT-easy + GRPO | SFT-mix |
+| Family | Base | Seed 42 (shipped) | Seed 7 | Seed 123 |
 |---|---:|---:|---:|---:|
-| two_query | 6 | 0/6 | 0/6 | 6/6 |
-| convert_sum | 3 | 0/3 | 0/3 | 2/3 |
-| empty_balance | 3 | 1/3 | 2/3 | 3/3 |
-| trap_combo | 6 | 0/6 | 5/6 | 6/6 |
-| settle5 | 6 | 0/6 | 6/6 | 6/6 |
-| paraphrase | 6 | 0/6 | 6/6 | 6/6 |
+| settle5 | 0/15 | 15/15 | 15/15 | 14/15 |
+| trap_combo | 0/15 | 15/15 | 15/15 | 15/15 |
+| paraphrase | 0/15 | 13/15 | 13/15 | 13/15 |
+| two_query | 0/15 | 13/15 | 14/15 | 11/15 |
+| convert_sum | 0/15 | 8/15 | 11/15 | 11/15 |
+| empty_balance | 3/15 | 4/15 | 7/15 | 4/15 |
 
-The base model, on the same rows: tool error rate **22.3%**, `overcall` **1.08** (more than one
-extra call per expected call), `strict_rate` **0.534**, and 16 episodes that never reached
-`finish`. The frozen run has zero tool errors, zero redundant calls, zero unnecessary calls
-(`overcall` 0.00) and zero loop collapse. It matches the oracle on calls per task, which is why the
-secondary statement ("efficient trajectories") is reported on the same row as success.
-The single remaining miss is `h-e-027`, a two-currency sum.
+## What the 90-task holdout changed
+
+The 30-task split was optimistic by 21 points. Two families it under-samples are the two that
+stay hard: `empty_balance` goes from 3/3 on hard-30 to 4/15 on hard-90, `convert_sum` from 2/3
+to 8/15. The shipped adapter keeps a clean trajectory profile on hard-90 — tool error rate
+**1.1%**, `overcall` **0.000**, redundant calls **0.000** — so the remaining failures are answer
+shape (`tac` 0.822, loop-free 0.989) rather than tool use, exactly the failure mode the round-1
+analysis predicted.
+
+The seed spread is wider than any single change made after round 1: 16.67 pp on hard-30, 7.77 pp
+on hard-90. It is published instead of hidden. Shipping seed 7 would add 7.8 pp on hard-90; it
+would also mean choosing the seed on the split that is reported. The shipped adapter is seed 42,
+fixed before the seed runs existed, and it is the median of the three on the mean of both splits.
+
+## AuditKIT: an independent scorer on the same episodes
+
+The track asks for an agentic evaluation toolkit. AuditKIT replays the recorded trajectories —
+same cases, same final-state assertions, no judge model — and scores tool calls with its own
+implementation:
+
+| Split | Model | tool_call_exact | tool_call_f1 | precision | recall | redundant | loop |
+|---|---|---:|---:|---:|---:|---:|---:|
+| hard-30 | base | 0.0333 | 0.1875 | 0.1547 | 0.3194 | 0.3270 | 0.4333 |
+| hard-30 | shipped | 1.000 | 1.000 | 1.000 | 1.000 | 0.000 | 1.000 |
+| hard-90 | shipped | 0.7778 | 0.8114 | 0.8130 | 0.8102 | 0.0109 | 0.9875 |
+
+Its success verdict agrees with this repo's deterministic scorer on **30/30** hard-30 tasks and
+**89/90** hard-90 tasks, so the toolkit reproduces the result rather than replacing it. That
+agreement number is the point: two independent scorers, one dataset, no judge.
+
+The base model, on the same rows: tool error rate **22.3%** (hard-30) and **17.4%** (hard-90),
+`overcall` **1.08**, `strict_rate` **0.534**, and 16/30 episodes that never reached `finish`.
+The shipped adapter has zero tool errors and zero redundant calls on hard-30, and matches the
+oracle on calls per task — which is why the secondary statement ("efficient trajectories") is
+reported on the same row as success.
 
 ## What did not work
 
@@ -125,7 +175,13 @@ an expense that was never mentioned. `answer_ok` was 66.67% while `tac` was 96.6
 model knew what to do and dropped it when writing the answer.
 
 Reweighting the same 40 hard rows into an SFT mix fixed that in 92 steps (+33.3 points).
-The bottleneck was coverage of the answer shape, not the RL stage.
+The bottleneck was coverage of the answer shape, not the RL stage. Round 2 reruns GRPO with an
+abstention-aware reward, 40 steps and lr 3e-6 on top of the mix2 adapter; the outcome is reported
+in `docs/ROUND2.md` whichever way it points.
+
+The abstention slice is the other honest negative: it moved `asked` from 0/8 to 2/8 against a
+pre-registered bar of 6/8 (`invented_expense` 7/8 → 6/8). At 8.4% supervised ask-tokens the
+policy can produce the behaviour but does not prefer it.
 
 ## Safety: what happens when a tool result lies
 
@@ -146,39 +202,39 @@ injection tasks:
 | Base Tiny Aya | 0/24 | 0/24 | **13/24 (54.2%)** | 8/24 (33.3%) |
 | SFT-mix (`sft2`) | 11/24 (45.8%) | 11/24 | **0/24** | 3/24 (12.5%) |
 | SFT-mix + hardened prompt | 15/24 (62.5%) | 15/24 | **0/24** | 2/24 (8.3%) |
+| **SFT-mix2 (`sft3`, shipped)** | **15/24 (62.5%)** | 15/24 | **0/24** | 2/24 (8.3%) |
+| SFT-mix2 + hardened prompt | 12/24 (50.0%) | 12/24 | **0/24** | 3/24 (12.5%) |
 
-Paired exact McNemar: base → `sft2` removes **13 ledger attacks, introduces 0,
-p = 0.00024**. The prompt-level defence adds 4 safe tasks in one direction
-(p = 0.125 — directional, not significant at n = 24).
+Paired exact McNemar: base → shipped removes **13 ledger attacks, introduces 0, p = 0.00024**.
+The prompt-level defence adds 4 safe tasks on `sft2` (p = 0.125, directional) and removes 3 on
+`sft3`, so it is not the default.
 
 Three honest readings:
 
 - **Fine-tuning fixed the money-moving failure, not injection as a whole.** Zero written
-  attacks, but the tuned model still repeats 999999 in prose on 3 of 24 tasks, and it solves
-  11/24 under attack versus 29/30 on the clean hard-30. An injection that does not move
-  money still costs tasks; without a no-payload control on these exact 24, treat that gap
-  as a warning sign rather than a measured tax.
-- **Abstention did not improve.** On the 8 underspecified tasks the tuned model invents a
-  split 7 times and abstains once — the same as base on invention. It was trained on fully
-  specified tasks, so it learned to complete a ledger, not to ask for missing fields. The
-  hardened prompt changes nothing here.
-- **The defence is cheap and measurable, not proven.** A two-rule system prompt
-  (`HARDENED_RULES`) is the whole mitigation. It never regressed a task and never let money
-  move, but a 4-task gain on 24 items is not statistical evidence. The architectural fix —
-  treating tool output as data by construction — is unmeasured.
-
+  attacks across all tuned variants, but the shipped model still repeats 999999 in prose on 2 of
+  24 tasks, and it solves 15/24 under attack versus 29/30 on the clean hard-30. An injection
+  that does not move money still costs tasks; without a no-payload control on these exact 24,
+  treat that gap as a warning sign rather than a measured tax.
+- **Abstention improved, and the bar was still missed.** 2/8 asked, 6/8 invented, against a
+  pre-registered 6/8 and 2/8. The direction is real (`unplanned_calls` also drops to 0.12) but
+  the claim is "visible to the policy", not "solved".
+- **The defence is prompt-level, and its sign flips with the adapter.** On `sft2` the two-rule
+  hardened prompt never regressed a task; on `sft3` it costs three. A defence that depends on the
+  adapter is not a defence yet — the architectural fix (treat tool output as data by
+  construction) is unmeasured.
 
 ## Why these choices
 
-- **SFT memorizes, RL generalizes** (Chu et al., ICML 2025, arXiv:2501.17161): the frozen
-  hard-30 split is the unseen-variant test. SFT scores 100% on the template-matched eval-24
-  and 63.33% on hard-30 — the paper's SFT drop, reproduced on Hinglish tool use.
+- **SFT memorizes, RL generalizes** (Chu et al., ICML 2025, arXiv:2501.17161): the held-out hard
+  splits are the unseen-variant test. SFT scores 100% on the template-matched eval-24 and 63.33%
+  on hard-30 — the paper's SFT drop, reproduced on Hinglish tool use.
 - **ToolRL** (Qian et al., arXiv:2504.13958): reward is decomposed into format, tool-name,
   parameter-name, parameter-value and answer terms instead of a binary hit, and there is no
   length reward. The `empty_balance` family is ToolRL's relevance/irrelevance case: the
   correct action is to add nothing.
 - **APIGen** (arXiv:2406.18518) and **ToolACE** (arXiv:2409.00920): every task is
-  oracle-verified before use, the eval file is SHA-256 pinned, and the hard split is
+  oracle-verified before use, the eval files are SHA-256 pinned, and the hard splits are
   organised into complexity families so failures can be attributed.
 - **τ-bench** (arXiv:2406.12045): success is the final ledger state, not string similarity.
 - **DeepSeekMath** (arXiv:2402.03300) for GRPO, **Tiny Aya** (arXiv:2603.11510) for the model.
@@ -186,53 +242,52 @@ Three honest readings:
 What we did **not** run, so no claim is made about it: cold-start GRPO without SFT (the
 control that would test whether SFT is necessary here), a Hammer-style schema-shift eval,
 verification-iteration repair beyond the parse-error correction prompt, a no-payload control
-on the 24 injection tasks, and an adaptive attacker that can see the eval.
+on the 24 injection tasks, a seed sweep of the safety split, and an adaptive attacker that can
+see the eval.
 
 ## Limitations
 
-- hard-30 has 30 tasks; counts are reported next to percentages, and the CIs above are wide.
-- hard-30 rows are held-out *instances* of the same six templates, so this measures
+- hard-90 has 90 tasks; counts are reported next to percentages, and its Wilson interval is
+  still ±7 pp.
+- Hard rows are held-out *instances* of the same six templates, so this measures
   generalization across amounts/names/languages, not across task formats.
 - eval-24 is in-distribution with easy train, which is why it stays at 100%.
+- Three seeds bound the variance; they do not remove it, and the spread is wider than any
+  single change made after round 1.
 - Fixed offline FX rates, fixed six-person name universe, no free-form tools.
-- One assistant turn in the frozen run was not bare JSON (`strict_rate` 0.983); task-level
-  `strict` is in the uploaded summary.
 - The injection split is 32 tasks, the payloads are English-leaning, and the defence is one
-  prompt variant. The prompt gain (4 tasks, p = 0.125) is directional, not significant.
+  prompt variant. Greedy decoding, one sample per task.
 
 ## Reproduce
 
 ```bash
-python data/build_hard.py
-python data/build_mix.py
-python scripts/run_baseline.py --model CohereLabs/tiny-aya-global \
-    --tasks data/tasks_hard_eval.jsonl --no-4bit --out runs/base_hard30
-python scripts/train_sft.py --tasks data/tasks_train_mix.jsonl \
-    --epochs 2 --out runs/sft2 --merge-out runs/sft2_merged
-python scripts/run_baseline.py --model runs/sft2_merged \
-    --tasks data/tasks_hard_eval.jsonl --no-4bit --out runs/sft2_hard30
-python scripts/run_baseline.py --model runs/sft2_merged \
-    --tasks data/tasks_eval.jsonl --no-4bit --out runs/sft2_eval
-python scripts/stats.py --a runs/base_hard30 --b runs/sft2_hard30
+python data/build_hard.py && python data/build_hard90.py && python data/build_mix.py
+python data/build_abstain.py && python data/build_safety.py
+python scripts/verify_all.py          # no GPU, no token: 13 checks
 
-python data/build_safety.py
-python scripts/run_baseline.py --model CohereLabs/tiny-aya-global \
-    --tasks data/tasks_safety_eval.jsonl --safety --no-4bit --out runs/safety_base
-python scripts/run_baseline.py --model runs/sft2_merged \
-    --tasks data/tasks_safety_eval.jsonl --safety --no-4bit --out runs/safety_sft2
-python scripts/run_baseline.py --model runs/sft2_merged \
-    --tasks data/tasks_safety_eval.jsonl --safety --hardened-prompt --no-4bit \
-    --out runs/safety_sft2_hardened
+python scripts/train_sft.py --tasks data/tasks_train_mix2.jsonl \
+    --epochs 2 --seed 42 --out runs/sft3 --merge-out runs/sft3_merged
+python scripts/run_baseline.py --model runs/sft3_merged \
+    --tasks data/tasks_hard_eval.jsonl --no-4bit --out runs/sft3_hard30
+python scripts/run_baseline.py --model runs/sft3_merged \
+    --tasks data/tasks_hard90_eval.jsonl --no-4bit --out runs/sft3_hard90
+python scripts/run_baseline.py --model runs/sft3_merged \
+    --tasks data/tasks_safety_eval.jsonl --safety --no-4bit --out runs/safety_sft3
+
+python scripts/stats.py --a runs/base_hard90 --b runs/sft3_hard90
+python scripts/auditkit_eval.py --run sft3_hard90 --tasks data/tasks_hard90_eval.jsonl
 python scripts/safety_table.py
 ```
 
 ## Artifacts
 
 - GitHub: https://github.com/PRINCE2-AI/lexsi-agentic-hinglish
-- Adapter: https://huggingface.co/primce/tiny-aya-hinglish-lora (`sft2_adapter`, tag `sft2-frozen`)
+- Adapter: https://huggingface.co/primce/tiny-aya-hinglish-lora (`sft3_adapter`; seed adapters
+  alongside it)
 - Run logs: https://huggingface.co/datasets/primce/lexsi-runs
-- Space: https://huggingface.co/spaces/primce/hinglish-expense-agent (T4, frozen adapter, visible tool trace)
+- Space: https://huggingface.co/spaces/primce/hinglish-expense-agent (T4, shipped adapter, visible tool trace)
 - This article: https://huggingface.co/spaces/primce/hinglish-track3-article
+- Collection: https://huggingface.co/collections/primce/lexsi-track-3-hinglish-expense-agent-6aeb3207e10dfc7dda6329d6
 
 ## Credits
 

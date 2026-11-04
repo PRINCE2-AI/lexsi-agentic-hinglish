@@ -4,9 +4,9 @@ A solo-friendly Track 3 (Agentic Fine-tuning) entry for the **Lexsi AI Safety & 
 
 Tiny Aya learns to call tools reliably in Hinglish: it records shared expenses, carries the ledger across turns, converts USD/EUR, and settles balances. Success is checked against the **final ledger state**, not an LLM judge, so the before/after numbers are reproducible.
 
-Live demo: https://huggingface.co/spaces/primce/hinglish-expense-agent (T4, frozen adapter, visible tool trace and ledger).
+Live demo: https://huggingface.co/spaces/primce/hinglish-expense-agent (T4, shipped `sft3` adapter, visible tool trace and ledger).
 
-Write-up: https://huggingface.co/spaces/primce/hinglish-track3-article — the full article (numbers, method, safety split, limitations). Hub Articles need PRO, so it is hosted as a free static Space rendered from `docs/hf_article.md`.
+Write-up: https://huggingface.co/spaces/primce/hinglish-track3-article — the full article (numbers, method, safety split, limitations). Hub Articles need PRO, so it is hosted as a free static Space rendered from `docs/hf_article.md`. The submission write-up itself is [`submission/README.md`](submission/README.md).
 
 ## Problem statement (Track 3)
 
@@ -53,7 +53,10 @@ How each clause is measured, all without an LLM judge:
   [docs/SAFETY.md](docs/SAFETY.md).
 - Standalone Tiny Aya baseline runner (transformers, 4-bit) that writes AgentTune-compatible `trajectories.jsonl`.
 - GRPO training script using `create_agentic_trainer` with custom rewards.
-- AuditKIT handoff via `episodes_from_agenttune`.
+- **AuditKIT scoring**: every recorded run is replayed through `auditkit.agent_eval` (recorded
+  mode, no judge model) with five of its scorers, and its success verdict agrees with this repo's
+  scorer on 89/90 hard-90 tasks.
+- HF Collection with the adapter, the run logs, the demo and the article.
 - Gradio demo with a visible tool trace and final ledger.
 
 ## Layout
@@ -86,7 +89,7 @@ scripts/
   deploy_space.py     create/refresh the Gradio Space with the right layout
   verify_all.py       every no-GPU check in one command (judges start here)
   score_strict.py     recover strict-JSON metrics from saved trajectories
-  auditkit_eval.py    load run logs into AuditKIT
+  auditkit_eval.py    replay a run through AuditKIT agent_eval (no judge)
 space/
   app.py              Gradio demo
 docs/
@@ -115,9 +118,9 @@ Pure-Python checks (Windows/macOS/Linux, no GPU, no model download):
 python scripts/verify_all.py
 ```
 
-That single command regenerates the hard and safety splits, checks both SHA-256 pins, runs every
-test suite and replays the oracle. It prints `all 9 checks passed` when the dataset and the scoring
-are consistent.
+That single command regenerates the hard, hard-90 and safety splits, checks every SHA-256 pin,
+runs every test suite, replays the oracle and runs the AuditKIT adapter tests. It prints
+`all 13 checks passed` when the dataset and the scoring are consistent.
 
 
 ### Tiny Aya access
@@ -167,8 +170,8 @@ python data/build_safety.py
 python scripts/run_baseline.py --model runs/sft2_merged     --tasks data/tasks_safety_eval.jsonl --safety --no-4bit --out runs/safety_sft2
 python scripts/run_baseline.py --model runs/sft2_merged     --tasks data/tasks_safety_eval.jsonl --safety --hardened-prompt --no-4bit     --out runs/safety_sft2_hardened
 
-# 6) AuditKIT handoff
-python scripts/auditkit_eval.py --trajectories runs/baseline_eval/trajectories.jsonl
+# 6) AuditKIT replay (recorded episodes, no judge model)
+python scripts/auditkit_eval.py --run sft3_hard90 --tasks data/tasks_hard90_eval.jsonl
 ```
 
 `--limit 20` is the whole starter set. On a free T4, baseline inference took **2062 s (34 min)** for 20 tasks, and the smoke-adapter evaluation took **2247 s (37 min)**; budget ~45 min for 24 held-out tasks each. A 2-step GRPO smoke took **786 s (381 s/step)**, so 60 steps is ~6.4 h — split into 30-step blocks with checkpoints.
@@ -193,24 +196,32 @@ Programmatic, computed in `hinglish_agent/runner.py`:
 | `steps` | agent turns per task (mean) — efficiency |
 | `parse_failures` | assistant turns with no parseable tool call, per task |
 
-## Frozen results (Nov 3, 2026)
+## Results (frozen Nov 4, 2026)
 
-Submission candidate is the `sft2` adapter. Provenance, configs, caveats and repro
+Submission candidate is the `sft3` adapter: SFT on the mix2 data (hard mix + abstention pairs),
+seed 42. Round-1 rows are kept as the before-column. Provenance, configs, caveats and repro
 commands: [docs/RESULTS.md](docs/RESULTS.md).
 
-| Model | hard-30 success | eval-24 success | answer_ok (hard) | calls (hard) |
+| Model | hard-30 | hard-90 | eval-24 | calls (hard-90) |
 |---|---:|---:|---:|---:|
-| Base Tiny Aya (no adapter) | 3.33% | - | 6.67% | 7.03 |
-| SFT-easy (100 rows, 3 epochs) | 63.33% | 100% | 66.67% | 3.47 |
-| SFT-easy + GRPO (30 steps) | 63.33% | 100% | 66.67% | 3.47 |
-| **SFT-mix (184 rows, 2 epochs)** | **96.67%** | **100%** | **96.67%** | **3.57** |
+| Base Tiny Aya (no adapter) | 3.33% | 3.33% | - | 7.24 |
+| SFT-easy (100 rows, 3 epochs) | 63.33% | - | 100% | - |
+| SFT-easy + GRPO (30 steps) | 63.33% | - | 100% | - |
+| SFT-mix, round 1 (`sft2`) | 96.67% | - | 100% | - |
+| **SFT-mix2 seed 42 (`sft3`, shipped)** | **96.67%** | **75.56%** | **100%** | **3.27** |
+| SFT-mix2 seed 7 | 93.33% | 83.33% | - | 3.42 |
+| SFT-mix2 seed 123 | 80.00% | 75.56% | - | 3.23 |
 
-Oracle ceiling on hard-30 is 30/30 at 3.57 calls. All runs: Kaggle T4 x2, greedy,
-`--no-4bit`. Paired McNemar, same 30 task ids: base -> SFT-mix 28 fixed / 0 broken, p = 7.5e-9;
-GRPO -> SFT-mix 10 fixed / 0 broken, p = 0.00195. GRPO moved nothing at 30 steps because the graded reward was
-saturated; reweighting the hard rows into SFT is what fixed two_query, convert_sum and
-empty_balance. Full per-metric summaries live in the uploaded `summary.json` files under
-`primce/lexsi-runs`.
+Oracle ceiling on hard-30 is 30/30 at 3.57 calls. All runs: one T4 (HF Jobs) or Kaggle T4 x2,
+greedy, `--no-4bit`. Paired McNemar, same task ids: base -> sft3 hard-90 66 fixed / 1 broken,
+p = 9.2e-19; base -> sft3 hard-30 28 fixed / 0 broken, p = 7.5e-9. The seed spread is published
+(16.67 pp on hard-30, 7.77 pp on hard-90) and seed 7 is better than the shipped seed on hard-90;
+the shipped seed is the one fixed before the seed runs existed, and the median of the three.
+Full per-metric summaries live in the uploaded `summary.json` files under `primce/lexsi-runs`.
+
+AuditKIT, same 30 tasks, no judge model: exact-call accuracy 0.033 -> 1.000, tool-call F1
+0.188 -> 1.000, redundant calls 0.327 -> 0.000, loop-free 0.433 -> 1.000. Its success verdict
+agrees with this repo's scorer on 30/30 (hard-30) and 89/90 (hard-90).
 
 ### Safety split (32 tasks, no LLM judge)
 
@@ -220,13 +231,16 @@ final ledger.
 | System | safe | utility under attack | attack_ledger | attack_answer |
 |---|---:|---:|---:|---:|
 | Base Tiny Aya | 0/24 | 0/24 | 13/24 (54.2%) | 8/24 (33.3%) |
-| **SFT-mix (`sft2`)** | **11/24** | **11/24** | **0/24** | 3/24 |
-| SFT-mix + hardened prompt | 15/24 | 15/24 | 0/24 | 2/24 |
+| SFT-mix (`sft2`) | 11/24 | 11/24 | **0/24** | 3/24 |
+| SFT-mix + hardened prompt | 15/24 | 15/24 | **0/24** | 2/24 |
+| **SFT-mix2 (`sft3`, shipped)** | **15/24** | **15/24** | **0/24** | **2/24** |
 
-Base -> `sft2` removes 13 ledger attacks and introduces 0 (exact McNemar p = 0.00024). On the
-8 underspecified requests both tuned variants still invent a split 7 times, so abstention is
-the open problem. Prompt-defence gain is 4 tasks in one direction (p = 0.125, directional).
-Details: [docs/SAFETY.md](docs/SAFETY.md).
+Base -> `sft3` removes 13 ledger attacks and introduces 0 (exact McNemar p = 0.00024). On the
+8 underspecified requests the mix2 adapter asks on 2 (up from 0/8) and invents a split on 6
+(down from 7/8) — against a pre-registered bar of 6/8 asked, so abstention is improved but still
+the open problem, and `docs/ROUND2.md` says so next to the bar it missed. The hardened prompt
+helps `sft2` (+4 safe) and hurts `sft3` (−3), so it is not the default. Details:
+[docs/SAFETY.md](docs/SAFETY.md).
 
 ## Training notes
 
@@ -242,7 +256,7 @@ Details: [docs/SAFETY.md](docs/SAFETY.md).
 
 Live: https://huggingface.co/spaces/primce/hinglish-expense-agent — built from `space/` by
 `python scripts/deploy_space.py --repo primce/hinglish-expense-agent`. The Space needs a GPU
-(T4 small is enough); it defaults to the frozen adapter.
+(T4 small is enough); it defaults to the shipped `sft3_adapter`.
 
 1. Push the whole repo to a Space and set `app_file: space/app.py` in the Space README.
 2. Push `space/` plus `hinglish_agent/` to the Space (keep the same relative layout) and use `space/app.py` as the app file.
@@ -256,9 +270,12 @@ Set `MODEL_ID` and, for the tuned demo, `ADAPTER_ID=<you>/tiny-aya-hinglish-lora
 - [x] HF artifacts: LoRA adapter, `trajectories.jsonl` logs, dataset card
 - [x] HF Article: metrics chosen and why, dataset/task/model rationale, before/after table
       (published as a static Space: https://huggingface.co/spaces/primce/hinglish-track3-article)
-- [x] At least two metrics, before and after
+- [x] At least two metrics, before and after (success, exact tool calls, F1, precision, recall,
+      redundant calls, loop detection, ledger-attack rate, abstention)
+- [x] AgentTune + AuditKIT used together, no judge model
+- [x] HF Collection: https://huggingface.co/collections/primce/lexsi-track-3-hinglish-expense-agent-6aeb3207e10dfc7dda6329d6
 - [ ] Optional ROI table: self-hosted Tiny Aya vs closed-source API at a realistic volume
-- [ ] Only Cohere Labs models used for the trained model
+- [x] Only Cohere Labs models used for the trained model
 - [ ] Submission form link from Discord filled before Nov 14 end of day
 
 ## 13-day plan
@@ -278,8 +295,8 @@ Set `MODEL_ID` and, for the tuned demo, `ADAPTER_ID=<you>/tiny-aya-hinglish-lora
 
 Round 2 (after the 2026-11-04 self-review) is tracked in [docs/ROUND2.md](docs/ROUND2.md): an
 abstention SFT split with minimal pairs, a separately pinned hard-90 holdout, a GRPO run whose
-reward can actually see the abstention behaviour, and a seed control. Data and notebooks are in
-the repo; the runs are the GPU half.
+reward can actually see the abstention behaviour, and a seed control. The SFT half is measured
+and shipped; the GRPO half runs on HF Jobs and its outcome is appended there.
 
 ## Gotchas (from the library READMEs)
 

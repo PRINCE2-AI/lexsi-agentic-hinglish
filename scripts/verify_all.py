@@ -26,6 +26,7 @@ STEPS = [
     ("reward tests", ["tests/test_rewards.py"]),
     ("stats tests", ["tests/test_stats.py"]),
     ("scaffold tests", ["tests/test_scaffold.py"]),
+    ("auditkit adapter tests", ["tests/test_auditkit_adapter.py"]),
     (
         "oracle on hard-30",
         ["scripts/run_oracle_eval.py", "--tasks", "data/tasks_hard_eval.jsonl", "--out", "runs/oracle"],
