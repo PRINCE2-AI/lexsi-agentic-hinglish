@@ -7,6 +7,7 @@ venv/
 
 # Runs and artifacts
 runs/
+article/
 *.log
 .env
 

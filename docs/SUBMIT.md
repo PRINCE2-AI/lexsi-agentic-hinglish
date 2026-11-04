@@ -10,7 +10,7 @@ Everything left is packaging, and packaging is what most solo entries lose on.
 |---|---|---|
 | 1 | Public repo, runnable, numbers reproducible | done (`8c78979`+) |
 | 2 | **Live Space demo** with a visible tool trace | **live**: https://huggingface.co/spaces/primce/hinglish-expense-agent (T4 small) |
-| 3 | **HF Article** with metrics, before/after, rationale | drafted with hard-30 + safety tables |
+| 3 | **HF Article** with metrics, before/after, rationale | **live**: https://huggingface.co/spaces/primce/hinglish-track3-article (static Space; Hub Articles need PRO) |
 | 4 | HF artifacts: adapter + run logs + dataset | adapter and logs (incl. safety runs) uploaded; model card pending paste |
 | 5 | **One memorable differentiator** | the injection eval: 13/24 -> 0/24 ledger attacks, no LLM judge |
 
@@ -41,13 +41,14 @@ Then tag the frozen adapter so the exact bytes are named:
 python -c "from huggingface_hub import HfApi; HfApi().create_tag('primce/tiny-aya-hinglish-lora', tag='sft2-frozen', repo_type='model')"
 ```
 
-### 3. Article (45 min)
+### 3. Article (done 2026-11-04)
 
-Paste `docs/hf_article.md`. Three tables must be filled from run summaries, never estimated:
+Hub Articles require PRO, so the article is published as a free static Space:
+https://huggingface.co/spaces/primce/hinglish-track3-article
 
-- before/after on hard-30 (base, easy-SFT, +GRPO, mix) — `runs/*/summary.json`
-- per-family residual failures — `scripts/stats.py --a ... --b ...`
-- injection results — `python scripts/safety_table.py`
+It is rendered from `docs/hf_article.md` by `python scripts/build_article_space.py --repo
+primce/hinglish-track3-article`. Re-run that command after any number changes; the tables in
+the page come from the same file, never hand-edited HTML.
 
 ### 4. Submission form (10 min, hard deadline)
 
@@ -63,7 +64,11 @@ repo, so paste rather than write:
   scored without an LLM judge, plus a prompt-level defence measured on the same tasks. Base
   writes attacker money in 13/24 tasks, the adapter in 0/24 (p = 0.00024); underspecified
   abstention stays broken at 1/8 and is reported as such.
-- **Links**: repo, Space, model, dataset (`primce/lexsi-runs`), article.
+- **Links**: https://github.com/PRINCE2-AI/lexsi-agentic-hinglish ,
+  https://huggingface.co/spaces/primce/hinglish-expense-agent ,
+  https://huggingface.co/primce/tiny-aya-hinglish-lora ,
+  https://huggingface.co/datasets/primce/lexsi-runs ,
+  https://huggingface.co/spaces/primce/hinglish-track3-article
 
 ### 5. Demo Day (only if shortlisted)
 

@@ -109,4 +109,6 @@ tool call per turn, ledger returned by every ledger tool and copied into the nex
 
 Base weights: CohereLabs Tiny Aya, used under its licence. Adapter trained by the entry author on
 synthetic, oracle-verified data. Code, data, pins and run logs:
-`github.com/PRINCE2-AI/lexsi-agentic-hinglish`, `primce/lexsi-runs`.
+`github.com/PRINCE2-AI/lexsi-agentic-hinglish`, `primce/lexsi-runs`. Live demo:
+`huggingface.co/spaces/primce/hinglish-expense-agent`. Write-up:
+`huggingface.co/spaces/primce/hinglish-track3-article`.

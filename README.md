@@ -6,6 +6,8 @@ Tiny Aya learns to call tools reliably in Hinglish: it records shared expenses, 
 
 Live demo: https://huggingface.co/spaces/primce/hinglish-expense-agent (T4, frozen adapter, visible tool trace and ledger).
 
+Write-up: https://huggingface.co/spaces/primce/hinglish-track3-article — the full article (numbers, method, safety split, limitations). Hub Articles need PRO, so it is hosted as a free static Space rendered from `docs/hf_article.md`.
+
 ## Problem statement (Track 3)
 
 The live Track 3 statements are on [hackathon.lexsi.ai/tracks](https://hackathon.lexsi.ai/tracks). This project targets one as primary and measures a second:
@@ -250,7 +252,8 @@ Set `MODEL_ID` and, for the tuned demo, `ADAPTER_ID=<you>/tiny-aya-hinglish-lora
 - [x] Public GitHub repo with this code and the generated `data/tasks.jsonl`
 - [x] Public HF Space demo with tool trace
 - [x] HF artifacts: LoRA adapter, `trajectories.jsonl` logs, dataset card
-- [ ] HF Article: metrics chosen and why, dataset/task/model rationale, before/after table
+- [x] HF Article: metrics chosen and why, dataset/task/model rationale, before/after table
+      (published as a static Space: https://huggingface.co/spaces/primce/hinglish-track3-article)
 - [x] At least two metrics, before and after
 - [ ] Optional ROI table: self-hosted Tiny Aya vs closed-source API at a realistic volume
 - [ ] Only Cohere Labs models used for the trained model
