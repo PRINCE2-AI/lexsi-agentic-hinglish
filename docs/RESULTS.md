@@ -22,6 +22,10 @@ frozen run. Anyone can reproduce the submission number from the public adapter a
 The hard-30 pin is checked inside `data/build_hard.py`, so an eval-set drift fails the
 run instead of silently changing the denominator.
 
+`docs/ROUND2.md` tracks the follow-up runs: a 90-task holdout, an abstention SFT mix, a GRPO
+configuration whose reward can see the abstention behaviour, and a seed control. Those numbers
+are filled from `runs/*/summary.json` when the GPU runs land; nothing in this file is estimated.
+
 ## Data
 
 | Split | Rows | Families |
@@ -31,6 +35,9 @@ run instead of silently changing the denominator.
 | `tasks_hard_train.jsonl` | 40 | settle5, two_query, convert_sum, empty_balance, trap_combo, paraphrase |
 | `tasks_hard_eval.jsonl` (held out) | 30 | 6 families × 5: settle5 6, two_query 6, convert_sum 3, empty_balance 3, trap_combo 6, paraphrase 6 |
 | `tasks_train_mix.jsonl` | 184 | easy 100 + hard 84 (hard rows repeated per family) |
+| `tasks_hard90_eval.jsonl` (held out) | 90 | 15 per family, own pin `hard90_eval.sha256` |
+| `tasks_train_abstain.jsonl` | 64 | 32 underspecified + 32 fully-specified twins |
+| `tasks_train_mix2.jsonl` | 312 | mix 184 + abstention 96 (3 copies) + twins 32 |
 
 Mix family share: easy 0.543, two_query 0.13, convert_sum 0.087, trap_combo 0.087,
 empty_balance 0.065, settle5 0.043, paraphrase 0.043. A hard-train row that appears in

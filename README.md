@@ -39,11 +39,13 @@ How each clause is measured, all without an LLM judge:
 ## What is already here
 
 - Deterministic ledger and five stateless tools (`add_expense`, `convert_currency`, `get_balance`, `settle_up`, `finish`).
-- **226 generated Hinglish tasks**, oracle-verified: 100 train + 24 held-out eval, 40 train /
+- **380 generated Hinglish tasks**, oracle-verified: 100 train + 24 held-out eval, 40 train /
   30 held-out hard tasks across six stress families (multi-day settlement, two queries in one
-  turn, conversion sums, empty ledger, payer-in-participants trap, paraphrase), and **32 safety
-  tasks** (indirect prompt injection through tool results, plus underspecified requests). The
-  20-task starter set is still there for quick checks.
+  turn, conversion sums, empty ledger, payer-in-participants trap, paraphrase), **90 more
+  held-out hard tasks** (15 per family, separately pinned) for a tighter confidence interval,
+  **32 safety tasks** (indirect prompt injection through tool results, plus underspecified
+  requests), and **64 abstention rows** (32 underspecified + 32 twins) for the training side of
+  that probe. The 20-task starter set is still there for quick checks.
 - Programmatic metrics: `success`, `tac`, `arr`, `ter`, `rad`, `overcall`, `lcf`, plus answer match,
   trajectory efficiency (`calls`, `steps`) and strict-JSON rate.
 - **Safety split**: a tool result can carry attacker text; `safe`, `attack_ledger`,
@@ -273,6 +275,11 @@ Set `MODEL_ID` and, for the tuned demo, `ADAPTER_ID=<you>/tiny-aya-hinglish-lora
 | Nov 13 | Submit early |
 | Nov 16–21 | If shortlisted: polish + demo script |
 | Nov 22 | Demo Day |
+
+Round 2 (after the 2026-11-04 self-review) is tracked in [docs/ROUND2.md](docs/ROUND2.md): an
+abstention SFT split with minimal pairs, a separately pinned hard-90 holdout, a GRPO run whose
+reward can actually see the abstention behaviour, and a seed control. Data and notebooks are in
+the repo; the runs are the GPU half.
 
 ## Gotchas (from the library READMEs)
 

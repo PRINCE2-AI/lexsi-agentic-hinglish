@@ -49,6 +49,8 @@ def build_dataset(tasks: list[dict]):
             # whose keys differ between tools.
             "oracle_actions": json.dumps(task["actions"], ensure_ascii=False),
             "answer_contains": json.dumps(task.get("answer_contains") or []),
+            # 1 for rows where the right move is a question, not an expense.
+            "abstain": int(bool(task.get("abstain"))),
         }
         for task in tasks
     ]
@@ -112,6 +114,33 @@ def graded_reward(completions, oracle_actions=None, answer_contains=None, **kwar
     ]
 
 
+def abstain_reward(completions, abstain=None, **kwargs):
+    """Reward a clarifying question on rows where a field is missing; 0 elsewhere.
+
+    The graded reward cannot see this behaviour: an abstention row has no oracle
+    actions, so recording a fabricated expense and asking both score 0 on name and
+    parameter terms. This reward is the only signal that separates the two, and it
+    is why GRPO has something to learn on the safety slice.
+    """
+    from hinglish_agent.rewards import _extract_calls
+
+    if abstain is None:
+        return [0.0 for _ in completions]
+    scores = []
+    for item, flag in zip(completions, abstain):
+        if not int(flag):
+            scores.append(0.0)
+            continue
+        calls = _extract_calls(_text(item))
+        names = [str(call.get("tool_name", "")).strip().lower() for call in calls]
+        answer = ""
+        for call in calls:
+            if str(call.get("tool_name", "")).strip().lower() == "finish":
+                answer = str(call.get("parameters", {}).get("answer", ""))
+        scores.append(1.0 if names == ["finish"] and "?" in answer else 0.0)
+    return scores
+
+
 def efficiency_reward(completions, **kwargs):
     """Reward completions whose tool calls are all distinct; duplicate calls get no credit."""
     from hinglish_agent.rewards import _extract_calls
@@ -155,6 +184,12 @@ def main() -> None:
         help="tool-calling iterations per rollout; oracle episodes need 2-6 (max 6)",
     )
     parser.add_argument("--efficiency", action="store_true", help="add a no-duplicate-calls reward")
+    parser.add_argument(
+        "--abstain-reward",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="add the clarifying-question reward for rows marked abstain=1",
+    )
     parser.add_argument(
         "--reward-mode",
         choices=["graded", "binary"],
@@ -207,7 +242,6 @@ def main() -> None:
             for name, cap in (
                 ("max_steps_per_turn", 5),
                 ("max_completion_length", 192),
-                ("max_steps", 30),
             ):
                 if getattr(args, name) > cap:
                     print(
@@ -222,6 +256,9 @@ def main() -> None:
         reward_funcs = [format_reward, tool_reward, answer_reward]
     if args.efficiency:
         reward_funcs.append(efficiency_reward)
+    if args.abstain_reward and any(task.get("abstain") for task in tasks):
+        reward_funcs.append(abstain_reward)
+        print(f"rewards: {[fn.__name__ for fn in reward_funcs]}")
 
     trainer = create_agentic_trainer(
         algorithm="grpo",

@@ -14,6 +14,18 @@ Everything left is packaging, and packaging is what most solo entries lose on.
 | 4 | HF artifacts: adapter + run logs + dataset | adapter and logs (incl. safety runs) uploaded; model card pending paste |
 | 5 | **One memorable differentiator** | the injection eval: 13/24 -> 0/24 ledger attacks, no LLM judge |
 
+### The four attack lines a strong reviewer will use
+
+| Attack | Answer today | Answer after the round-2 runs |
+|---|---|---|
+| "Track says RL, your win is SFT" | "GRPO ran; it moved 0/30 because 2 generations on a 96% policy gives zero reward variance at 30 steps." | GRPO with an abstention-aware reward, 40 steps, lr 3e-6, delta reported on safety and success (`docs/ROUND2.md`) |
+| "30 tasks, 1 seed" | "Wilson 83–99%; limits are stated." | hard-90 (15/family, own pin) + seed-42 vs seed-123 |
+| "Abstention is still 1/8" | "Reported as open, not as solved." | 32 underspecified rows as minimal pairs in the SFT mix; target `asked ≥ 6/8` without losing hard-30 |
+| "Your article is a Space, not an HF blog" | "Hub Articles need PRO or a Team org on this account; the static Space renders the same markdown." | unchanged — this one is an account tier, not a repo gap |
+
+Say the first three out loud before a judge does. The fourth one is unwinnable without a
+subscription, and stating the constraint is cheaper than being caught by it.
+
 ## Order of work (do not reorder)
 
 ### 1. Space live (30 min, blocking)

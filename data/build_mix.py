@@ -8,6 +8,10 @@ here to give them a learnable share of the rollouts.
 
     python data/build_mix.py
     -> data/tasks_train_mix.jsonl  (184 rows: easy 100 + hard 84)
+
+    python data/build_mix.py --abstain --out data/tasks_train_mix2.jsonl
+    -> ads the abstention split (`data/build_abstain.py`) so SFT also sees what
+       "info missing, ask" looks like
 """
 
 from __future__ import annotations
@@ -40,6 +44,14 @@ def load(name: str) -> list[dict]:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--out", default=str(ROOT / "data" / "tasks_train_mix.jsonl"))
+    parser.add_argument(
+        "--abstain",
+        nargs="?",
+        const=str(ROOT / "data" / "tasks_train_abstain.jsonl"),
+        default=None,
+        help="append the abstention split from data/build_abstain.py",
+    )
+    parser.add_argument("--abstain-copies", type=int, default=3)
     args = parser.parse_args()
 
     easy = load("tasks_train.jsonl")
@@ -51,6 +63,18 @@ def main() -> None:
         if task["task"].strip().lower() in hard_eval:
             raise SystemExit(f"train row leaks into hard eval: {task['id']}")
         rows.extend([task] * COPIES.get(task.get("family", ""), 1))
+
+    if args.abstain:
+        abstain = [
+            json.loads(line)
+            for line in Path(args.abstain).read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        for task in abstain:
+            if task["task"].strip().lower() in hard_eval:
+                raise SystemExit(f"abstention row leaks into hard eval: {task['id']}")
+            repeats = args.abstain_copies if task.get("abstain") else 1
+            rows.extend([task] * repeats)
 
     with Path(args.out).open("w", encoding="utf-8", newline="\n") as handle:
         for row in rows:

@@ -215,6 +215,12 @@ def main() -> None:
     parser.add_argument("--lr", type=float, default=2e-4)
     parser.add_argument("--max-len", type=int, default=4096)
     parser.add_argument("--grad-accum", type=int, default=4)
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="seeds LoRA init and the data order; run 2 seeds to report training variance",
+    )
     parser.add_argument("--no-merge", action="store_true")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--check", action="store_true")
@@ -236,11 +242,12 @@ def main() -> None:
     os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
     import torch
     from peft import LoraConfig, get_peft_model
-    from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments
+    from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments, set_seed
 
     if not torch.cuda.is_available():
         raise SystemExit("SFT needs CUDA; run this on Kaggle/Colab, not the local Windows shell.")
 
+    set_seed(args.seed)
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
@@ -286,6 +293,8 @@ def main() -> None:
         num_train_epochs=args.epochs,
         learning_rate=args.lr,
         warmup_steps=warmup_steps,
+        seed=args.seed,
+        data_seed=args.seed,
         logging_steps=2,
         save_steps=25,
         save_total_limit=2,
