@@ -34,6 +34,7 @@ sys.path.insert(0, str(ROOT))
 from data.build_generated import NAMES  # noqa: E402
 from data.task_builder import A, finalize  # noqa: E402
 from hinglish_agent.runner import run_oracle, score_episode  # noqa: E402
+from hinglish_agent.tools import execute_tool  # noqa: E402
 
 SEED = 20261105
 
@@ -179,9 +180,34 @@ def convert_rows(rng: random.Random, used: set) -> list[dict]:
                     ],
                 },
                 "require_answer": True,
+                # Half the rows show the addition in integer paise: a small model
+                # drops a digit adding two decimals, and 5979.75 vs 6979.75 is a
+                # miss even when both conversions were right.
+                "answer_format": "paise" if len(rows) % 2 else "plain",
             }
         )
     return rows
+
+
+def paise_answer(task: dict) -> str:
+    values = [
+        execute_tool(
+            "convert_currency",
+            {"amount": item["amount"], "from_currency": item["from"], "to_currency": "INR"},
+        )["value"]
+        for item in task["query"]["items"]
+    ]
+    paise = [round(value * 100) for value in values]
+    parts = [
+        f"{item['amount']} {item['from']} = {value:.2f} INR"
+        for item, value in zip(task["query"]["items"], values)
+    ]
+    total = sum(paise)
+    return (
+        "; ".join(parts)
+        + f". Paise me: {' + '.join(str(p) for p in paise)} = {total} paise, "
+        + f"yaani {total / 100:.2f} INR."
+    )
 
 
 def main() -> None:
@@ -194,6 +220,8 @@ def main() -> None:
     failures = []
     for index, scenario in enumerate(scenarios, start=1):
         task = finalize(scenario)
+        if scenario.get("answer_format") == "paise":
+            task["answer_text"] = paise_answer(scenario)
         task["id"] = f"c-t-{index:03d}"
         task["family"] = {
             "balance": "contrast_empty",

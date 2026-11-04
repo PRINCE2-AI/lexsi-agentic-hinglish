@@ -36,18 +36,19 @@ fi
 
 [ -f runs/sft4_merged/config.json ] || { echo "no sft4, stopping"; exit 1; }
 
-# The probe: only the two families round 2 lost, both from hard-90.
-step "probe: hard-90 weak families" python scripts/run_baseline.py --model runs/sft4_merged \
-  --tasks data/tasks_hard90_eval.jsonl --families empty_balance,convert_sum \
-  --no-4bit --out runs/sft4_probe
+# Gate: three easy tasks through the merged weights. Stage 1's sft2 row came back
+# near zero on hard-90 because the Hub merge did nothing visible; three tasks tell
+# us in ~3 minutes whether these weights are the trained ones.
+step "sft4 sanity (3 easy tasks)" python scripts/adapter_sanity.py \
+  --merged runs/sft4_merged --limit 3 --out runs/sft4_sanity/summary.json
 
-step "sft4 hard-30" python scripts/run_baseline.py --model runs/sft4_merged \
-  --tasks data/tasks_hard_eval.jsonl --no-4bit --out runs/sft4_hard30
-
-step "upload sft4 (part 1)" python scripts/job_upload.py \
-  --run sft4_probe --run sft4_hard30 --adapter runs/sft4:sft4_adapter
+step "sft2 sanity (Hub merge, control)" python scripts/adapter_sanity.py \
+  --hub-adapter primce/tiny-aya-hinglish-lora:sft2_adapter --limit 3 \
+  --out runs/sft2_sanity/summary.json
 
 if [ "${FULL:-0}" = "1" ]; then
+  step "sft4 hard-30" python scripts/run_baseline.py --model runs/sft4_merged \
+    --tasks data/tasks_hard_eval.jsonl --no-4bit --out runs/sft4_hard30
   step "sft4 hard-90" python scripts/run_baseline.py --model runs/sft4_merged \
     --tasks data/tasks_hard90_eval.jsonl --no-4bit --out runs/sft4_hard90
   step "sft4 eval-24" python scripts/run_baseline.py --model runs/sft4_merged \
@@ -57,8 +58,19 @@ if [ "${FULL:-0}" = "1" ]; then
   step "sft4 safety + hardened prompt" python scripts/run_baseline.py --model runs/sft4_merged \
     --tasks data/tasks_safety_eval.jsonl --safety --hardened-prompt --no-4bit \
     --out runs/safety_sft4_hardened
-  step "upload sft4 (part 2)" python scripts/job_upload.py \
-    --run sft4_hard90 --run sft4_eval --run safety_sft4 --run safety_sft4_hardened
+  step "upload sft4 (full)" python scripts/job_upload.py \
+    --run sft4_hard30 --run sft4_hard90 --run sft4_eval \
+    --run safety_sft4 --run safety_sft4_hardened \
+    --adapter runs/sft4:sft4_adapter
+else
+  # Cheap probe: only the two families round 2 lost, both from hard-90.
+  step "probe: hard-90 weak families" python scripts/run_baseline.py --model runs/sft4_merged \
+    --tasks data/tasks_hard90_eval.jsonl --families empty_balance,convert_sum \
+    --no-4bit --out runs/sft4_probe
+  step "sft4 hard-30" python scripts/run_baseline.py --model runs/sft4_merged \
+    --tasks data/tasks_hard_eval.jsonl --no-4bit --out runs/sft4_hard30
+  step "upload sft4 (probe)" python scripts/job_upload.py \
+    --run sft4_probe --run sft4_hard30 --adapter runs/sft4:sft4_adapter
 fi
 
 echo "=== stage 3 finished: $(date -u +%H:%M:%S) ==="
