@@ -21,6 +21,10 @@
 - Indirect injection through tool results: base writes attacker money into the ledger in
   **13/24** tasks, the shipped adapter in **0/24** (p = 0.00024). Abstention on underspecified
   requests moves **0/8 → 2/8** — a direction, not a fix, against a bar of 6/8 that it missed.
+- The abstention rows also cost **11 tasks on hard-90** without touching the 30-task score, because
+  the model learned to match the *wording* of a training sentence rather than the situation. Masking
+  names exposes it: 4/4 on seen empty-ledger phrasings, **0/11 on unseen**. A 44-row minimal-pair set
+  and a mixture-count ablation are the pre-registered fix.
 
 ## Problem statement
 
@@ -139,6 +143,47 @@ The seed spread is wider than any single change made after round 1: 16.67 pp on 
 on hard-90. It is published instead of hidden. Shipping seed 7 would add 7.8 pp on hard-90; it
 would also mean choosing the seed on the split that is reported. The shipped adapter is seed 42,
 fixed before the seed runs existed, and it is the median of the three on the mean of both splits.
+
+## The split a task-success number cannot see
+
+hard-90 is held-out *instances*: new names, new amounts, same six templates. That makes it a good
+test of arithmetic and tool use and a poor test of one thing judges should care about — whether the
+agent answers a question it has never been asked in that wording. So mask every person name and ask
+which hard-90 sentences actually appear in the adapter's training file
+(`scripts/template_split.py`):
+
+| Run | seen wording | unseen wording | `empty_balance` seen | `empty_balance` unseen |
+|---|---:|---:|---:|---:|
+| base | 2/5 | 1/85 (1.18%) | 2/4 | 1/11 |
+| SFT round 1 | 5/5 | **75/85 (88.24%)** | 4/4 | **11/11** |
+| SFT round 2 | 5/5 | 63/85 (74.12%) | 4/4 | **0/11** |
+
+Round 2 added an abstention slice and bought `asked` 0/8 → 2/8. This table is the bill. Every task
+it lost is an `empty_balance` task whose sentence it had never seen, and the lost outputs are not
+silence or a wrong number — they are an abstention answer, copied verbatim from a training row:
+
+> "Wo teesra banda! Batao kitna tha split kar ke paise? Number batao."
+
+That sentence is the supervised answer for `ambiguous_share` (a third friend whose share is
+unknown). It fired on "Shuruaat me hi poochh raha hoon: Priya ka balance? Koi kharcha record nahi
+hua." — where the ledger is simply empty and the correct answer is 0. The mechanism is a mixture
+count, not a mystery: round 2 repeats every ask row three times, so **96 of 312 rows (31%)** teach
+"ask something", and the behaviour transferred across families. Round 1 had none and answers 11/11
+of the same unseen sentences.
+
+Two things follow, and both are pre-registered experiments rather than corrections after the fact:
+
+1. **Minimal pairs** (`data/build_contrast.py`, 44 rows): an empty ledger is answerable (0 INR) and
+   only a missing field is a reason to ask, with 16 Hinglish/Devanagari phrasings of the same
+   empty-ledger request so the label cannot be read off the wording.
+2. **The mixture count is the variable** — `mix3` keeps round 2's 96 ask rows and adds the pairs;
+   `mix5` keeps the pairs at three copies but cuts ask rows to 32 (10%). Reporting both separates
+   "contrast data helps" from "too many ask rows hurt", which one run cannot tell you.
+
+One caveat, stated before the numbers exist: one of the three hard-90-only empty-ledger phrasings
+does appear in the contrast set, so the seen/unseen column for the next adapters is about 5 seen and
+6 unseen rows, not 0 and 11. The unseen column stays the honest one and it is narrower than it
+looks.
 
 ## AuditKIT: an independent scorer on the same episodes
 
