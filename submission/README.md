@@ -110,7 +110,7 @@ direction, not a fix; the pre-registered bar was 6/8 and it was missed. That mis
 
 ```bash
 git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
-python scripts/verify_all.py      # 13 checks: pins, oracle 30/30, safety, reward, stats, AuditKIT adapter
+python scripts/verify_all.py      # 16 checks: pins, oracle 30/30, safety, contrast, reward, stats, AuditKIT adapter
 ```
 
 On a T4 (one GPU is enough):

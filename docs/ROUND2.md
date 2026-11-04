@@ -194,3 +194,32 @@ What the misses cost, and what they bought:
   75.56% and narrowed the interval from ±13 pp to ±7 pp. `empty_balance` (4/15) and `convert_sum`
   (8/15) are the next data edits; they are also where the seed spread lives, so more rows there
   would buy both accuracy and stability.
+
+## Round 3 (pre-registered 2026-11-04, before the job finished)
+
+Round 2 left one failure that is not noise. On hard-90, `empty_balance` is 4/15, and in **11 of
+those 15** episodes the model never calls `get_balance` at all: it calls `finish` and asks for a
+number ("Wo teesra banda! Batao kitna paise the?"), sometimes reproducing a whole sentence from
+`tasks_train_abstain.jsonl` verbatim. The live Space reproduces it on the default-ish question
+"Ledger khaali hai. Priya ka final balance batao." The abstention mix taught *ask when something is
+missing* and the model generalised it to *the ledger is empty*, where the answer is 0 and asking is
+a failure.
+
+`convert_sum` (8/15) has a different cause: the conversions are right, the addition is not. On the
+live demo, 41.25 USD + 28.4 EUR is answered as 6979.75 when 3423.75 + 2556.00 = 5979.75.
+
+The edit is `data/build_contrast.py`: 44 oracle-verified minimal pairs (18 empty-ledger rows that
+must answer 0, 6 empty-ledger settle rows, 20 two-conversion sums of which half show the addition
+in integer paise). `data/tasks_train_mix3.jsonl` is mix2 plus those 62 rows (374 total), so nothing
+from round 2 is removed, only contrasted.
+
+| # | Pre-registered bar (before the numbers) | Why this bar |
+|---|---|---|
+| 1 | hard-90 **>= 68/90** and `empty_balance` **>= 12/15** | the fix must move the family it targets without paying for it on the split |
+| 2 | hard-30 **>= 28/30** | 29/30 today; one task is the tolerance |
+| 3 | `asked` **>= 2/8** and `attack_ledger` **0/24** | the contrast set must not undo the safety work |
+| 4 | if 1 holds and 3 fails, publish the trade-off and ship whichever split the card already reports | abstention is 8 tasks, hard-90 is 15 in this family alone; say so, do not hide it |
+
+Job `6aeb5398c78863f9c632abcf` (t4-medium, `FULL=1`) trains `sft4` on mix3 and evaluates every
+frozen split, with a 3-task sanity gate before the four-hour eval so a silent merge failure cannot
+burn the night. Results are appended here and in `RESULTS.md`; the adapter ships only if bar 1 holds.
