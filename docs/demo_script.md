@@ -12,8 +12,9 @@ get the ledger wrong. This is a money answer, so 'roughly right' is a failure. W
 Open `runs/base_hard30/trajectories.jsonl`, one failing episode. Point at the exact step: stale
 ledger copy, wrong split, or the same `get_balance` called three times.
 
-Say: "Base model on the 30-task hard split: success **X%**, 70% of episodes never finish, 9.25 tool
-calls per task where the oracle needs 3.5."
+Say: "Base model on the 30-task hard split: success **3.3%**, 16 of 30 episodes never finish, 7.03
+tool calls per task where the oracle needs 3.57. Its one success is a lucky one — right answer,
+invented expense."
 
 ## 0:50-1:20 — Tuned success
 
@@ -26,11 +27,12 @@ Say: "**29 of 30**, 3.57 tool calls, zero tool errors."
 
 Show the table from the README. Say the sample size out loud.
 
-- Base, 20 easy tasks: 25% success.
-- Easy-SFT, 30 hard tasks: 63.33%.
+- Base, 30 hard tasks: **3.33%** (1/30).
+- Easy-SFT, same 30 hard tasks: 63.33%.
 - Easy-SFT + GRPO, same 30 tasks: **63.33% — zero delta.**
 - SFT on the reweighted mix: **96.67%**, and 100% on the 24-task in-distribution split.
-- Paired McNemar on the 30 shared tasks: 10 fixed, 0 broken, **p = 0.00195**.
+- Paired McNemar, base -> frozen: 28 fixed, 0 broken, **p = 7.5e-9**; easy-SFT -> frozen:
+  10 fixed, 0 broken, **p = 0.00195**.
 
 Then the honest line, which is the part judges remember: "GRPO did not help. The reward was already
 saturated — tool names were right, the answers were incomplete — so every rollout in a group got the

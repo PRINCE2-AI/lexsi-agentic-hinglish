@@ -29,15 +29,21 @@ final ledger state.
 
 | Run | Split | Task success |
 |---|---|---:|
-| Base Tiny Aya, prompt-only | 20 easy tasks | 25.00% |
+| Base Tiny Aya, prompt-only | 30 hard tasks | 3.33% (1/30) |
 | SFT on easy split | 30 hard tasks | 63.33% |
 | + GRPO (30 steps, graded reward) | 30 hard tasks | 63.33% (no gain) |
 | **SFT on the reweighted mix (this adapter)** | **30 hard tasks** | **96.67%** |
 | Same adapter | 24 in-distribution tasks | 100.00% |
 
-- Paired McNemar over the 30 shared hard tasks: **10 fixed, 0 broken, two-sided p = 0.00195**.
-- Tool calls per task: **3.57** (the oracle needs 3.5).
-- Tool error rate **0.00%**, loop collapse **0.00%**, unnecessary calls **0.00%**.
+- Paired exact McNemar over the 30 shared hard tasks: base → this adapter **28 fixed, 0 broken,
+  p = 7.45e-09**; easy-SFT → this adapter **10 fixed, 0 broken, p = 0.00195**.
+- Tool calls per task: **3.57**, exactly the oracle's count (base: 7.03).
+- Tool error rate **0.00%**, loop collapse **0.00%**, unnecessary calls **0.00%** (base: 22.3%,
+  16 of 30 episodes never finishing, `overcall` 1.08).
+
+The base model's single success is not a clean one: on `h-e-029` it returned the correct "0 INR"
+only after inventing an 800 INR expense nobody mentioned. The adapter fixes the behaviour, not
+just the final string.
 
 The hard split is 30 tasks the model never saw, spanning six families: five-way settlement with
 paise remainders and two currencies, balance-plus-settlement in one turn, payer-not-a-participant

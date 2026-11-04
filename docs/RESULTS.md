@@ -1,8 +1,9 @@
 # Frozen results — sft2 (submission candidate)
 
 **Frozen on 2026-11-03.** `runs/sft2_merged` + its LoRA adapter is the submission
-candidate. Nothing below is estimated; every number comes from a Kaggle T4 x2 run of
-`laxsi-ai-round2.ipynb`.
+candidate. Every number comes from a Kaggle T4 x2 run: training and the tuned evals from
+`laxsi-ai-round2.ipynb`, the base-model before-column and the reproducibility re-run from
+`laxsi-ai-base-bench.ipynb` (2026-11-04).
 
 ## Frozen artifact and provenance
 
@@ -10,9 +11,13 @@ candidate. Nothing below is estimated; every number comes from a Kaggle T4 x2 ru
 |---|---|
 | Training / eval code | `PRINCE2-AI/lexsi-agentic-hinglish` @ `b9574c9` |
 | Adapter | `primce/tiny-aya-hinglish-lora` → `sft2_adapter` |
-| Eval logs | `primce/lexsi-runs` → `sft2_hard30`, `sft2_eval` |
+| Eval logs | `primce/lexsi-runs` → `base_hard30`, `sft2_hard30`, `sft2_eval`, plus the 2026-11-04 re-runs `sft2_hard30_v2`, `sft2_eval_v2` |
 | Hard eval set | `data/tasks_hard_eval.jsonl`, sha256 `37f52b47937d231cce468c2b222d6e979ac51dffd116705fb98151b4a5056865` |
 | Base model | `CohereLabs/tiny-aya-global` (3.35B) |
+
+The 2026-11-04 run loaded the published adapter, merged it with `merge_and_unload()` and
+re-ran hard-30: `success` 0.9667, `calls` 3.57, `strict_rate` 0.9833 — identical to the
+frozen run. Anyone can reproduce the submission number from the public adapter alone.
 
 The hard-30 pin is checked inside `data/build_hard.py`, so an eval-set drift fails the
 run instead of silently changing the denominator.
@@ -45,6 +50,7 @@ Held-out tasks, greedy decoding, `--no-4bit`, 0 tool errors in every run.
 
 | Model | hard-30 success | eval-24 success | answer_ok (hard) | calls (hard) | strict_rate (hard) |
 |---|---:|---:|---:|---:|---:|
+| Base Tiny Aya, prompt-only | 3.33% (1/30) | - | 6.67% | 7.03 | 0.534 |
 | SFT-easy | 63.33% (19/30) | 100% (24/24) | 66.67% | 3.47 | 1.000 |
 | SFT-easy + GRPO | 63.33% (19/30) | 100% (24/24) | 66.67% | 3.47 | 1.000 |
 | **SFT-mix (frozen)** | **96.67% (29/30)** | **100% (24/24)** | **96.67%** | **3.57** | 0.983 |
@@ -52,13 +58,24 @@ Held-out tasks, greedy decoding, `--no-4bit`, 0 tool errors in every run.
 Oracle ceiling on hard-30 is 30/30 with 3.57 calls, so the frozen model reaches oracle
 call efficiency exactly.
 
+The base model's single success is not a clean one: on `h-e-029` it answered "0 INR"
+correctly, but only after inventing an 800 INR expense nobody mentioned. It also averaged
+7.03 calls against the oracle's 3.57, with 16 of 30 episodes never reaching `finish`.
+
+Run timings on the same T4 x2, greedy, `--no-4bit`: base hard-30 2428.4 s, tuned hard-30
+1648.6 s, tuned eval-24 1212.5 s. The tuned model is both more accurate and faster because
+it stops at the oracle call count instead of looping.
+
 ## What moved the number
 
-SFT-easy left three hard families at zero: two_query 0/6, convert_sum 0/3, empty_balance
-2/3. Tool calls were already correct in those episodes — the final answer dropped the
-second value (answer_ok 66.67%). GRPO on top of SFT-easy moved nothing: 30 steps is
-~0.33 epoch of the mix, and with a saturated graded reward both generations in a group
-scored alike, so there was no advantage to learn from.
+Base Tiny Aya solves 1/30. Its tool error rate is 22.3%, `overcall` 1.075 and 16 episodes
+never finish, so the before-column is a genuine failure, not a close miss.
+
+SFT-easy then left three hard families at zero: two_query 0/6, convert_sum 0/3,
+empty_balance 2/3. Tool calls were already correct in those episodes — the final answer
+dropped the second value (answer_ok 66.67%). GRPO on top of SFT-easy moved nothing: 30
+steps is ~0.33 epoch of the mix, and with a saturated graded reward both generations in a
+group scored alike, so there was no advantage to learn from.
 
 Reweighting the same 40 hard rows into an SFT run fixed it in 92 steps: +33.3 points on
 hard-30 with eval-24 unchanged. The bottleneck was data coverage of the answer shape,
@@ -68,6 +85,7 @@ not the RL stage.
 
 | Model | hard-30 success | Wilson 95% CI |
 |---|---:|---|
+| Base Tiny Aya | 3.33% (1/30) | 0.6% – 16.7% |
 | SFT-easy | 63.33% (19/30) | 45.5% – 78.1% |
 | SFT-easy + GRPO | 63.33% (19/30) | 45.5% – 78.1% |
 | **SFT-mix (frozen)** | **96.67% (29/30)** | **83.3% – 99.4%** |
@@ -75,24 +93,31 @@ not the RL stage.
 eval-24 is 100% (24/24) with a Wilson CI of 86.2% – 100%. The 30-task denominator is
 small, which is exactly why the interval is reported instead of the point estimate alone.
 
-Paired exact McNemar on the uploaded trajectories (`grpo_hard30` vs `sft2_hard30`):
-**10 tasks fixed, 0 broken, two-sided p = 0.00195.** The improvement is nested — every hard
-task the baseline passed, the frozen model still passes.
+Paired exact McNemar on the uploaded trajectories:
+
+- base → SFT-mix (`base_hard30` vs `sft2_hard30_v2`): **28 fixed, 0 broken, two-sided
+  p = 7.45e-09**.
+- easy-SFT + GRPO → SFT-mix (`grpo_hard30` vs `sft2_hard30`): **10 fixed, 0 broken,
+  two-sided p = 0.00195**.
+
+Both improvements are nested — every hard task the earlier model passed, the frozen model
+still passes.
 
 ```bash
+python scripts/stats.py --a runs/base_hard30 --b runs/sft2_hard30
 python scripts/stats.py --a runs/grpo_hard30 --b runs/sft2_hard30
 ```
 
 Per family, same paired files:
 
-| Family | n | SFT-easy + GRPO | SFT-mix |
-|---|---:|---:|---:|
-| two_query | 6 | 0/6 | **6/6** |
-| convert_sum | 3 | 0/3 | **2/3** |
-| empty_balance | 3 | 2/3 | **3/3** |
-| trap_combo | 6 | 5/6 | **6/6** |
-| settle5 | 6 | 6/6 | 6/6 |
-| paraphrase | 6 | 6/6 | 6/6 |
+| Family | n | Base | SFT-easy + GRPO | SFT-mix |
+|---|---:|---:|---:|---:|
+| two_query | 6 | 0/6 | 0/6 | **6/6** |
+| convert_sum | 3 | 0/3 | 0/3 | **2/3** |
+| empty_balance | 3 | 1/3 | 2/3 | **3/3** |
+| trap_combo | 6 | 0/6 | 5/6 | **6/6** |
+| settle5 | 6 | 0/6 | 6/6 | 6/6 |
+| paraphrase | 6 | 0/6 | 6/6 | 6/6 |
 
 The one remaining failure is `h-e-027` (`convert_sum`: "Total kitna INR hoga agar 19 USD aur
 37 EUR convert karein?"), so the next data edit should target that template, not the others.
@@ -116,12 +141,15 @@ The one remaining failure is `h-e-027` (`convert_sum`: "Total kitna INR hoga aga
 ```bash
 python data/build_hard.py
 python data/build_mix.py
+python scripts/run_baseline.py --model CohereLabs/tiny-aya-global \
+    --tasks data/tasks_hard_eval.jsonl --no-4bit --out runs/base_hard30
 python scripts/train_sft.py --tasks data/tasks_train_mix.jsonl \
     --epochs 2 --out runs/sft2 --merge-out runs/sft2_merged
 python scripts/run_baseline.py --model runs/sft2_merged \
     --tasks data/tasks_hard_eval.jsonl --no-4bit --out runs/sft2_hard30
 python scripts/run_baseline.py --model runs/sft2_merged \
     --tasks data/tasks_eval.jsonl --no-4bit --out runs/sft2_eval
+python scripts/stats.py --a runs/base_hard30 --b runs/sft2_hard30
 ```
 
 No GPU is needed to confirm the data: `python scripts/train_sft.py --tasks

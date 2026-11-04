@@ -61,12 +61,17 @@ fp16/4-bit, so a single T4-class card serves one request at a time at the latenc
 
 | Model | s / request | GPU-hours / month | Cost / month |
 |---|---:|---:|---:|
-| Base Tiny Aya (measured, 4-bit, 20 tasks / 2062 s) | 103.1 | 286.4 | \$100.24 |
-| SFT-mix (measured, fill from `runs/sft2_hard30_v2/summary.json`: `seconds / 30`) | TBD | TBD | TBD |
+| Base Tiny Aya (measured, 4-bit, 30 tasks / 2428.4 s) | 80.95 | 224.9 | \$78.70 |
+| SFT-mix (measured, 4-bit, 30 tasks / 1648.6 s) | 54.95 | 152.6 | \$53.43 |
 
-The honest headline: **at base-model latency, self-hosting is more expensive than the API.**
-Base needs 9.25 tool calls per task and loops in 70% of episodes, and GPU time scales with turns.
-The tuned adapter is cheaper *because* it drops to 3.57 calls, not because the model is smaller.
+The eval-24 run writes a third data point: 1212.5 s / 24 = 50.52 s per request, the same
+adapter on the in-distribution split.
+
+The honest headline: **at base-model latency, self-hosting is a wash** — \$78.70 against a
+\$79.74 API bill, so reliability is the only thing you bought. At tuned latency it is
+**0.67× the API bill**. Base needs 7.03 tool calls per task and 16 of 30 episodes never
+finish, and GPU time scales with turns; the tuned adapter is cheaper *because* it drops to
+3.57 calls, not because the model is smaller.
 
 ## Break-even
 
@@ -75,8 +80,8 @@ break_even_cost_ratio = self_host_cost_per_request / api_cost_per_request
 ```
 
 - API: \$0.00797 per request.
-- Self-host at base latency: \$0.01002 per request -> 1.26x the API. Not worth it.
-- Self-host at tuned latency: fill once the measured run lands.
+- Self-host at base latency: \$0.00787 per request -> 0.99x the API, with 3.33% success. No reason to run it.
+- Self-host at tuned latency: \$0.00534 per request -> **0.67x the API, at 96.67% success.**
 
 Break-even monthly volume only matters if there is a fixed cost (dedicated GPU reservation,
 monitoring, engineering). With a serverless GPU there is none, so the decision is the per-request

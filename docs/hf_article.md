@@ -4,8 +4,9 @@
 
 ## TL;DR
 
-- Base Tiny Aya Global on the 20-task starter set: **25%** success, **70%** loop collapse,
-  **9.25** tool calls per task against an oracle that needs 3.5.
+- Base Tiny Aya on the frozen hard-30, no adapter: **3.33%** (1/30), and that one success is
+  accidental. 16 of 30 episodes never finish and it averages **7.03** calls. On the 20-task
+  starter set it is **25%** with **70%** loop collapse and **9.25** calls.
 - SFT on 100 easy oracle trajectories: **63.33%** on the held-out hard-30, **100%** on eval-24.
 - Adding GRPO on top (30 steps, graded reward): **63.33%** — no change. The reward was
   saturated and the run was too short to move an answer-shape failure.
@@ -71,28 +72,40 @@ hard-train row appears in the hard-eval set, so repetition cannot leak eval rows
 
 | Model | hard-30 success | eval-24 success | answer_ok (hard) | calls (hard) |
 |---|---:|---:|---:|---:|
+| Base Tiny Aya, prompt-only | 3.33% (1/30) | - | 6.67% | 7.03 |
 | SFT-easy (100 rows, 3 epochs) | 63.33% (19/30) | 100% (24/24) | 66.67% | 3.47 |
 | SFT-easy + GRPO (30 steps) | 63.33% (19/30) | 100% (24/24) | 66.67% | 3.47 |
 | **SFT-mix (184 rows, 2 epochs)** | **96.67% (29/30)** | **100% (24/24)** | **96.67%** | **3.57** |
 | oracle | 100% (30/30) | 100% (24/24) | 100% | 3.57 |
 
-Wilson 95% intervals: 63.33% → 45.5–78.1%; 96.67% → 83.3–99.4%; eval-24 100% → 86.2–100%.
-The paired exact McNemar on the uploaded trajectories is **10 tasks fixed, 0 broken,
-p = 0.00195** — no hard task regressed.
+Wilson 95% intervals: 3.33% → 0.6–16.7%; 63.33% → 45.5–78.1%; 96.67% → 83.3–99.4%;
+eval-24 100% → 86.2–100%.
+
+Two paired exact McNemar tests on the uploaded trajectories, same 30 task ids:
+
+- base → SFT-mix: **28 fixed, 0 broken, p = 7.5e-9**.
+- easy-SFT + GRPO → SFT-mix: **10 fixed, 0 broken, p = 0.00195**.
+
+No hard task regressed in either comparison. The base model's one success is a lucky one:
+on `h-e-029` it answered "0 INR" correctly, but only after inventing an 800 INR expense
+nobody asked for. The answer was right, the behaviour was not — which is why the safety
+split in this repo scores the ledger and not just the text.
 
 Per family:
 
-| Family | n | SFT-easy + GRPO | SFT-mix |
-|---|---:|---:|---:|
-| two_query | 6 | 0/6 | 6/6 |
-| convert_sum | 3 | 0/3 | 2/3 |
-| empty_balance | 3 | 2/3 | 3/3 |
-| trap_combo | 6 | 5/6 | 6/6 |
-| settle5 | 6 | 6/6 | 6/6 |
-| paraphrase | 6 | 6/6 | 6/6 |
+| Family | n | Base | SFT-easy + GRPO | SFT-mix |
+|---|---:|---:|---:|---:|
+| two_query | 6 | 0/6 | 0/6 | 6/6 |
+| convert_sum | 3 | 0/3 | 0/3 | 2/3 |
+| empty_balance | 3 | 1/3 | 2/3 | 3/3 |
+| trap_combo | 6 | 0/6 | 5/6 | 6/6 |
+| settle5 | 6 | 0/6 | 6/6 | 6/6 |
+| paraphrase | 6 | 0/6 | 6/6 | 6/6 |
 
-Zero tool errors, zero redundant calls, zero unnecessary calls (`overcall` 0.00) and zero
-loop collapse in the frozen run. It matches the oracle on calls per task, which is why the
+The base model, on the same rows: tool error rate **22.3%**, `overcall` **1.08** (more than one
+extra call per expected call), `strict_rate` **0.534**, and 16 episodes that never reached
+`finish`. The frozen run has zero tool errors, zero redundant calls, zero unnecessary calls
+(`overcall` 0.00) and zero loop collapse. It matches the oracle on calls per task, which is why the
 secondary statement ("efficient trajectories") is reported on the same row as success.
 The single remaining miss is `h-e-027`, a two-currency sum.
 
@@ -145,13 +158,15 @@ and verification-iteration repair beyond the parse-error correction prompt.
 ```bash
 python data/build_hard.py
 python data/build_mix.py
+python scripts/run_baseline.py --model CohereLabs/tiny-aya-global \
+    --tasks data/tasks_hard_eval.jsonl --no-4bit --out runs/base_hard30
 python scripts/train_sft.py --tasks data/tasks_train_mix.jsonl \
     --epochs 2 --out runs/sft2 --merge-out runs/sft2_merged
 python scripts/run_baseline.py --model runs/sft2_merged \
     --tasks data/tasks_hard_eval.jsonl --no-4bit --out runs/sft2_hard30
 python scripts/run_baseline.py --model runs/sft2_merged \
     --tasks data/tasks_eval.jsonl --no-4bit --out runs/sft2_eval
-python scripts/stats.py --a runs/sft_hard30 --b runs/sft2_hard30
+python scripts/stats.py --a runs/base_hard30 --b runs/sft2_hard30
 ```
 
 ## Artifacts

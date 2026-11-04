@@ -194,12 +194,14 @@ commands: [docs/RESULTS.md](docs/RESULTS.md).
 
 | Model | hard-30 success | eval-24 success | answer_ok (hard) | calls (hard) |
 |---|---:|---:|---:|---:|
+| Base Tiny Aya (no adapter) | 3.33% | - | 6.67% | 7.03 |
 | SFT-easy (100 rows, 3 epochs) | 63.33% | 100% | 66.67% | 3.47 |
 | SFT-easy + GRPO (30 steps) | 63.33% | 100% | 66.67% | 3.47 |
 | **SFT-mix (184 rows, 2 epochs)** | **96.67%** | **100%** | **96.67%** | **3.57** |
 
 Oracle ceiling on hard-30 is 30/30 at 3.57 calls. All runs: Kaggle T4 x2, greedy,
-`--no-4bit`, 0 tool errors. GRPO moved nothing at 30 steps because the graded reward was
+`--no-4bit`. Paired McNemar, same 30 task ids: base -> SFT-mix 28 fixed / 0 broken, p = 7.5e-9;
+GRPO -> SFT-mix 10 fixed / 0 broken, p = 0.00195. GRPO moved nothing at 30 steps because the graded reward was
 saturated; reweighting the hard rows into SFT is what fixed two_query, convert_sum and
 empty_balance. Full per-metric summaries live in the uploaded `summary.json` files under
 `primce/lexsi-runs`.

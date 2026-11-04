@@ -33,7 +33,7 @@ not the failing baseline.
 ### 2. Model card (5 min)
 
 `docs/MODEL_CARD.md` is ready to paste as the README of `primce/tiny-aya-hinglish-lora`.
-Fill the base-model hard-30 row from `runs/base_hard30/summary.json` when that run finishes.
+The base-model hard-30 row is filled (3.33%, 1/30) from the 2026-11-04 run.
 
 Then tag the frozen adapter so the exact bytes are named:
 
@@ -56,8 +56,9 @@ repo, so paste rather than write:
 
 - **Track**: 3, Agentic fine-tuning.
 - **Model**: Cohere Labs Tiny Aya (`CohereLabs/tiny-aya-global`), LoRA, 3.35B.
-- **One-line result**: 25% -> 96.67% task success on a frozen 30-task hard split (p = 0.00195),
-  at 3.57 tool calls per task versus an oracle 3.5.
+- **One-line result**: 3.33% -> 96.67% task success on a frozen 30-task hard split
+  (28 fixed, 0 broken, exact McNemar p = 7.5e-9), at 3.57 tool calls per task versus an
+  oracle 3.57.
 - **Differentiator**: the repo ships a 32-task indirect prompt-injection eval for ledger agents,
   scored without an LLM judge, plus a prompt-level defence measured on the same tasks.
 - **Links**: repo, Space, model, dataset (`primce/lexsi-runs`), article.
