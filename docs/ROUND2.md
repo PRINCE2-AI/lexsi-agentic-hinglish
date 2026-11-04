@@ -223,3 +223,14 @@ from round 2 is removed, only contrasted.
 Job `6aeb5398c78863f9c632abcf` (t4-medium, `FULL=1`) trains `sft4` on mix3 and evaluates every
 frozen split, with a 3-task sanity gate before the four-hour eval so a silent merge failure cannot
 burn the night. Results are appended here and in `RESULTS.md`; the adapter ships only if bar 1 holds.
+
+### Bar amendment (2026-11-04, 16:05 UTC — before sft4 was evaluated)
+
+The stage-1b control landed while stage 3 was still training, and it changes what "success" means
+for this run. `sft2` (round 1, no abstention rows) scores **80/90 (88.89%)** on hard-90, against
+`sft3`'s 68/90: `empty_balance` is **15/15 for sft2 and 4/15 for sft3**. The abstention mix bought
+0/8 -> 2/8 on safety and cost 11 tasks on the primary split, which only the 90-task file could see.
+
+So bar 1 is raised, not lowered: `sft4` must reach **>= 80/90 on hard-90** (beat the round-1
+adapter) with `asked >= 2/8`, or the submission stays on the better adapter. A run that lands
+between 69 and 79 is a failed fix and is reported as one.
