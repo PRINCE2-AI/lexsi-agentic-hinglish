@@ -16,10 +16,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 STEPS = [
     ("hard split pin + oracle", ["data/build_hard.py"]),
-    ("hard-90 split pin + oracle", ["data/build_hard90.py"]),
     ("mix leak check", ["data/build_mix.py"]),
     ("safety split pin + oracle", ["data/build_safety.py"]),
-    ("abstention split oracle", ["data/build_abstain.py", "--check"]),
+    ("abstention split oracle", ["data/build_abstain.py"]),
+    ("hard-90 split pin + oracle", ["data/build_hard90.py"]),
     ("mix2 leak check", ["data/build_mix.py", "--abstain", "--out", "data/tasks_train_mix2.jsonl"]),
     ("hard-data tests", ["tests/test_hard_data.py"]),
     ("safety tests", ["tests/test_safety.py"]),

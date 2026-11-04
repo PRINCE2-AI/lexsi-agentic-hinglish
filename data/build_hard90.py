@@ -103,6 +103,11 @@ BUILDERS90 = {
 
 
 def known_texts() -> set:
+    """Every task text that already exists, so the new split cannot repeat one.
+
+    The abstention split must already be built: it is part of the dedupe set, and
+    generating the split without it would change the bytes and break the pin.
+    """
     texts = set()
     for name in (
         "tasks_hard_eval.jsonl",
@@ -115,7 +120,10 @@ def known_texts() -> set:
     ):
         path = ROOT / "data" / name
         if not path.exists():
-            continue
+            raise SystemExit(
+                f"missing data/{name}; build in order: build_hard, build_safety, "
+                "build_abstain, then build_hard90"
+            )
         with path.open(encoding="utf-8") as handle:
             texts.update(json.loads(line)["task"] for line in handle if line.strip())
     return texts
