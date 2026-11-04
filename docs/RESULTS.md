@@ -5,6 +5,12 @@ round-1 SFT mix plus an abstention slice (`data/tasks_train_mix2.jsonl`, 312 row
 measured on a 90-task holdout, three seeds, the safety split and an independent AuditKIT pass.
 The round-1 freeze (`sft2`, 2026-11-03) is kept unchanged further down as the before-column.
 
+**Shipping note (2026-11-04, 16:20 UTC).** The `sft2` control row below arrived after this header
+was written and it beats `sft3` on hard-90 by 12 tasks (88.89% vs 75.56%, p = 0.00418), losing only
+the abstention slice. The adapter that ships is therefore undecided until `sft4` (mix3 + contrast
+pairs) is evaluated; this file is updated in place when it lands, and the table above is the
+current measurement, not the decision.
+
 Every number here comes from a `summary.json` written by a GPU run and uploaded to
 `primce/lexsi-runs`; nothing is estimated.
 
@@ -33,7 +39,7 @@ Greedy decoding, `--no-4bit`, zero tool errors in every row.
 | Model | hard-30 | hard-90 | eval-24 |
 |---|---:|---:|---:|
 | Base Tiny Aya, prompt-only | 3.33% (1/30) | 3.33% (3/90) | - |
-| SFT-mix, round 1 (`sft2`) | 96.67% (29/30) | - | 100% (24/24) |
+| SFT-mix, round 1 (`sft2`) | 96.67% (29/30) | **88.89% (80/90)** | 100% (24/24) |
 | **SFT-mix2 seed 42 (`sft3`, shipped)** | **96.67% (29/30)** | **75.56% (68/90)** | **100% (24/24)** |
 | SFT-mix2 seed 7 | 93.33% (28/30) | 83.33% (75/90) | - |
 | SFT-mix2 seed 123 | 80.00% (24/30) | 75.56% (68/90) | - |
@@ -41,6 +47,14 @@ Greedy decoding, `--no-4bit`, zero tool errors in every row.
 Wilson 95% intervals: sft3 83.3–99.4% on hard-30 and 65.8–83.3% on hard-90; base 0.6–16.7%
 and 1.1–9.3%; seed 7 78.7–98.2% and 74.3–89.6%; seed 123 62.7–90.5% and 65.8–83.3%. The 90-task
 number is the one to quote: the interval is ±7 pp instead of ±13 pp.
+
+The round-1 adapter row landed with stage 1b (`6aeaf8d80e0338d1bb7f983a`, 2026-11-04) and it
+reorders the table: `sft2` is 12 tasks better than `sft3` on hard-90, and the difference is one
+family. `empty_balance` is **15/15 for `sft2` and 4/15 for `sft3`**; every other family is within
+one task. Paired exact McNemar over the 90 shared tasks: **14 tasks only `sft2`, 2 only `sft3`,
+p = 0.00418**. The abstention rows bought `asked` 0/8 -> 2/8 and cost 11 tasks on the primary
+split, which the 30-task file could not see. Base -> `sft2` on the same 90 tasks is 77 fixed, 0
+broken (p < 1e-20).
 
 hard-90 is harder for a reason that is not tool use. sft3 keeps `ter` 0.011, `overcall` 0.000
 and `rad` 0.000; the misses are answer shape (`tac` 0.822, `lcf` 0.011) and eight tasks with one
