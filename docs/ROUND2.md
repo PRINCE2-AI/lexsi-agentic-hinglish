@@ -235,7 +235,7 @@ So bar 1 is raised, not lowered: `sft4` must reach **>= 80/90 on hard-90** (beat
 adapter) with `asked >= 2/8`, or the submission stays on the better adapter. A run that lands
 between 69 and 79 is a failed fix and is reported as one.
 
-### Wording split (2026-11-04, 17:10 UTC — still before sft4 was evaluated)
+### Wording split (2026-11-04, 16:30 UTC — still before sft4 was evaluated)
 
 `scripts/template_split.py` masks person names and asks whether a hard-90 task's wording appears
 anywhere in the adapter's training file. Two of the five `empty_balance` phrasings exist only in
