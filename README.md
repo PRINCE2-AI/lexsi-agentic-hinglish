@@ -4,6 +4,8 @@ A solo-friendly Track 3 (Agentic Fine-tuning) entry for the **Lexsi AI Safety & 
 
 Tiny Aya learns to call tools reliably in Hinglish: it records shared expenses, carries the ledger across turns, converts USD/EUR, and settles balances. Success is checked against the **final ledger state**, not an LLM judge, so the before/after numbers are reproducible.
 
+Live demo: https://huggingface.co/spaces/primce/hinglish-expense-agent (T4, frozen adapter, visible tool trace and ledger).
+
 ## Problem statement (Track 3)
 
 The live Track 3 statements are on [hackathon.lexsi.ai/tracks](https://hackathon.lexsi.ai/tracks). This project targets one as primary and measures a second:
@@ -234,7 +236,9 @@ Details: [docs/SAFETY.md](docs/SAFETY.md).
 
 ## Demo deployment
 
-The Space needs a GPU. Two options:
+Live: https://huggingface.co/spaces/primce/hinglish-expense-agent — built from `space/` by
+`python scripts/deploy_space.py --repo primce/hinglish-expense-agent`. The Space needs a GPU
+(T4 small is enough); it defaults to the frozen adapter.
 
 1. Push the whole repo to a Space and set `app_file: space/app.py` in the Space README.
 2. Push `space/` plus `hinglish_agent/` to the Space (keep the same relative layout) and use `space/app.py` as the app file.
@@ -243,11 +247,11 @@ Set `MODEL_ID` and, for the tuned demo, `ADAPTER_ID=<you>/tiny-aya-hinglish-lora
 
 ## Submission checklist (Track 3)
 
-- [ ] Public GitHub repo with this code and the generated `data/tasks.jsonl`
-- [ ] Public HF Space demo with tool trace
-- [ ] HF artifacts: LoRA adapter, tokenizer, `trajectories.jsonl` logs, dataset
+- [x] Public GitHub repo with this code and the generated `data/tasks.jsonl`
+- [x] Public HF Space demo with tool trace
+- [x] HF artifacts: LoRA adapter, `trajectories.jsonl` logs, dataset card
 - [ ] HF Article: metrics chosen and why, dataset/task/model rationale, before/after table
-- [ ] At least two metrics, before and after
+- [x] At least two metrics, before and after
 - [ ] Optional ROI table: self-hosted Tiny Aya vs closed-source API at a realistic volume
 - [ ] Only Cohere Labs models used for the trained model
 - [ ] Submission form link from Discord filled before Nov 14 end of day

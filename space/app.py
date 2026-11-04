@@ -33,10 +33,12 @@ MAX_NEW_TOKENS = int(os.getenv("MAX_NEW_TOKENS", "256"))
 _CACHE: dict = {}
 
 try:  # ZeroGPU on Hugging Face Spaces
+    if not os.getenv("SPACES_ZERO_GPU"):
+        raise RuntimeError("not a ZeroGPU space")
     import spaces
 
     _gpu = spaces.GPU
-except Exception:  # noqa: BLE001 - normal GPU spaces do not ship the package
+except Exception:  # noqa: BLE001 - dedicated T4 spaces do not need the decorator
     _gpu = lambda fn: fn  # noqa: E731
 
 

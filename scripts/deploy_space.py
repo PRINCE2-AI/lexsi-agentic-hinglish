@@ -3,7 +3,7 @@
 A Space needs `app.py`, `README.md`, `requirements.txt` at the repo root and the
 `hinglish_agent/` package next to them, which is not the layout of this repo.
 
-    set HF_TOKEN=...            (PowerShell: $env:HF_TOKEN="...")
+    hf auth login               # browser flow, no token in the shell history
     python scripts/deploy_space.py --repo primce/hinglish-expense-agent
 
 Then open the Space settings, pick a GPU (T4 small is enough), and wait for the build.
@@ -37,8 +37,13 @@ def main() -> None:
 
     token = os.environ.get("HF_TOKEN")
     if not token:
-        sys.exit("HF_TOKEN is not set in this shell. Export it first, do not paste it into chat.")
+        from huggingface_hub.constants import HF_TOKEN_PATH
 
+        if not Path(HF_TOKEN_PATH).exists():
+            sys.exit(
+                "Not logged in to Hugging Face. Run `hf auth login` (browser flow) or export "
+                "HF_TOKEN in this shell; never paste a token into chat."
+            )
     api = HfApi(token=token)
     create_repo(args.repo, repo_type="space", space_sdk="gradio", private=args.private, exist_ok=True)
     print(f"space ready: https://huggingface.co/spaces/{args.repo}")

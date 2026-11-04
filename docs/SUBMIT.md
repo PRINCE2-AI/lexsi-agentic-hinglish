@@ -9,7 +9,7 @@ Everything left is packaging, and packaging is what most solo entries lose on.
 | # | What judges check | Status |
 |---|---|---|
 | 1 | Public repo, runnable, numbers reproducible | done (`8c78979`+) |
-| 2 | **Live Space demo** with a visible tool trace | **missing** — `scripts/deploy_space.py` is ready |
+| 2 | **Live Space demo** with a visible tool trace | **live**: https://huggingface.co/spaces/primce/hinglish-expense-agent (T4 small) |
 | 3 | **HF Article** with metrics, before/after, rationale | drafted with hard-30 + safety tables |
 | 4 | HF artifacts: adapter + run logs + dataset | adapter and logs (incl. safety runs) uploaded; model card pending paste |
 | 5 | **One memorable differentiator** | the injection eval: 13/24 -> 0/24 ledger attacks, no LLM judge |

@@ -231,7 +231,7 @@ python scripts/safety_table.py
 - GitHub: https://github.com/PRINCE2-AI/lexsi-agentic-hinglish
 - Adapter: https://huggingface.co/primce/tiny-aya-hinglish-lora (`sft2_adapter`)
 - Run logs: https://huggingface.co/datasets/primce/lexsi-runs
-- Space: [tuned demo link]
+- Space: https://huggingface.co/spaces/primce/hinglish-expense-agent (T4, frozen adapter, visible tool trace)
 
 ## Credits
 
