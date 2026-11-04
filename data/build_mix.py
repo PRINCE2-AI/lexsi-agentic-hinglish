@@ -64,6 +64,12 @@ def main() -> None:
         help="append the minimal-pair split from data/build_contrast.py",
     )
     parser.add_argument("--contrast-copies", type=int, default=2)
+    parser.add_argument(
+        "--no-easy",
+        action="store_true",
+        help="drop the 100 easy rows; GRPO samples uniformly, so rows the SFT already "
+        "solves give every group the same reward and no gradient",
+    )
     args = parser.parse_args()
 
     easy = load("tasks_train.jsonl")
@@ -74,7 +80,7 @@ def main() -> None:
         for task in load(name)
     }
 
-    rows = list(easy)
+    rows = [] if args.no_easy else list(easy)
     for task in hard:
         if task["task"].strip().lower() in hard_eval:
             raise SystemExit(f"train row leaks into hard eval: {task['id']}")

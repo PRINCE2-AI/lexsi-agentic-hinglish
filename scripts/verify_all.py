@@ -40,6 +40,13 @@ STEPS = [
             "--contrast", "--contrast-copies", "3", "--out", "data/tasks_train_mix5.jsonl",
         ],
     ),
+    (
+        "grpo split leak check",
+        [
+            "data/build_mix.py", "--no-easy", "--abstain", "--abstain-copies", "1",
+            "--contrast", "--contrast-copies", "3", "--out", "data/tasks_train_grpo.jsonl",
+        ],
+    ),
     ("hard-data tests", ["tests/test_hard_data.py"]),
     ("safety tests", ["tests/test_safety.py"]),
     ("contrast tests", ["tests/test_contrast.py"]),

@@ -265,3 +265,9 @@ One caveat, stated before the number exists: `ledger khaali hai. {person} ka fin
 is one of the three hard-90-only phrasings and it is also in the contrast set, so for `sft4`/`sft5`
 the seen/unseen split of `empty_balance` will be about 5 seen and 6 unseen rows. The unseen column
 stays the honest one, and it is narrower than it looks.
+
+Both arms are queued as one pipeline: `6aeb5c93c78863f9c632b6af` (`sft4`, mix3) and
+`6aeb5f03c78863f9c632b9e6` (`sft5`, mix5), each on a t4-medium with a 6-hour timeout, behind the
+GRPO job that already holds the GPU slot. `sft5` is queued rather than gated on `sft4` in
+deliberation: the two arms differ by one variable (ask-row count) and a sequential read would cost
+four more hours than the experiment is worth.

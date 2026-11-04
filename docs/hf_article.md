@@ -263,7 +263,7 @@ see the eval.
 ```bash
 python data/build_hard.py && python data/build_hard90.py && python data/build_mix.py
 python data/build_abstain.py && python data/build_safety.py
-python scripts/verify_all.py          # no GPU, no token: 18 checks
+python scripts/verify_all.py          # no GPU, no token: 19 checks
 
 python scripts/train_sft.py --tasks data/tasks_train_mix2.jsonl \
     --epochs 2 --seed 42 --out runs/sft3 --merge-out runs/sft3_merged

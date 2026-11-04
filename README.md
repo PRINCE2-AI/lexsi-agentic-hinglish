@@ -120,7 +120,7 @@ python scripts/verify_all.py
 
 That single command regenerates the hard, hard-90 and safety splits, checks every SHA-256 pin,
 runs every test suite, replays the oracle and runs the AuditKIT adapter tests. It prints
-`all 18 checks passed` when the dataset and the scoring are consistent.
+`all 19 checks passed` when the dataset and the scoring are consistent.
 
 
 ### Tiny Aya access
