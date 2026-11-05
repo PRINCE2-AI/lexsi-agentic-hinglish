@@ -114,6 +114,7 @@ other split.
 | SFT-mix2 + GRPO (40 steps, abstain reward) | 96.67% (29/30) | 75.56% (68/90) | - | 3.27 |
 | **SFT-mix3, seed 42 (shipped)** | **96.67% (29/30)** | **93.33% (84/90)** | **100% (24/24)** | **3.38** |
 | SFT-mix5 (ablation, fewer ask rows) | 100% (30/30) | 92.22% (83/90) | 100% (24/24) | 3.38 |
+| SFT-mix3, seed 7 (replication) | 100% (30/30) | 93.33% (84/90) | - | 3.37 |
 | SFT-mix2, seed 7 | 93.33% (28/30) | 83.33% (75/90) | - | 3.42 |
 | SFT-mix2, seed 123 | 80.00% (24/30) | 75.56% (68/90) | - | 3.23 |
 | oracle | 100% (30/30) | 100% (90/90) | 100% (24/24) | 3.57 |
@@ -158,11 +159,16 @@ misses are answer shape (`tac` 0.967, `answer_ok` 0.933), not tool use: the mode
 tools in the right order and then drops or misstates a number in the final sentence. That is the
 same failure mode round 1 identified, now confined to two families.
 
-The seed spread is wider than the round-1-to-round-3 difference: 16.67 pp on hard-30 and 7.77 pp
-on hard-90 across the three mix2 seeds. It is published instead of hidden. Shipping the best seed
-would add 7.8 pp on hard-90; it would also mean choosing the seed on the split that is reported.
-The shipped adapter is seed 42, fixed before the seed runs existed, and it is the median of the
-three on the mean of both splits.
+The mix2 seed spread is wider than the round-1-to-round-3 difference: 16.67 pp on hard-30 and
+7.77 pp on hard-90 across three seeds. It is published instead of hidden, and shipping the best
+seed would add 7.8 pp on hard-90 — by choosing the seed on the split that is reported. The shipped
+adapter is seed 42, fixed before the seed runs existed.
+
+Mix3 behaves differently. A second mix3 seed (7) trained on the identical recipe lands on the same
+**84/90**: 1 task fixed, 1 broken, exact McNemar p = 1.0, and five of its six misses are the same
+tasks as seed 42. Hard-30 is 30/30 against 29/30. Two seeds cannot bound a variance, but they do
+show that the mix3 number is not one lucky initialisation — the spread that mix2 showed came from
+the abstention rows, which the contrast pairs in mix3 appear to stabilise.
 
 ## The split a task-success number cannot see
 
@@ -347,9 +353,11 @@ see the eval.
 - The shipped adapter is better than round 1 by 4 tasks on hard-90, but the paired test is not
   significant (7 fixed, 3 broken, p = 0.34); the claim is "at least as good, directionally
   better", not "significantly better".
-- Three seeds bound the variance; they do not remove it. The mix2 spread (7.77 pp on hard-90) is
-  wider than the round-1-to-round-3 difference, and no mix3 seed spread was finished, so the
-  shipped number carries that caveat.
+- Two mix3 seeds agree on the headline, which is a replication and not a variance bound: seed 7
+  lands on the same 84/90 (1 fixed, 1 broken, p = 1.0) and 30/30 on hard-30, and five of its six
+  misses are the same task ids. Seed 123 of mix3 was never trained — the free GPU budgets ran
+  out — so the only estimate of how much the recipe itself moves is still the mix2 spread,
+  7.77 pp on hard-90.
 - The abstention result that clears the 6/8 bar comes from a hardened system prompt on the same
   adapter, whose hard-90 success is not measured. The default configuration asks 4/8.
 - Fixed offline FX rates, fixed six-person name universe, no free-form tools.
@@ -405,8 +413,9 @@ python scripts/safety_table.py
 ## Artifacts
 
 - GitHub: https://github.com/PRINCE2-AI/lexsi-agentic-hinglish
-- Adapter: https://huggingface.co/primce/tiny-aya-hinglish-lora (`sft4_adapter`;
-  `sft3_seed7_adapter` and `sft3_seed123_adapter` carry the seed control)
+- Adapter: https://huggingface.co/primce/tiny-aya-hinglish-lora (`sft4_adapter` is the shipped
+  one; `sft4_seed7_adapter` is the mix3 replication, `sft3_seed7_adapter` and
+  `sft3_seed123_adapter` are the mix2 seed control)
 - Run logs: https://huggingface.co/datasets/primce/lexsi-runs
 - Space: https://huggingface.co/spaces/primce/hinglish-expense-agent (ZeroGPU, shipped adapter, visible tool trace)
 - This article: https://huggingface.co/spaces/primce/hinglish-track3-article

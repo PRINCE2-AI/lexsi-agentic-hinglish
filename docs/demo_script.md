@@ -71,10 +71,10 @@ money answers at scale. Adapter, dataset, frozen eval, trajectories and the Spac
   control that would answer the question properly.
 - **Why is round 1 -> shipped only p = 0.34?** Because 7 fix and 3 break: the gain is directional,
   not proven. The proven step is round 2 -> shipped, 18 against 2.
-- **What would you do with $200 of compute?** Seeds 7 and 123 of the shipped recipe (the mix2
-  three-seed control is in the write-up; the mix3 spread is the missing one),
-  a schema-shift eval (rename tools and parameters) to see whether the adapter learned the task or
-  the format, and a Hinglish-only injection payload set.
+- **What would you do with $200 of compute?** Mix3 seed 123, the one seed run that never happened
+  (seed 7 replicated the headline at 84/90, so what is missing is the third point that would turn a
+  replication into a spread), a schema-shift eval (rename tools and parameters) to see whether the
+  adapter learned the task or the format, and a Hinglish-only injection payload set.
 - **Is the agent safe?** We measured it: 32-task indirect-injection split with no LLM judge. Base
   writes attacker money in 13/24 tasks and repeats the attacker number in 8/24 answers; the shipped
   adapter in **0/24 and 0/24** (p = 0.00024). It asks on 4 of 8 underspecified requests — the same

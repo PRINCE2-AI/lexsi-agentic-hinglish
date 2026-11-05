@@ -40,8 +40,9 @@ seed adapters are kept for the ablation and variance controls.
 | **Same adapter** | **90 hard tasks** | **93.33% (84/90)** |
 | Same adapter | 24 in-distribution tasks | 100.00% (24/24) |
 | `sft5` ablation (fewer ask rows) | 30 / 90 hard tasks | 100% (30/30) / 92.22% (83/90) |
-| `sft3` recipe, seed 7 | 30 / 90 hard tasks | 93.33% / 83.33% |
-| `sft3` recipe, seed 123 | 30 / 90 hard tasks | 80.00% / 75.56% |
+| `sft4` recipe, seed 7 (mix3 replication) | 30 / 90 hard tasks | 100% (30/30) / 93.33% (84/90) |
+| `sft3` recipe (mix2), seed 7 | 30 / 90 hard tasks | 93.33% / 83.33% |
+| `sft3` recipe (mix2), seed 123 | 30 / 90 hard tasks | 80.00% / 75.56% |
 
 - Paired exact McNemar over shared task ids: base → this adapter **28 fixed, 0 broken,
   p = 7.5e-09** on hard-30 and **81 fixed, 0 broken, p < 1e-20** on hard-90. Against the
@@ -57,10 +58,15 @@ seed adapters are kept for the ablation and variance controls.
   validity 1.000, zero redundant calls and zero loops; its success verdict agrees with the repo
   scorer on 88/90 decided tasks.
 
-Three seeds of the same recipe span 16.67 pp on hard-30 and 7.77 pp on hard-90. The shipped
-adapter is seed 42, fixed before the seed runs existed and the median of the three on the mean of
-both splits; seed 7 is better on hard-90 (7 fixed, 0 broken, p = 0.0156). The spread is published
-rather than hidden.
+Three seeds of the mix2 recipe span 16.67 pp on hard-30 and 7.77 pp on hard-90, and that spread
+is published rather than hidden. The shipped adapter is mix3 seed 42, chosen before any seed run
+existed. A second mix3 seed (7) reproduces the headline instead of moving it: the same 84/90 on
+hard-90 (1 fixed, 1 broken, p = 1.0), 30/30 on hard-30, and five of the six hard-90 misses are the
+same task ids (`h9-019`, `-024`, `-029`, `-066`, `-067`). That is a replication, not a variance
+bound — mix3 seed 123 was never trained, so the mix2 spread stays the only estimate of how much
+the recipe itself moves. Seed 7 of mix2 is better than the shipped adapter on hard-90 (7 fixed,
+0 broken, p = 0.0156); picking it after seeing the split would be selection on the reported split,
+so seed 42 stays shipped.
 
 The base model's single hard-30 success is not a clean one: on `h-e-029` it returned the correct
 "0 INR" only after inventing an 800 INR expense nobody mentioned. The adapter fixes the behaviour,
@@ -126,7 +132,8 @@ model = PeftModel.from_pretrained(model, "primce/tiny-aya-hinglish-lora", subfol
 ```
 
 Other subfolders: `sft2_adapter` (round 1), `sft3_adapter` (round 2), `sft5_adapter` (mixture
-ablation), `sft3_seed7_adapter` / `sft3_seed123_adapter` (variance control), `grpo_adapter` and
+ablation), `sft4_seed7_adapter` (mix3 replication), `sft3_seed7_adapter` / `sft3_seed123_adapter`
+(mix2 variance control), `grpo_adapter` and
 `sft_adapter` (earlier stages).
 
 The adapter expects the system prompt from `hinglish_agent/prompts.py` (tool schemas inline, one
@@ -135,8 +142,10 @@ tool call per turn, ledger returned by every ledger tool and copied into the nex
 ## Limitations
 
 - Domain-specific: it answers ledger questions with exact arithmetic; it is not a general assistant.
-- The 90-task holdout is still a probe (Wilson 86.2–96.9% on this adapter), and the recipe's own
-  seed spread (7.77 pp) is wider than the round-1-to-round-3 difference.
+- The 90-task holdout is still a probe (Wilson 86.2–96.9% on this adapter), and the widest
+  same-recipe spread this entry measured — 7.77 pp on hard-90 — is wider than the
+  round-1-to-round-3 difference. That spread comes from the mix2 recipe; mix3 has two seeds that
+  agree, which bounds nothing.
 - The adapter can ask for missing details but does not prefer to: 4 of 8 underspecified requests,
   or 7 of 8 with the hardened system prompt.
 - Hinglish + English only. Devanagari paraphrases appear in the eval, but generation is not

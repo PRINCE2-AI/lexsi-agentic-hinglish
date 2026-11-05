@@ -296,10 +296,12 @@ what buys the behaviour, and the contrast pairs are what stop it firing on an em
 pre-registered 6/8 bar is still missed by the adapter alone; the hardened prompt clears it
 (7/8 asked, 0/8 invented) and is documented as the abstention configuration.
 
-Two follow-ups were started for this round and neither produced a number: the mix3 seed controls 7
-and 123 (`lexsi-seeds-sft4`, and a Kaggle re-train of seed 7), and GRPO with 4 generations
-(`lexsi-grpo4`). The seed-7 re-train finished on Kaggle and its held-out evaluation was cut off by
-the GPU quota; the GRPO job died on a missing `agenttune` import in a Python 3.11 image; and both
-free budgets (Kaggle quota, HF Jobs credit) are now exhausted, so no further attempt was made.
-Nothing below depends on them: seed 42 was fixed before the seed runs existed, and GRPO had
-already moved hard-90 by exactly 0 twice.
+Two follow-ups were started for this round. One produced a number, one did not. The mix3 seed
+control (`lexsi-seeds-sft4`, a Kaggle notebook for seeds 7 and 123) finished seed 7 first and
+reproduced the headline: **93.33% (84/90)** on hard-90 and **100% (30/30)** on hard-30, with one
+task fixed and one broken against seed 42 on hard-90 (exact McNemar p = 1.0) and five of the six
+misses on the same task ids. Seed 123 of mix3 never ran — the Kaggle quota was spent by seed 7 and
+HF Jobs answers 402 — so mix3 has a replication, not a spread. GRPO with 4 generations
+(`lexsi-grpo4`) died on a missing `agenttune` import in a Python 3.11 image before its first step,
+and with HF credit at zero it was not retried. Nothing below depends on either: seed 42 was fixed
+before the seed runs existed, and GRPO had already moved hard-90 by exactly 0 twice.

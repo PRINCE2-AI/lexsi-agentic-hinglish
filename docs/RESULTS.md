@@ -17,10 +17,10 @@ a `summary.json` written by a GPU run and uploaded to `primce/lexsi-runs`; nothi
 | Item | Value |
 |---|---|
 | Adapter (shipped) | `primce/tiny-aya-hinglish-lora` → `sft4_adapter` |
-| Seed controls | same repo → `sft3_seed7_adapter`, `sft3_seed123_adapter` (mix2 recipe, seeds 7 and 123) |
+| Seed controls | same repo → `sft3_seed7_adapter`, `sft3_seed123_adapter` (mix2), `sft4_seed7_adapter` (mix3 replication) |
 | Training data | `data/tasks_train_mix3.jsonl` (100 easy + 84 hard + 96 abstention + 94 contrast) |
 | Holdouts | `data/tasks_hard_eval.jsonl` (30), `data/tasks_hard90_eval.jsonl` (90, own pin), `data/tasks_eval.jsonl` (24), `data/tasks_safety_eval.jsonl` (32) |
-| Run logs | `primce/lexsi-runs` → `sft4_hard30`, `sft4_hard90`, `sft4_eval`, `sft3_seed7_*`, `sft3_seed123_*`, `grpo3_*`, `safety_sft4*`, `auditkit_sft4_hard90` |
+| Run logs | `primce/lexsi-runs` → `sft4_hard30`, `sft4_hard90`, `sft4_eval`, `sft4_seed7_hard30`, `sft4_seed7_hard90`, `sft3_seed7_*`, `sft3_seed123_*`, `grpo3_*`, `safety_sft4*`, `auditkit_sft4_hard90` |
 | Independent eval | AuditKIT 1.1.3 via `scripts/auditkit_eval.py`, no judge model |
 
 ## Round 3 (2026-11-05) — sft4
@@ -44,6 +44,7 @@ Greedy decoding, `--no-4bit`, zero tool errors in every tuned row.
 | SFT-mix2, round 2 (`sft3`) | 96.67% (29/30) | 75.56% (68/90) | 100% (24/24) |
 | **SFT-mix3 seed 42 (`sft4`, shipped)** | **96.67% (29/30)** | **93.33% (84/90)** | **100% (24/24)** |
 | SFT-mix5 seed 42 (`sft5`, ablation) | 100% (30/30) | 92.22% (83/90) | 100% (24/24) |
+| SFT-mix3 seed 7 (`sft4_seed7`, replication) | 100% (30/30) | 93.33% (84/90) | - |
 | SFT-mix2 seed 7 | 93.33% (28/30) | 83.33% (75/90) | - |
 | SFT-mix2 seed 123 | 80.00% (24/30) | 75.56% (68/90) | - |
 
@@ -126,11 +127,26 @@ The round-2 seed controls (same mix2 recipe, three seeds) put the recipe's own v
 | 123 | 80.00% | 75.56% | 77.78% |
 | spread (max − min) | 16.67 pp | 7.77 pp | - |
 
-The three seeds above are the mix2 recipe. The mix3 recipe that ships was trained once: a seed-7
-re-train finished on Kaggle but its held-out evaluation did not complete before the GPU quota ran
-out, and both free-compute budgets (Kaggle quota, HF Jobs credit) are now exhausted, so no mix3
-seed spread exists and none is claimed. Shipping seed 42 stays the rule: it was fixed before any
-seed run existed, and choosing the best seed on the split that gets reported would be selection.
+The three seeds above are the mix2 recipe. The mix3 recipe that ships was re-trained under seed 7
+on Kaggle with the identical recipe (188 steps, `train_loss` 0.06614, 77 min) and scored on both
+frozen splits:
+
+| Mix3 seed | hard-30 | hard-90 | misses on hard-90 |
+|---|---:|---:|---:|
+| 42 (shipped) | 96.67% (29/30) | 93.33% (84/90) | 6 |
+| 7 | 100% (30/30) | 93.33% (84/90) | 6 |
+| paired (42 → 7) | 1 fixed, 0 broken | 1 fixed, 1 broken, p = 1.0 | - |
+
+This is a replication, not a spread: the same 84/90, with five of the six misses on the same tasks
+(`h9-019`, `-024`, `-029`, `-066`, `-067`) and the same family shape (`convert_sum` 12/15,
+`empty_balance` 15/15, `paraphrase` 15/15, `two_query` 12/15, the other two families 15/15).
+Seed 7 trades one `convert_sum` miss for one `paraphrase` win. Mix2's 7.77 pp spread came from the
+abstention rows, which mix3's contrast pairs appear to stabilise; two seeds cannot prove that, and
+seed 123 of mix3 was not trained (the free GPU budgets ran out), so the claim stays "two seeds
+agree on the headline" and not "the variance is bounded".
+
+Shipping seed 42 stays the rule: it was fixed before any seed run existed, and choosing the best
+seed on the split that gets reported would be selection.
 
 ### AuditKIT (independent scorer, Track 3 toolkit)
 

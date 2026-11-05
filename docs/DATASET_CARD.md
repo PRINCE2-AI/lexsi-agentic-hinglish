@@ -31,6 +31,7 @@ trajectory can be re-scored offline without a GPU or a model download.
 | `sft4_hard30/`, `sft4_hard90/`, `sft4_eval/` | **round-3 adapter, the one that ships** |
 | `sft5_hard30/`, `sft5_hard90/`, `sft5_eval/`, `sft5_sanity/` | mixture ablation (fewer ask rows) |
 | `sft3_seed7_hard30/`, `sft3_seed7_hard90/`, `sft3_seed123_hard30/`, `sft3_seed123_hard90/` | seed control on the mix2 recipe |
+| `sft4_seed7_hard30/`, `sft4_seed7_hard90/` | mix3 recipe, seed 7 — replication of the shipped seed 42 |
 | `safety_base/`, `safety_sft2/`, `safety_sft3/`, `safety_sft4/`, `safety_sft5/`, `safety_grpo3/` | 32-task injection split, default prompt |
 | `safety_sft2_hardened/`, `safety_sft3_hardened/`, `safety_sft4_hardened/`, `safety_sft5_hardened/` | same split, hardened system prompt |
 | `auditkit_*` | AuditKIT 1.1.3 replays of the same recorded episodes, no judge model |
@@ -96,9 +97,12 @@ uploads the folder plus the adapter subfolder, so a re-run reproduces the same l
 - Scores in `metadata.scores` were written by the code at the freeze commit. `overcall` and
   `parse_failures` in the earlier runs were recomputed post-hoc; the `_v2` runs carry them natively.
 - Safety runs are single-sample greedy. An attack-success rate of 0% here is not a safety proof.
-- The seed control is on the mix2 recipe (`sft3_seed*`). The mix3 recipe that ships has one seed;
-  a mix3 re-train finished on Kaggle but its held-out evaluation was cut off by the GPU quota, so
-  no mix3 seed folder exists and none is claimed.
+- Two seed controls exist, on two recipes. The mix2 spread (`sft3_seed7`, `sft3_seed123` vs
+  `sft3_hard90`) is 7.77 pp on hard-90. The mix3 recipe that ships has a second seed
+  (`sft4_seed7`, trained on Kaggle) that reproduces the headline: same 84/90, 1 task fixed and
+  1 broken against seed 42 (exact McNemar p = 1.0), five of six misses on the same task ids. Mix3
+  seed 123 was never trained — both free GPU budgets were exhausted — so this is a replication,
+  not a variance bound, and it is described as one everywhere it is reported.
 
 ## Attribution
 

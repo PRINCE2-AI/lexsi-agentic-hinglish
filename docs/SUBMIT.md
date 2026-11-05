@@ -2,7 +2,7 @@
 
 A solo entry beats better-resourced teams by having **no empty rubric cell** and **one thing
 nobody else did**. Model quality is settled and measured twice: 96.67% on the 30-task hard split
-and 93.33% on a 90-task holdout, both with paired tests, three seed controls, an ablation, and an
+and 93.33% on a 90-task holdout, both with paired tests, four seed controls, an ablation, and an
 independent AuditKIT pass. Everything left is packaging, and packaging is what most solo entries lose on.
 
 ## The five things that decide it
@@ -12,7 +12,7 @@ independent AuditKIT pass. Everything left is packaging, and packaging is what m
 | 1 | Public repo, runnable, numbers reproducible | done: `python scripts/verify_all.py` → 20/20, no GPU or token; one-click Colab `notebooks/colab_reproduce.ipynb` |
 | 2 | **Live Space demo** with a visible tool trace | **live**: https://huggingface.co/spaces/primce/hinglish-expense-agent (ZeroGPU `zero-a10g`, sft4 adapter, base/tuned switch, injection scenario) |
 | 3 | **HF Article** with metrics, before/after, rationale | **live**: https://huggingface.co/spaces/primce/hinglish-track3-article (static Space; Hub Articles need PRO) |
-| 4 | HF artifacts: adapter + run logs + dataset | adapter (`sft4_adapter` + seed and ablation adapters), all run logs, **and the required HF Collection** |
+| 4 | HF artifacts: adapter + run logs + dataset | adapter (`sft4_adapter`, `sft4_seed7_adapter`, `sft5_adapter`, `sft3_seed7/123_adapter`), all run logs, **and the required HF Collection** |
 | 5 | **One memorable differentiator** | the injection eval: 13/24 → 0/24 ledger attacks and 8/24 → 0/24 attacker numbers in answers, no LLM judge, on a track where the required toolkit (AuditKIT) usually only scores tool calls |
 
 ### The four attack lines a strong reviewer will use
@@ -20,7 +20,7 @@ independent AuditKIT pass. Everything left is packaging, and packaging is what m
 | Attack | Answer today |
 |---|---|
 | "Track says RL, your win is SFT" | "GRPO ran twice: 0/30 in round 1, and 0 tasks fixed / 0 broken on hard-90 in round 2 (p = 1.0) with the abstain reward, 40 steps and lr 3e-6. That zero is measured, diagnosed (`frac_reward_zero_std` 0.8–0.95 at 2 generations) and reported, and round 3 shows the real bottleneck was data coverage, not RL (`docs/ROUND2.md`)." |
-| "30 tasks, 1 seed" | "90-task holdout at 15 per family (93.33%), paired against base at p < 1e-20, and against round 2 at 18 fixed / 2 broken, p = 0.0004. The seed control spans 80.00 / 93.33 / 96.67 on hard-30 and 75.56 / 83.33 / 75.56 on hard-90, and the spread is in the write-up." |
+| "30 tasks, 1 seed" | "90-task holdout at 15 per family (93.33%), paired against base at p < 1e-20, and against round 2 at 18 fixed / 2 broken, p = 0.0004. Four seed runs: the mix2 control spans 80.00 / 93.33 / 96.67 on hard-30 and 75.56 / 83.33 / 75.56 on hard-90, and a second mix3 seed reproduces the headline exactly — same 84/90, 1 fixed and 1 broken against the shipped seed, p = 1.0. The mix2 spread is in the write-up, and so is the fact that mix3 has a replication and not a spread." |
 | "Abstention is still 1/8" | "It is 4/8 on the adapter and 7/8 with the hardened prompt (0/8 invented), against a pre-registered 6/8 bar. `attack_ledger` is 0/24 and `attack_answer` is 0/24 on the same runs." |
 | "Your article is a Space, not an HF blog" | "Hub Articles need PRO or a Team org on this account; the static Space renders the same markdown from the same file." |
 
