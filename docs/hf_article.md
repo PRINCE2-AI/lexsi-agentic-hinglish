@@ -88,12 +88,15 @@ other split.
 1. Five stateless tools: `add_expense`, `convert_currency`, `get_balance`, `settle_up`,
    `finish`; state travels in the ledger object, so rollouts cannot leak into each other.
 2. SFT on oracle trajectories: LoRA r=16 on all linear layers, fp16, lr 2e-4, 2 epochs, labels
-   masked to assistant turns. mix3 is 374 rows / ~188 optimizer steps on one T4 (~55 min).
+   masked to assistant turns. mix3 is 374 rows / 188 optimizer steps on one T4 (77 min measured
+   on Kaggle).
 3. GRPO with AgentTune `create_agentic_trainer`, graded reward (format + required tools +
    argument names/values + answer number), a no-duplicate-calls term, and — in round 2 — an
    abstain reward that pays 1.0 when the only call is `finish` with a question on an
    `abstain=1` row.
-4. Evaluation: greedy, `--no-4bit`, one sample per task, on rented T4s (HF Jobs) and Kaggle T4 x2.
+4. Evaluation: greedy, `--no-4bit`, one sample per task, on rented T4s (HF Jobs) and a single
+   Kaggle T4 (`CUDA_VISIBLE_DEVICES=0`; with both visible, `Trainer` wraps the 3.35B model in
+   DataParallel and the backward pass OOMs).
 5. AuditKIT: `scripts/auditkit_eval.py` rebuilds each recorded episode as an
    `auditkit.agent_eval.AgentCase` + episode, runs `AgentEvalRunner` in `mode="recorded"`, and
    scores `tool_call_f1`, `tool_call_f1_name`, `tool_call_validity`, `redundant_tool_calls`,
@@ -345,8 +348,8 @@ see the eval.
   significant (7 fixed, 3 broken, p = 0.34); the claim is "at least as good, directionally
   better", not "significantly better".
 - Three seeds bound the variance; they do not remove it. The mix2 spread (7.77 pp on hard-90) is
-  wider than the round-1-to-round-3 difference, and the mix3 seed runs are the same control for
-  the shipped recipe.
+  wider than the round-1-to-round-3 difference, and no mix3 seed spread was finished, so the
+  shipped number carries that caveat.
 - The abstention result that clears the 6/8 bar comes from a hardened system prompt on the same
   adapter, whose hard-90 success is not measured. The default configuration asks 4/8.
 - Fixed offline FX rates, fixed six-person name universe, no free-form tools.
@@ -355,9 +358,9 @@ see the eval.
 
 ## The demo: before, after, and an attack in one Space
 
-https://huggingface.co/spaces/primce/hinglish-expense-agent runs on a T4 with one model loaded
-and two adapters-worth of behaviour: the **mode switch** calls `disable_adapter()` on the same
-4-bit weights, so "Base model (adapter off)" and "Shipped adapter (sft4)" differ only in the
+https://huggingface.co/spaces/primce/hinglish-expense-agent runs on ZeroGPU with one 4-bit model
+loaded and two adapters-worth of behaviour: the **mode switch** calls `disable_adapter()` on the
+same weights, so "Base model (adapter off)" and "Shipped adapter (sft4)" differ only in the
 adapter, not in the prompt, the tools or the scorer. A **scenario switch** loads three frozen
 tasks: the normal split, an indirect injection through a tool result (`s-001`), and an
 underspecified request (`s-025`). Each run prints the tool trace, the final ledger and a verdict
@@ -402,10 +405,10 @@ python scripts/safety_table.py
 ## Artifacts
 
 - GitHub: https://github.com/PRINCE2-AI/lexsi-agentic-hinglish
-- Adapter: https://huggingface.co/primce/tiny-aya-hinglish-lora (`sft4_adapter`; seed adapters
-  alongside it)
+- Adapter: https://huggingface.co/primce/tiny-aya-hinglish-lora (`sft4_adapter`;
+  `sft3_seed7_adapter` and `sft3_seed123_adapter` carry the seed control)
 - Run logs: https://huggingface.co/datasets/primce/lexsi-runs
-- Space: https://huggingface.co/spaces/primce/hinglish-expense-agent (T4, shipped adapter, visible tool trace)
+- Space: https://huggingface.co/spaces/primce/hinglish-expense-agent (ZeroGPU, shipped adapter, visible tool trace)
 - This article: https://huggingface.co/spaces/primce/hinglish-track3-article
 - Collection: https://huggingface.co/collections/primce/lexsi-track-3-hinglish-expense-agent-6aeb3207e10dfc7dda6329d6
 

@@ -296,7 +296,10 @@ what buys the behaviour, and the contrast pairs are what stop it firing on an em
 pre-registered 6/8 bar is still missed by the adapter alone; the hardened prompt clears it
 (7/8 asked, 0/8 invented) and is documented as the abstention configuration.
 
-Still running when this was written: mix3 seed controls 7 and 123 (`lexsi-seeds-sft4`) and GRPO
-with 4 generations / 24 steps (`lexsi-grpo4`). Their rows are appended below when they land; the
-shipped adapter does not depend on either, because seed 42 was fixed before the seed runs existed
-and GRPO has already moved hard-90 by exactly 0 twice.
+Two follow-ups were started for this round and neither produced a number: the mix3 seed controls 7
+and 123 (`lexsi-seeds-sft4`, and a Kaggle re-train of seed 7), and GRPO with 4 generations
+(`lexsi-grpo4`). The seed-7 re-train finished on Kaggle and its held-out evaluation was cut off by
+the GPU quota; the GRPO job died on a missing `agenttune` import in a Python 3.11 image; and both
+free budgets (Kaggle quota, HF Jobs credit) are now exhausted, so no further attempt was made.
+Nothing below depends on them: seed 42 was fixed before the seed runs existed, and GRPO had
+already moved hard-90 by exactly 0 twice.

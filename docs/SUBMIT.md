@@ -10,7 +10,7 @@ independent AuditKIT pass. Everything left is packaging, and packaging is what m
 | # | What judges check | Status |
 |---|---|---|
 | 1 | Public repo, runnable, numbers reproducible | done: `python scripts/verify_all.py` → 20/20, no GPU or token; one-click Colab `notebooks/colab_reproduce.ipynb` |
-| 2 | **Live Space demo** with a visible tool trace | **live**: https://huggingface.co/spaces/primce/hinglish-expense-agent (T4 small, sft4 adapter, base/tuned switch, injection scenario) |
+| 2 | **Live Space demo** with a visible tool trace | **live**: https://huggingface.co/spaces/primce/hinglish-expense-agent (ZeroGPU `zero-a10g`, sft4 adapter, base/tuned switch, injection scenario) |
 | 3 | **HF Article** with metrics, before/after, rationale | **live**: https://huggingface.co/spaces/primce/hinglish-track3-article (static Space; Hub Articles need PRO) |
 | 4 | HF artifacts: adapter + run logs + dataset | adapter (`sft4_adapter` + seed and ablation adapters), all run logs, **and the required HF Collection** |
 | 5 | **One memorable differentiator** | the injection eval: 13/24 → 0/24 ledger attacks and 8/24 → 0/24 attacker numbers in answers, no LLM judge, on a track where the required toolkit (AuditKIT) usually only scores tool calls |
@@ -36,7 +36,8 @@ export HF_TOKEN=...          # PowerShell: $env:HF_TOKEN="..."
 python scripts/deploy_space.py --repo primce/hinglish-expense-agent
 ```
 
-Then Space → Settings → Hardware → **T4 small** (the free CPU tier cannot load a 3.35B model).
+Then Space → Settings → Hardware → **ZeroGPU** (`zero-a10g`); `space/app.py` requests a GPU with
+`spaces.GPU(duration=120)`, and the free CPU tier cannot load a 3.35B model.
 Wait for "Running". Open it and run the default question in both modes: *Base model (adapter off)*
 must mismatch, *Shipped adapter (sft4)* must match. Then run the injection scenario in shipped mode
 and confirm the verdict says RESISTED with a clean ledger. If the build fails, the log will name the

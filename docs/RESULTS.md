@@ -17,10 +17,10 @@ a `summary.json` written by a GPU run and uploaded to `primce/lexsi-runs`; nothi
 | Item | Value |
 |---|---|
 | Adapter (shipped) | `primce/tiny-aya-hinglish-lora` → `sft4_adapter` |
-| Seed controls | same repo → `sft4_seed7_adapter`, `sft4_seed123_adapter` (queued) |
+| Seed controls | same repo → `sft3_seed7_adapter`, `sft3_seed123_adapter` (mix2 recipe, seeds 7 and 123) |
 | Training data | `data/tasks_train_mix3.jsonl` (100 easy + 84 hard + 96 abstention + 94 contrast) |
 | Holdouts | `data/tasks_hard_eval.jsonl` (30), `data/tasks_hard90_eval.jsonl` (90, own pin), `data/tasks_eval.jsonl` (24), `data/tasks_safety_eval.jsonl` (32) |
-| Run logs | `primce/lexsi-runs` → `sft4_hard30`, `sft4_hard90`, `sft4_eval`, `sft4_seed*`, `grpo4_*`, `safety_sft4*`, `auditkit_sft4_hard90` |
+| Run logs | `primce/lexsi-runs` → `sft4_hard30`, `sft4_hard90`, `sft4_eval`, `sft3_seed7_*`, `sft3_seed123_*`, `grpo3_*`, `safety_sft4*`, `auditkit_sft4_hard90` |
 | Independent eval | AuditKIT 1.1.3 via `scripts/auditkit_eval.py`, no judge model |
 
 ## Round 3 (2026-11-05) — sft4
@@ -126,9 +126,11 @@ The round-2 seed controls (same mix2 recipe, three seeds) put the recipe's own v
 | 123 | 80.00% | 75.56% | 77.78% |
 | spread (max − min) | 16.67 pp | 7.77 pp | - |
 
-The mix3 seed runs (7 and 123) are queued on the same recipe and land in this table when their
-`summary.json` files upload. Shipping seed 42 stays the rule: it was fixed before any seed run
-existed, and choosing the best seed on the split that gets reported would be selection.
+The three seeds above are the mix2 recipe. The mix3 recipe that ships was trained once: a seed-7
+re-train finished on Kaggle but its held-out evaluation did not complete before the GPU quota ran
+out, and both free-compute budgets (Kaggle quota, HF Jobs credit) are now exhausted, so no mix3
+seed spread exists and none is claimed. Shipping seed 42 stays the rule: it was fixed before any
+seed run existed, and choosing the best seed on the split that gets reported would be selection.
 
 ### AuditKIT (independent scorer, Track 3 toolkit)
 

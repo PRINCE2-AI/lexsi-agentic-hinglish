@@ -71,7 +71,8 @@ money answers at scale. Adapter, dataset, frozen eval, trajectories and the Spac
   control that would answer the question properly.
 - **Why is round 1 -> shipped only p = 0.34?** Because 7 fix and 3 break: the gain is directional,
   not proven. The proven step is round 2 -> shipped, 18 against 2.
-- **What would you do with $200 of compute?** Three seeds of the shipped recipe (already queued),
+- **What would you do with $200 of compute?** Seeds 7 and 123 of the shipped recipe (the mix2
+  three-seed control is in the write-up; the mix3 spread is the missing one),
   a schema-shift eval (rename tools and parameters) to see whether the adapter learned the task or
   the format, and a Hinglish-only injection payload set.
 - **Is the agent safe?** We measured it: 32-task indirect-injection split with no LLM judge. Base
