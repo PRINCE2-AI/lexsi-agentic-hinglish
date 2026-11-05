@@ -237,15 +237,18 @@ repro commands: [docs/RESULTS.md](docs/RESULTS.md).
 | SFT-mix2 + GRPO (40 steps) | 96.67% | 75.56% | - | 3.27 |
 | **SFT-mix3 seed 42 (`sft4`, shipped)** | **96.67%** | **93.33%** | **100%** | **3.38** |
 | SFT-mix5 (ablation, fewer ask rows) | 100% | 92.22% | 100% | 3.38 |
+| SFT-mix3 seed 7 (replication) | 100% | 93.33% | - | 3.37 |
 | SFT-mix2 seed 7 | 93.33% | 83.33% | - | 3.42 |
 | SFT-mix2 seed 123 | 80.00% | 75.56% | - | 3.23 |
 
 Oracle ceiling on hard-30 is 30/30 at 3.57 calls. All runs: one T4 (HF Jobs) or Kaggle T4 x2,
 greedy, `--no-4bit`. Paired McNemar, same task ids: base -> sft4 hard-90 81 fixed / 0 broken,
 p < 1e-20; sft3 -> sft4 18 fixed / 2 broken, p = 0.0004; sft2 -> sft4 7 fixed / 3 broken,
-p = 0.34 (directional, not significant). The seed spread is published (16.67 pp on hard-30,
-7.77 pp on hard-90) and seed 7 is better than the shipped seed on hard-90; the shipped seed is the
-one fixed before the seed runs existed, and the median of the three. Full per-metric summaries
+p = 0.34 (directional, not significant). The mix2 seed spread is published (16.67 pp on
+hard-30, 7.77 pp on hard-90) and seed 7 of mix2 is better than the shipped seed on hard-90; the
+shipped seed is the one fixed before the seed runs existed. Mix3 has a second seed instead of a
+spread: seed 7 lands on the same 84/90 (1 fixed, 1 broken, p = 1.0) and 30/30 on hard-30, with five
+of its six misses on the same tasks, and mix3 seed 123 was never trained. Full per-metric summaries
 live in the uploaded `summary.json` files under `primce/lexsi-runs`.
 
 AuditKIT replay of the recorded episodes, no judge model: on hard-30, exact-call accuracy
