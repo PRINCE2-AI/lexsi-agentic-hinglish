@@ -368,7 +368,7 @@ Do not put schema-shift in the headline. It is a diagnostic with n≤30.
 | Ablation | Binary reward is worse than graded | A4 vs A3 | ToolRL §5.3 |
 | Ablation | Cold start vs SFT init | A2 vs A3 | ToolRL §4.3 (SFT-init can generalise worse) |
 | Diagnostic | Schema shift separates memorised names from schema following | canonical vs aliased | ToolRL §4.1 (Hammer masked) |
-| Limitations | n=30 hard, 60 GRPO steps, two mix3 seeds and no third, fixed FX, six names | CI + logs | — |
+| Limitations | n=30 hard, 60 GRPO steps, three mix3 seeds (1.11 pp spread), fixed FX, six names | CI + logs | — |
 | Limitations | No length reward, no dynamic schedule | deliberate, cited | ToolRL §5.1, §5.2 |
 
 Allowed sentences: "on our frozen 30-task hard split, SFT drops from X to Y and

@@ -40,7 +40,8 @@ seed adapters are kept for the ablation and variance controls.
 | **Same adapter** | **90 hard tasks** | **93.33% (84/90)** |
 | Same adapter | 24 in-distribution tasks | 100.00% (24/24) |
 | `sft5` ablation (fewer ask rows) | 30 / 90 hard tasks | 100% (30/30) / 92.22% (83/90) |
-| `sft4` recipe, seed 7 (mix3 replication) | 30 / 90 hard tasks | 100% (30/30) / 93.33% (84/90) |
+| `sft4` recipe, seed 7 (mix3) | 30 / 90 hard tasks | 100% (30/30) / 93.33% (84/90) |
+| `sft4` recipe, seed 123 (mix3) | 30 / 90 hard tasks | 96.67% (29/30) / 92.22% (83/90) |
 | `sft3` recipe (mix2), seed 7 | 30 / 90 hard tasks | 93.33% / 83.33% |
 | `sft3` recipe (mix2), seed 123 | 30 / 90 hard tasks | 80.00% / 75.56% |
 
@@ -58,15 +59,14 @@ seed adapters are kept for the ablation and variance controls.
   validity 1.000, zero redundant calls and zero loops; its success verdict agrees with the repo
   scorer on 88/90 decided tasks.
 
-Three seeds of the mix2 recipe span 16.67 pp on hard-30 and 7.77 pp on hard-90, and that spread
-is published rather than hidden. The shipped adapter is mix3 seed 42, chosen before any seed run
-existed. A second mix3 seed (7) reproduces the headline instead of moving it: the same 84/90 on
-hard-90 (1 fixed, 1 broken, p = 1.0), 30/30 on hard-30, and five of the six hard-90 misses are the
-same task ids (`h9-019`, `-024`, `-029`, `-066`, `-067`). That is a replication, not a variance
-bound — mix3 seed 123 was never trained, so the mix2 spread stays the only estimate of how much
-the recipe itself moves. Seed 7 of mix2 is better than the shipped adapter on hard-90 (7 fixed,
-0 broken, p = 0.0156); picking it after seeing the split would be selection on the reported split,
-so seed 42 stays shipped.
+Three seeds of the mix2 recipe span 16.67 pp on hard-30 and 7.77 pp on hard-90; three seeds of the
+mix3 recipe that ships span **3.33 pp and 1.11 pp** on the same splits. Mix3 seeds 42 / 7 / 123
+score 96.67% / 100% / 96.67% on hard-30 and 93.33% / 93.33% / 92.22% on hard-90, no seed pair is
+significantly different (exact McNemar p = 1.0 in every comparison), and five tasks are missed by
+all three (`h9-019`, `-024`, `-029`, `-066`, `-067`). The shipped adapter is mix3 seed 42, chosen
+before any seed run existed and the median of the three on the mean of both splits; the mix2
+spread stays published rather than hidden, and seed 7 of mix2 is better than mix2 seed 42 on
+hard-90 (7 fixed, 0 broken, p = 0.0156).
 
 The base model's single hard-30 success is not a clean one: on `h-e-029` it returned the correct
 "0 INR" only after inventing an 800 INR expense nobody mentioned. The adapter fixes the behaviour,
@@ -132,7 +132,7 @@ model = PeftModel.from_pretrained(model, "primce/tiny-aya-hinglish-lora", subfol
 ```
 
 Other subfolders: `sft2_adapter` (round 1), `sft3_adapter` (round 2), `sft5_adapter` (mixture
-ablation), `sft4_seed7_adapter` (mix3 replication), `sft3_seed7_adapter` / `sft3_seed123_adapter`
+ablation), `sft4_seed7_adapter` / `sft4_seed123_adapter` (mix3 seed control), `sft3_seed7_adapter` / `sft3_seed123_adapter`
 (mix2 variance control), `grpo_adapter` and
 `sft_adapter` (earlier stages).
 
@@ -142,10 +142,9 @@ tool call per turn, ledger returned by every ledger tool and copied into the nex
 ## Limitations
 
 - Domain-specific: it answers ledger questions with exact arithmetic; it is not a general assistant.
-- The 90-task holdout is still a probe (Wilson 86.2–96.9% on this adapter), and the widest
-  same-recipe spread this entry measured — 7.77 pp on hard-90 — is wider than the
-  round-1-to-round-3 difference. That spread comes from the mix2 recipe; mix3 has two seeds that
-  agree, which bounds nothing.
+- The 90-task holdout is still a probe (Wilson 86.2–96.9% on the shipped adapter). This recipe's
+  own three-seed spread is 1.11 pp on hard-90, narrower than the round-1-to-round-3 difference;
+  the 7.77 pp mix2 spread is the wider contrast, not this recipe's noise.
 - The adapter can ask for missing details but does not prefer to: 4 of 8 underspecified requests,
   or 7 of 8 with the hardened system prompt.
 - Hinglish + English only. Devanagari paraphrases appear in the eval, but generation is not

@@ -17,10 +17,10 @@ a `summary.json` written by a GPU run and uploaded to `primce/lexsi-runs`; nothi
 | Item | Value |
 |---|---|
 | Adapter (shipped) | `primce/tiny-aya-hinglish-lora` → `sft4_adapter` |
-| Seed controls | same repo → `sft3_seed7_adapter`, `sft3_seed123_adapter` (mix2), `sft4_seed7_adapter` (mix3 replication) |
+| Seed controls | same repo → `sft3_seed7_adapter`, `sft3_seed123_adapter` (mix2), `sft4_seed7_adapter`, `sft4_seed123_adapter` (mix3) |
 | Training data | `data/tasks_train_mix3.jsonl` (100 easy + 84 hard + 96 abstention + 94 contrast) |
 | Holdouts | `data/tasks_hard_eval.jsonl` (30), `data/tasks_hard90_eval.jsonl` (90, own pin), `data/tasks_eval.jsonl` (24), `data/tasks_safety_eval.jsonl` (32) |
-| Run logs | `primce/lexsi-runs` → `sft4_hard30`, `sft4_hard90`, `sft4_eval`, `sft4_seed7_hard30`, `sft4_seed7_hard90`, `sft3_seed7_*`, `sft3_seed123_*`, `grpo3_*`, `safety_sft4*`, `auditkit_sft4_hard90` |
+| Run logs | `primce/lexsi-runs` → `sft4_hard30`, `sft4_hard90`, `sft4_eval`, `sft4_seed7_*`, `sft4_seed123_*`, `sft3_seed7_*`, `sft3_seed123_*`, `grpo3_*`, `safety_sft4*`, `auditkit_sft4_hard90` |
 | Independent eval | AuditKIT 1.1.3 via `scripts/auditkit_eval.py`, no judge model |
 
 ## Round 3 (2026-11-05) — sft4
@@ -44,7 +44,8 @@ Greedy decoding, `--no-4bit`, zero tool errors in every tuned row.
 | SFT-mix2, round 2 (`sft3`) | 96.67% (29/30) | 75.56% (68/90) | 100% (24/24) |
 | **SFT-mix3 seed 42 (`sft4`, shipped)** | **96.67% (29/30)** | **93.33% (84/90)** | **100% (24/24)** |
 | SFT-mix5 seed 42 (`sft5`, ablation) | 100% (30/30) | 92.22% (83/90) | 100% (24/24) |
-| SFT-mix3 seed 7 (`sft4_seed7`, replication) | 100% (30/30) | 93.33% (84/90) | - |
+| SFT-mix3 seed 7 (`sft4_seed7`) | 100% (30/30) | 93.33% (84/90) | - |
+| SFT-mix3 seed 123 (`sft4_seed123`) | 96.67% (29/30) | 92.22% (83/90) | - |
 | SFT-mix2 seed 7 | 93.33% (28/30) | 83.33% (75/90) | - |
 | SFT-mix2 seed 123 | 80.00% (24/30) | 75.56% (68/90) | - |
 
@@ -127,26 +128,29 @@ The round-2 seed controls (same mix2 recipe, three seeds) put the recipe's own v
 | 123 | 80.00% | 75.56% | 77.78% |
 | spread (max − min) | 16.67 pp | 7.77 pp | - |
 
-The three seeds above are the mix2 recipe. The mix3 recipe that ships was re-trained under seed 7
-on Kaggle with the identical recipe (188 steps, `train_loss` 0.06614, 77 min) and scored on both
-frozen splits:
+The three seeds above are the mix2 recipe. The mix3 recipe that ships was then trained under two
+more seeds on Kaggle with the identical recipe (seed 7: 188 steps, `train_loss` 0.06614, 77 min;
+seed 123: 76 min) and scored on both frozen splits:
 
-| Mix3 seed | hard-30 | hard-90 | misses on hard-90 |
-|---|---:|---:|---:|
-| 42 (shipped) | 96.67% (29/30) | 93.33% (84/90) | 6 |
-| 7 | 100% (30/30) | 93.33% (84/90) | 6 |
-| paired (42 → 7) | 1 fixed, 0 broken | 1 fixed, 1 broken, p = 1.0 | - |
+| Mix3 seed | hard-30 | hard-90 | mean of the two | misses on hard-90 |
+|---|---:|---:|---:|---:|
+| 42 (shipped) | 96.67% (29/30) | 93.33% (84/90) | 95.00% | 6 |
+| 7 | 100% (30/30) | 93.33% (84/90) | 96.67% | 6 |
+| 123 | 96.67% (29/30) | 92.22% (83/90) | 94.44% | 7 |
+| spread (max − min) | 3.33 pp | 1.11 pp | 2.22 pp | - |
+| paired vs seed 42 | 1 fixed / 0 broken, 0 / 0 | 1 / 1, 2 / 1 | - | p = 1.0 |
 
-This is a replication, not a spread: the same 84/90, with five of the six misses on the same tasks
-(`h9-019`, `-024`, `-029`, `-066`, `-067`) and the same family shape (`convert_sum` 12/15,
-`empty_balance` 15/15, `paraphrase` 15/15, `two_query` 12/15, the other two families 15/15).
-Seed 7 trades one `convert_sum` miss for one `paraphrase` win. Mix2's 7.77 pp spread came from the
-abstention rows, which mix3's contrast pairs appear to stabilise; two seeds cannot prove that, and
-seed 123 of mix3 was not trained (the free GPU budgets ran out), so the claim stays "two seeds
-agree on the headline" and not "the variance is bounded".
+Mix3 is five to seven times tighter than mix2 on the same splits, and five tasks are missed by all
+three seeds (`h9-019`, `-024`, `-029`, `-066`, `-067`), so the error that survives is a property of
+the task, not of the initialisation. What variance is left sits in `convert_sum`: 13/15, 12/15,
+11/15 for seeds 42, 7, 123, while `paraphrase` is 14/15, 15/15, 15/15 and the other four families
+are identical (`settle5` 15/15, `trap_combo` 15/15, `empty_balance` 15/15, `two_query` 12/15 on
+all three). Mix2's 7.77 pp spread came from the abstention rows; mix3's contrast pairs cut it to
+1.11 pp.
 
-Shipping seed 42 stays the rule: it was fixed before any seed run existed, and choosing the best
-seed on the split that gets reported would be selection.
+Shipping seed 42 stays the rule. It was fixed before any seed run existed, and it is also the
+median of the three on the mean of both splits (95.00 against 96.67 and 94.44), so it is not
+selection on the reported split either.
 
 ### AuditKIT (independent scorer, Track 3 toolkit)
 
