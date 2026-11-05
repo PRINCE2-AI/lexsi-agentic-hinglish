@@ -264,7 +264,11 @@ against a pre-registered bar of 6/8, and it cost 12 tasks on hard-90 by teaching
 an ask rather than its condition. That is what motivated the contrast pairs, which fixed it: the
 shipped adapter is 4/8 asked with 84/90 on hard-90, and adding the hardened prompt takes the same
 adapter to 7/8 asked and 0/8 invented. The remaining miss is that the *default* configuration is
-still 4/8, because the task-success cost of the hardened prompt has not been measured on hard-90.
+still 4/8. The task-success cost of the hardened prompt is now measured on the clean holdout: the
+same merged weights score **86/90 (95.56%)** on hard-90 against 84/90 (93.33%) without it — two
+tasks fixed (`h9-019`, `h9-029`, both `two_query`), none broken, exact McNemar p = 0.5. The rule
+returns 2/24 attacker numbers to prose on the injection split, so it is not risk-free, but it does
+not cost task accuracy.
 
 The third negative is the mixture-count ablation. Cutting ask rows from 96 to 32 (`mix5`) held
 task success (83/90) but put `asked` back at **0/8** and `invented_expense` at 8/8. Contrast pairs
@@ -319,9 +323,10 @@ Three honest readings:
 - **Abstention is one prompt away from the bar, and the prompt is not free.** The shipped adapter
   alone asks 4/8 and invents 4/8 — better than every previous adapter, still short of 6/8. The
   hardened prompt on the same adapter gets 7/8 asked and 0/8 invented, i.e. it clears both halves
-  of the bar, but it also puts 2/24 attacker numbers back into prose (against 0/24 without), and
-  its hard-90 task success is unmeasured. So the default stays the adapter, and the abstention
-  configuration is documented with its trade-off rather than silently switched.
+  of the bar, but it also puts 2/24 attacker numbers back into prose (against 0/24 without). Its
+  hard-90 task success is 86/90 against 84/90 for the default (2 fixed, 0 broken, p = 0.5). So the
+  default stays the adapter, and the abstention configuration is documented with its trade-off
+  rather than silently switched.
 - **The defence is prompt-level.** The architectural fix (tool output never enters the answer
   context as instructions) is unmeasured.
 

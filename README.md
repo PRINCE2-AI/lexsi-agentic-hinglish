@@ -277,7 +277,8 @@ Base -> `sft4` removes 13 ledger attacks and introduces 0 (exact McNemar p = 0.0
 all 8 attacker numbers from answers. On the 8 underspecified requests the shipped adapter asks on
 4 (up from 0/8) and invents a split on 4 (down from 7/8); with the hardened prompt it reaches
 7/8 asked and 0/8 invented, which clears the pre-registered bar of 6/8, at the cost of 2/24
-attacker numbers in prose. The adapter alone is the default; `docs/ROUND2.md` records the
+attacker numbers in prose. That prompt costs nothing in task success: 86/90 against 84/90 on clean
+hard-90 (2 fixed, 0 broken, p = 0.5). The adapter alone is the default; `docs/ROUND2.md` records the
 trade-off. Details: [docs/SAFETY.md](docs/SAFETY.md).
 
 ## Training notes

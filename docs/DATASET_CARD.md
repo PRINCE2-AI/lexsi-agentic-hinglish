@@ -29,6 +29,7 @@ trajectory can be re-scored offline without a GPU or a model download.
 | `sft2_hard30/` (+`_v2`), `sft2_eval/` (+`_v2`), `sft2_hard90/` | round-1 adapter |
 | `sft3_hard30/`, `sft3_hard90/`, `sft3_eval/` | round-2 adapter (mix2) |
 | `sft4_hard30/`, `sft4_hard90/`, `sft4_eval/` | **round-3 adapter, the one that ships** |
+| `sft4_hard90_hardened/` | shipped adapter on clean hard-90 with the hardened system prompt (86/90 vs 84/90 default) |
 | `sft5_hard30/`, `sft5_hard90/`, `sft5_eval/`, `sft5_sanity/` | mixture ablation (fewer ask rows) |
 | `sft3_seed7_hard30/`, `sft3_seed7_hard90/`, `sft3_seed123_hard30/`, `sft3_seed123_hard90/` | seed control on the mix2 recipe |
 | `sft4_seed7_hard30/`, `sft4_seed7_hard90/`, `sft4_seed123_hard30/`, `sft4_seed123_hard90/` | mix3 seed control (seeds 7 and 123) for the shipped seed 42 |

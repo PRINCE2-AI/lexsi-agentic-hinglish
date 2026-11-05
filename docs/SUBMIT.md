@@ -9,7 +9,7 @@ independent AuditKIT pass. Everything left is packaging, and packaging is what m
 
 | # | What judges check | Status |
 |---|---|---|
-| 1 | Public repo, runnable, numbers reproducible | done: `python scripts/verify_all.py` → 20/20, no GPU or token; one-click Colab `notebooks/colab_reproduce.ipynb` |
+| 1 | Public repo, runnable, numbers reproducible | done: `python scripts/verify_all.py` → 23/23, no GPU or token; one-click Colab `notebooks/colab_reproduce.ipynb` |
 | 2 | **Live Space demo** with a visible tool trace | **live**: https://huggingface.co/spaces/primce/hinglish-expense-agent (ZeroGPU `zero-a10g`, sft4 adapter, base/tuned switch, injection scenario) |
 | 3 | **HF Article** with metrics, before/after, rationale | **live**: https://huggingface.co/spaces/primce/hinglish-track3-article (static Space; Hub Articles need PRO) |
 | 4 | HF artifacts: adapter + run logs + dataset | adapter (`sft4_adapter`, `sft4_seed7_adapter`, `sft4_seed123_adapter`, `sft5_adapter`, `sft3_seed7/123_adapter`), all run logs, **and the required HF Collection** |
@@ -21,7 +21,7 @@ independent AuditKIT pass. Everything left is packaging, and packaging is what m
 |---|---|
 | "Track says RL, your win is SFT" | "GRPO ran twice: 0/30 in round 1, and 0 tasks fixed / 0 broken on hard-90 in round 2 (p = 1.0) with the abstain reward, 40 steps and lr 3e-6. That zero is measured, diagnosed (`frac_reward_zero_std` 0.8–0.95 at 2 generations) and reported, and round 3 shows the real bottleneck was data coverage, not RL (`docs/ROUND2.md`)." |
 | "30 tasks, 1 seed" | "90-task holdout at 15 per family (93.33%), paired against base at p < 1e-20, and against round 2 at 18 fixed / 2 broken, p = 0.0004. Five seed controls across two recipes. Mix3, the shipped recipe, has three seeds — 96.67 / 100 / 96.67 on hard-30 and 92.22 / 93.33 / 93.33 on hard-90 — an 1.11 pp spread on hard-90, no seed pair significant (p = 1.0), and five tasks all three seeds miss. Mix2's 7.77 pp spread is published too, and it is the contrast that shows what the contrast rows bought." |
-| "Abstention is still 1/8" | "It is 4/8 on the adapter and 7/8 with the hardened prompt (0/8 invented), against a pre-registered 6/8 bar. `attack_ledger` is 0/24 and `attack_answer` is 0/24 on the same runs." |
+| "Abstention is still 1/8" | "It is 4/8 on the adapter and 7/8 with the hardened prompt (0/8 invented), against a pre-registered 6/8 bar. `attack_ledger` is 0/24 and `attack_answer` is 0/24 on the same runs. The hardened prompt is not an accuracy tax either: 86/90 against 84/90 on clean hard-90 (2 fixed, 0 broken, p = 0.5)." |
 | "Your article is a Space, not an HF blog" | "Hub Articles need PRO or a Team org on this account; the static Space renders the same markdown from the same file." |
 
 Say all four out loud before a judge does. The fourth is unwinnable without a subscription, and

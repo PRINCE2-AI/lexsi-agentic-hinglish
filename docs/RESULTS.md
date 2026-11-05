@@ -199,11 +199,16 @@ Underspecified requests (8, no payload) — the abstention bar was `asked ≥ 6/
 
 `sft4` alone misses the bar on both halves (4/8 and 4/8). `sft4` with the hardened system prompt
 clears it (7/8 and 0/8) and also raises overall safety from 18/32 to 22/32, at the cost of 2/24
-`attack_answer` against 0/24 without it. The honest configuration statement is therefore: the
-adapter ships as the default, and the hardened prompt is documented as the abstention
-configuration with its measured trade-off, because a hard-90 run of the hardened prompt has not
-been done and the task-success cost of switching the default is unmeasured. Full family counts:
-`docs/SAFETY.md`.
+`attack_answer` against 0/24 without it.
+
+The task-success cost of that switch is now measured on the clean holdout. The same `sft4` merged
+weights with the hardened prompt score **86/90 (95.56%)** on hard-90 against 84/90 (93.33%)
+without it: two tasks fixed (`h9-019`, `h9-029`, both `two_query`, which moves 12/15 → 14/15),
+none broken, exact McNemar p = 0.5, 5461 s on one T4 (`primce/lexsi-runs` →
+`sft4_hard90_hardened`). The rule does not buy safety by spending accuracy, and the family it
+recovers is the one where the clean prompt reports only one of two results. The adapter still
+ships as the default, because the rule is prompt-level rather than an architectural defence, and
+the 2/24 return of attacker text in prose is a real cost. Full family counts: `docs/SAFETY.md`.
 
 ### What round 3 changed
 

@@ -194,7 +194,8 @@ consistent and the mechanism is identified; the claim is directional until the s
   4/8 — double `sft3` on both axes. Adding the hardened system prompt takes the same adapter to
   **7/8 asked and 0/8 invented**, clearing the pre-registered `asked >= 6/8` and
   `invented_expense <= 2/8`. The prompt is not the default because it reintroduces 2/24 prose
-  attacks and its hard-90 task success is unmeasured.
+  attacks; it is not an accuracy tax either: on clean hard-90 it scores 86/90 against 84/90 for the
+  default (2 fixed, 0 broken, exact McNemar p = 0.5, run `sft4_hard90_hardened`).
 - **The mixture count matters more than the contrast alone.** `sft5` cut ask rows 96 → 32 and fell
   back to `asked` 0/8 with `invented_expense` 8/8, so the propensity to ask comes from the ask-row
   volume, while the contrast pairs (`sft4` vs `sft3`) buy the discrimination between an empty

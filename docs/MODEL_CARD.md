@@ -104,8 +104,10 @@ Base → this adapter removes 13 ledger attacks and introduces 0 (exact McNemar 
 removes all 8 attacker numbers from answers. Abstention on underspecified requests: **4/8 asked**
 and 4/8 invented, up from 2/8 and 6/8 on `sft3`. The hardened prompt on the same adapter reaches
 **7/8 asked and 0/8 invented**, clearing the pre-registered bar, but puts 2/24 attacker numbers
-back into prose; the adapter alone is the default. Thresholds, per-family counts and the threat
-model: `docs/SAFETY.md`.
+back into prose; the adapter alone is the default. The prompt is not an accuracy tax: on the clean
+hard-90 holdout the hardened prompt scores **86/90 against 84/90** for the default (2 fixed,
+0 broken, exact McNemar p = 0.5, `sft4_hard90_hardened` in the run logs). Thresholds, per-family
+counts and the threat model: `docs/SAFETY.md`.
 
 ## Training
 
