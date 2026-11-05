@@ -8,6 +8,28 @@ Live demo: https://huggingface.co/spaces/primce/hinglish-expense-agent (T4, ship
 
 Write-up: https://huggingface.co/spaces/primce/hinglish-track3-article — the full article (numbers, method, safety split, limitations). Hub Articles need PRO, so it is hosted as a free static Space rendered from `docs/hf_article.md`. The submission write-up itself is [`submission/README.md`](submission/README.md).
 
+## Judge's 60-second view
+
+| | Base Tiny Aya (3.35B) | Shipped `sft4_adapter` |
+|---|---:|---:|
+| 30 unseen hard tasks | 3.33% (1/30) | **96.67% (29/30)** |
+| 90 unseen hard tasks | 3.33% (3/90) | **93.33% (84/90)**, Wilson 86.2–96.9% |
+| Tool calls per hard-30 task (oracle: 3.57) | 7.03 | 3.57 |
+| Injection split: attacker money in ledger / answer | 13/24 / 8/24 | **0/24 / 0/24** |
+
+Paired exact McNemar on shared ids: base → shipped **81 fixed, 0 broken** on hard-90 (p < 1e-20)
+and **28 fixed, 0 broken** on hard-30 (p = 7.5e-9). GRPO ran twice and moved nothing (0/0, p = 1.0);
+that null is reported, not hidden, and the gain is attributed to the data mix.
+
+```bash
+git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
+python scripts/verify_all.py    # 20 checks, no GPU, no token
+```
+
+Or run [`notebooks/colab_reproduce.ipynb`](notebooks/colab_reproduce.ipynb): CPU cells in ~2 min,
+one tuned episode on a free T4. Reproduce commands for every number: [docs/RESULTS.md](docs/RESULTS.md).
+
+
 ## Problem statement (Track 3)
 
 The live Track 3 statements are on [hackathon.lexsi.ai/tracks](https://hackathon.lexsi.ai/tracks). This project targets one as primary and measures a second:
@@ -110,7 +132,10 @@ tests/
 
 ## Quickstart
 
-One-click Colab (T4 GPU): [notebooks/colab_grpo.ipynb](notebooks/colab_grpo.ipynb) — fresh clone, verifies the fp16 fix, then baseline and a 2-step GRPO smoke test. The older [colab_starter.ipynb](notebooks/colab_starter.ipynb) still works but trains in float32.
+One-click Colab: [notebooks/colab_reproduce.ipynb](notebooks/colab_reproduce.ipynb) — cells 1–4
+run every offline check on a free CPU runtime in ~2 minutes; cells 6–8 load the shipped adapter on
+a T4 and score one frozen held-out task. `notebooks/colab_grpo.ipynb` is the older walkthrough of
+the GRPO smoke test, kept for history.
 
 Pure-Python checks (Windows/macOS/Linux, no GPU, no model download):
 
@@ -120,7 +145,7 @@ python scripts/verify_all.py
 
 That single command regenerates the hard, hard-90 and safety splits, checks every SHA-256 pin,
 runs every test suite, replays the oracle and runs the AuditKIT adapter tests. It prints
-`all 19 checks passed` when the dataset and the scoring are consistent.
+`all 20 checks passed` when the dataset and the scoring are consistent.
 
 
 ### Tiny Aya access
@@ -267,10 +292,13 @@ Live: https://huggingface.co/spaces/primce/hinglish-expense-agent — built from
 `python scripts/deploy_space.py --repo primce/hinglish-expense-agent`. The Space needs a GPU
 (T4 small is enough); it defaults to the shipped `sft4_adapter`.
 
-1. Push the whole repo to a Space and set `app_file: space/app.py` in the Space README.
-2. Push `space/` plus `hinglish_agent/` to the Space (keep the same relative layout) and use `space/app.py` as the app file.
+The demo has a **mode switch** (shipped adapter / base model / shipped + hardened prompt) that
+toggles `disable_adapter()` on one loaded model, and a **scenario switch** that loads the frozen
+safety tasks (`s-001` injection, `s-025` underspecified) next to the normal split. Every run prints
+the tool trace, the final ledger and a verdict from the same scoring code as the eval.
 
-Set `MODEL_ID` and, for the tuned demo, `ADAPTER_ID=<you>/tiny-aya-hinglish-lora`. Deploy two Spaces (base and tuned) or show the before/after table in the model card.
+Set `MODEL_ID` and `ADAPTER_ID=<you>/tiny-aya-hinglish-lora`; `python scripts/check_demo_space.py`
+verifies the handlers offline.
 
 ## Submission checklist (Track 3)
 

@@ -121,7 +121,7 @@ the default; the trade-off is recorded in `docs/ROUND2.md`.
 
 ```bash
 git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
-python scripts/verify_all.py      # 19 checks: pins, oracle 30/30, safety, contrast, reward, stats, AuditKIT adapter
+python scripts/verify_all.py      # 20 checks: pins, oracle 30/30, safety, contrast, reward, stats, AuditKIT adapter, demo handlers
 ```
 
 On a T4 (one GPU is enough):
