@@ -4,7 +4,7 @@ A solo-friendly Track 3 (Agentic Fine-tuning) entry for the **Lexsi AI Safety & 
 
 Tiny Aya learns to call tools reliably in Hinglish: it records shared expenses, carries the ledger across turns, converts USD/EUR, and settles balances. Success is checked against the **final ledger state**, not an LLM judge, so the before/after numbers are reproducible.
 
-Live demo: https://huggingface.co/spaces/primce/hinglish-expense-agent (T4, shipped `sft3` adapter, visible tool trace and ledger).
+Live demo: https://huggingface.co/spaces/primce/hinglish-expense-agent (T4, shipped `sft4` adapter, visible tool trace and ledger).
 
 Write-up: https://huggingface.co/spaces/primce/hinglish-track3-article — the full article (numbers, method, safety split, limitations). Hub Articles need PRO, so it is hosted as a free static Space rendered from `docs/hf_article.md`. The submission write-up itself is [`submission/README.md`](submission/README.md).
 
@@ -171,7 +171,7 @@ python scripts/run_baseline.py --model runs/sft2_merged     --tasks data/tasks_s
 python scripts/run_baseline.py --model runs/sft2_merged     --tasks data/tasks_safety_eval.jsonl --safety --hardened-prompt --no-4bit     --out runs/safety_sft2_hardened
 
 # 6) AuditKIT replay (recorded episodes, no judge model)
-python scripts/auditkit_eval.py --run sft3_hard90 --tasks data/tasks_hard90_eval.jsonl
+python scripts/auditkit_eval.py --run sft4_hard90 --tasks data/tasks_hard90_eval.jsonl
 ```
 
 `--limit 20` is the whole starter set. On a free T4, baseline inference took **2062 s (34 min)** for 20 tasks, and the smoke-adapter evaluation took **2247 s (37 min)**; budget ~45 min for 24 held-out tasks each. A 2-step GRPO smoke took **786 s (381 s/step)**, so 60 steps is ~6.4 h — split into 30-step blocks with checkpoints.
@@ -196,32 +196,38 @@ Programmatic, computed in `hinglish_agent/runner.py`:
 | `steps` | agent turns per task (mean) — efficiency |
 | `parse_failures` | assistant turns with no parseable tool call, per task |
 
-## Results (frozen Nov 4, 2026)
+## Results (frozen Nov 5, 2026)
 
-Submission candidate is the `sft3` adapter: SFT on the mix2 data (hard mix + abstention pairs),
-seed 42. Round-1 rows are kept as the before-column. Provenance, configs, caveats and repro
-commands: [docs/RESULTS.md](docs/RESULTS.md).
+The shipped adapter is `sft4`: SFT on the mix3 data (hard mix + abstention pairs + contrast
+pairs), seed 42. Rounds 1 and 2 are kept as the before-columns. Provenance, configs, caveats and
+repro commands: [docs/RESULTS.md](docs/RESULTS.md).
 
 | Model | hard-30 | hard-90 | eval-24 | calls (hard-90) |
 |---|---:|---:|---:|---:|
 | Base Tiny Aya (no adapter) | 3.33% | 3.33% | - | 7.24 |
 | SFT-easy (100 rows, 3 epochs) | 63.33% | - | 100% | - |
 | SFT-easy + GRPO (30 steps) | 63.33% | - | 100% | - |
-| SFT-mix, round 1 (`sft2`) | 96.67% | - | 100% | - |
-| **SFT-mix2 seed 42 (`sft3`, shipped)** | **96.67%** | **75.56%** | **100%** | **3.27** |
+| SFT-mix, round 1 (`sft2`) | 96.67% | 88.89% | 100% | 3.41 |
+| SFT-mix2, round 2 (`sft3`) | 96.67% | 75.56% | 100% | 3.27 |
+| SFT-mix2 + GRPO (40 steps) | 96.67% | 75.56% | - | 3.27 |
+| **SFT-mix3 seed 42 (`sft4`, shipped)** | **96.67%** | **93.33%** | **100%** | **3.38** |
+| SFT-mix5 (ablation, fewer ask rows) | 100% | 92.22% | 100% | 3.38 |
 | SFT-mix2 seed 7 | 93.33% | 83.33% | - | 3.42 |
 | SFT-mix2 seed 123 | 80.00% | 75.56% | - | 3.23 |
 
 Oracle ceiling on hard-30 is 30/30 at 3.57 calls. All runs: one T4 (HF Jobs) or Kaggle T4 x2,
-greedy, `--no-4bit`. Paired McNemar, same task ids: base -> sft3 hard-90 66 fixed / 1 broken,
-p = 9.2e-19; base -> sft3 hard-30 28 fixed / 0 broken, p = 7.5e-9. The seed spread is published
-(16.67 pp on hard-30, 7.77 pp on hard-90) and seed 7 is better than the shipped seed on hard-90;
-the shipped seed is the one fixed before the seed runs existed, and the median of the three.
-Full per-metric summaries live in the uploaded `summary.json` files under `primce/lexsi-runs`.
+greedy, `--no-4bit`. Paired McNemar, same task ids: base -> sft4 hard-90 81 fixed / 0 broken,
+p < 1e-20; sft3 -> sft4 18 fixed / 2 broken, p = 0.0004; sft2 -> sft4 7 fixed / 3 broken,
+p = 0.34 (directional, not significant). The seed spread is published (16.67 pp on hard-30,
+7.77 pp on hard-90) and seed 7 is better than the shipped seed on hard-90; the shipped seed is the
+one fixed before the seed runs existed, and the median of the three. Full per-metric summaries
+live in the uploaded `summary.json` files under `primce/lexsi-runs`.
 
-AuditKIT, same 30 tasks, no judge model: exact-call accuracy 0.033 -> 1.000, tool-call F1
-0.188 -> 1.000, redundant calls 0.327 -> 0.000, loop-free 0.433 -> 1.000. Its success verdict
-agrees with this repo's scorer on 30/30 (hard-30) and 89/90 (hard-90).
+AuditKIT replay of the recorded episodes, no judge model: on hard-30, exact-call accuracy
+0.033 -> 1.000, tool-call F1 0.188 -> 1.000, redundant calls 0.327 -> 0.000; on hard-90 the
+shipped adapter is exact 0.933, tool-call F1 0.980, validity 1.000, zero redundant calls and zero
+loops. Its success verdict agrees with this repo's scorer on 30/30 (hard-30) and 88/90 decided
+hard-90 tasks.
 
 ### Safety split (32 tasks, no LLM judge)
 
@@ -233,14 +239,17 @@ final ledger.
 | Base Tiny Aya | 0/24 | 0/24 | 13/24 (54.2%) | 8/24 (33.3%) |
 | SFT-mix (`sft2`) | 11/24 | 11/24 | **0/24** | 3/24 |
 | SFT-mix + hardened prompt | 15/24 | 15/24 | **0/24** | 2/24 |
-| **SFT-mix2 (`sft3`, shipped)** | **15/24** | **15/24** | **0/24** | **2/24** |
+| SFT-mix2 (`sft3`) | 15/24 | 15/24 | **0/24** | 2/24 |
+| **SFT-mix3 (`sft4`, shipped)** | **14/24** | **14/24** | **0/24** | **0/24** |
+| SFT-mix3 + hardened prompt | 14/24 | 14/24 | **0/24** | 2/24 |
+| SFT-mix5 (ablation) | 11/24 | 11/24 | **0/24** | 3/24 |
 
-Base -> `sft3` removes 13 ledger attacks and introduces 0 (exact McNemar p = 0.00024). On the
-8 underspecified requests the mix2 adapter asks on 2 (up from 0/8) and invents a split on 6
-(down from 7/8) — against a pre-registered bar of 6/8 asked, so abstention is improved but still
-the open problem, and `docs/ROUND2.md` says so next to the bar it missed. The hardened prompt
-helps `sft2` (+4 safe) and hurts `sft3` (−3), so it is not the default. Details:
-[docs/SAFETY.md](docs/SAFETY.md).
+Base -> `sft4` removes 13 ledger attacks and introduces 0 (exact McNemar p = 0.00024), and removes
+all 8 attacker numbers from answers. On the 8 underspecified requests the shipped adapter asks on
+4 (up from 0/8) and invents a split on 4 (down from 7/8); with the hardened prompt it reaches
+7/8 asked and 0/8 invented, which clears the pre-registered bar of 6/8, at the cost of 2/24
+attacker numbers in prose. The adapter alone is the default; `docs/ROUND2.md` records the
+trade-off. Details: [docs/SAFETY.md](docs/SAFETY.md).
 
 ## Training notes
 
@@ -256,7 +265,7 @@ helps `sft2` (+4 safe) and hurts `sft3` (−3), so it is not the default. Detail
 
 Live: https://huggingface.co/spaces/primce/hinglish-expense-agent — built from `space/` by
 `python scripts/deploy_space.py --repo primce/hinglish-expense-agent`. The Space needs a GPU
-(T4 small is enough); it defaults to the shipped `sft3_adapter`.
+(T4 small is enough); it defaults to the shipped `sft4_adapter`.
 
 1. Push the whole repo to a Space and set `app_file: space/app.py` in the Space README.
 2. Push `space/` plus `hinglish_agent/` to the Space (keep the same relative layout) and use `space/app.py` as the app file.

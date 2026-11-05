@@ -15,15 +15,16 @@ final ledger, so the answer can be checked against the money it moved.
 | Run | 30 unseen hard tasks | 90 unseen hard tasks |
 |---|---:|---:|
 | Base Tiny Aya, prompt-only | 3.33% (1/30) | 3.33% (3/90) |
-| **Shipped adapter (`sft3_adapter`)** | **96.67% (29/30)** | **75.56% (68/90)** |
+| **Shipped adapter (`sft4_adapter`)** | **96.67% (29/30)** | **93.33% (84/90)** |
 
 The base model's single hard-30 "success" invented an 800 INR expense; the adapter's runs have zero
 tool errors, zero redundant calls and 3.57 calls per task, the same count as the oracle. The repo
 also ships a 32-task indirect-injection eval scored without an LLM judge: base writes attacker money
-in 13/24 tasks, the adapter in 0/24 (exact McNemar p = 0.00024).
+in 13/24 tasks and repeats the attacker number in 8/24 answers; the adapter is 0/24 and 0/24
+(exact McNemar on the ledger p = 0.00024).
 
 Defaults: `MODEL_ID=CohereLabs/tiny-aya-global`, `ADAPTER_ID=primce/tiny-aya-hinglish-lora`,
-`ADAPTER_SUBFOLDER=sft3_adapter`. Set `ADAPTER_ID` to an empty value to demo the base model instead;
+`ADAPTER_SUBFOLDER=sft4_adapter`. Set `ADAPTER_ID` to an empty value to demo the base model instead;
 set `ADAPTER_SUBFOLDER` to empty when the adapter sits at the repo root.
 
 First message on a cold Space takes 2–3 minutes: the 3.35B model and the adapter load on the first

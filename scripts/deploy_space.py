@@ -7,7 +7,7 @@ A Space needs `app.py`, `README.md`, `requirements.txt` at the repo root and the
     python scripts/deploy_space.py --repo primce/hinglish-expense-agent
 
 Then open the Space settings, pick a GPU (T4 small is enough), and wait for the build.
-The app defaults to the shipped `sft3_adapter` (`ADAPTER_SUBFOLDER`); set `ADAPTER_ID` to an
+The app defaults to the shipped `sft4_adapter` (`ADAPTER_SUBFOLDER`); set `ADAPTER_ID` to an
 empty value in the Space variables to demo the base model instead.
 """
 

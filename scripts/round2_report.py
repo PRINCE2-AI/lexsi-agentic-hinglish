@@ -28,12 +28,24 @@ MAIN = [
     ("sft3_hard30", "SFT-mix2 s42 - hard-30"),
     ("sft3_eval", "SFT-mix2 s42 - eval-24"),
     ("sft3_hard90", "SFT-mix2 s42 - hard-90"),
+    ("sft4_hard30", "SFT-mix3 s42 - hard-30"),
+    ("sft4_eval", "SFT-mix3 s42 - eval-24"),
+    ("sft4_hard90", "SFT-mix3 s42 - hard-90"),
+    ("sft4_seed123_hard30", "SFT-mix3 s123 - hard-30"),
+    ("sft4_seed123_hard90", "SFT-mix3 s123 - hard-90"),
+    ("sft4_seed7_hard30", "SFT-mix3 s7 - hard-30"),
+    ("sft4_seed7_hard90", "SFT-mix3 s7 - hard-90"),
+    ("sft5_hard30", "SFT-mix5 s42 - hard-30"),
+    ("sft5_eval", "SFT-mix5 s42 - eval-24"),
+    ("sft5_hard90", "SFT-mix5 s42 - hard-90"),
     ("sft3_seed123_hard30", "SFT-mix2 s123 - hard-30"),
     ("sft3_seed123_hard90", "SFT-mix2 s123 - hard-90"),
     ("sft3_seed7_hard30", "SFT-mix2 s7 - hard-30"),
     ("sft3_seed7_hard90", "SFT-mix2 s7 - hard-90"),
     ("grpo3_hard30", "SFT-mix2 + GRPO - hard-30"),
     ("grpo3_hard90", "SFT-mix2 + GRPO - hard-90"),
+    ("grpo4_hard30", "SFT-mix3 + GRPO-4 - hard-30"),
+    ("grpo4_hard90", "SFT-mix3 + GRPO-4 - hard-90"),
 ]
 
 SAFETY = [
@@ -41,19 +53,29 @@ SAFETY = [
     ("safety_sft2", "SFT-mix"),
     ("safety_sft3", "SFT-mix2"),
     ("safety_sft3_hardened", "SFT-mix2 + hardened prompt"),
-    ("grpo3_safety", "SFT-mix2 + GRPO"),
+    ("safety_sft4", "SFT-mix3"),
+    ("safety_sft4_hardened", "SFT-mix3 + hardened prompt"),
+    ("safety_sft5", "SFT-mix5"),
+    ("safety_grpo3", "SFT-mix2 + GRPO"),
+    ("safety_grpo4", "SFT-mix3 + GRPO-4"),
 ]
 
 PAIRS = [
-    ("base_hard90", "sft3_hard90", "base -> SFT-mix2 on hard-90"),
+    ("base_hard90", "sft4_hard90", "base -> SFT-mix3 on hard-90"),
     ("sft2_hard90", "sft3_hard90", "SFT-mix -> SFT-mix2 on hard-90"),
-    ("sft3_hard30", "grpo3_hard30", "GRPO on hard-30"),
-    ("sft3_hard90", "grpo3_hard90", "GRPO on hard-90"),
+    ("sft2_hard90", "sft4_hard90", "SFT-mix -> SFT-mix3 on hard-90"),
+    ("sft3_hard90", "sft4_hard90", "SFT-mix2 -> SFT-mix3 on hard-90"),
+    ("sft4_hard90", "sft5_hard90", "contrast pairs only -> fewer ask rows on hard-90"),
+    ("sft3_hard30", "grpo3_hard30", "GRPO on hard-30 (2 generations)"),
+    ("sft3_hard90", "grpo3_hard90", "GRPO on hard-90 (2 generations)"),
+    ("sft4_hard90", "grpo4_hard90", "GRPO-4 on hard-90 (4 generations)"),
 ]
 
 SEED_RUNS = {
-    "hard-30": ["sft3_hard30", "sft3_seed123_hard30", "sft3_seed7_hard30"],
-    "hard-90": ["sft3_hard90", "sft3_seed123_hard90", "sft3_seed7_hard90"],
+    "hard-30 (mix2)": ["sft3_hard30", "sft3_seed123_hard30", "sft3_seed7_hard30"],
+    "hard-90 (mix2)": ["sft3_hard90", "sft3_seed123_hard90", "sft3_seed7_hard90"],
+    "hard-30 (mix3)": ["sft4_hard30", "sft4_seed123_hard30", "sft4_seed7_hard30"],
+    "hard-90 (mix3)": ["sft4_hard90", "sft4_seed123_hard90", "sft4_seed7_hard90"],
 }
 
 AUDITKIT = [
@@ -62,6 +84,7 @@ AUDITKIT = [
     ("auditkit_sft2_hard90", "SFT-mix - hard-90"),
     ("auditkit_sft3_hard30", "SFT-mix2 - hard-30"),
     ("auditkit_sft3_hard90", "SFT-mix2 - hard-90"),
+    ("auditkit_sft4_hard90", "SFT-mix3 - hard-90"),
 ]
 
 
@@ -201,7 +224,7 @@ def auditkit_table() -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--local", action="store_true", help="do not touch the network")
-    parser.add_argument("--family", default="sft3_hard90", help="run whose family table prints")
+    parser.add_argument("--family", default="sft4_hard90", help="run whose family table prints")
     args = parser.parse_args()
 
     if not args.local:

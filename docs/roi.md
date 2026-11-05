@@ -81,7 +81,8 @@ break_even_cost_ratio = self_host_cost_per_request / api_cost_per_request
 
 - API: \$0.00797 per request.
 - Self-host at base latency: \$0.00787 per request -> 0.99x the API, with 3.33% success. No reason to run it.
-- Self-host at tuned latency: \$0.00534 per request -> **0.67x the API, at 96.67% success.**
+- Self-host at tuned latency: \$0.00534 per request -> **0.67x the API, at 96.67% success on
+  hard-30 (93.33% on hard-90 for the shipped `sft4`).**
 
 Break-even monthly volume only matters if there is a fixed cost (dedicated GPU reservation,
 monitoring, engineering). With a serverless GPU there is none, so the decision is the per-request

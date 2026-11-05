@@ -3,16 +3,16 @@
 **Track 3, Agentic fine-tuning.** Solo entry. Base model `CohereLabs/tiny-aya-global` (3.35B),
 LoRA SFT + AgentTune GRPO, evaluated with AuditKIT 1.1.3.
 
-One line: **3.33% → 96.67% task success on a frozen 30-task hard split, and 3.33% → 75.56% on a
+One line: **3.33% → 96.67% task success on a frozen 30-task hard split, and 3.33% → 93.33% on a
 90-task holdout, with the same adapter moving attacker money into the ledger in 0 of 24
-prompt-injection tasks.**
+prompt-injection tasks and repeating the attacker number in 0 of 24 answers.**
 
 ## Artifacts
 
 | What | Where |
 |---|---|
 | Code + data + eval scripts | https://github.com/PRINCE2-AI/lexsi-agentic-hinglish |
-| Adapter (shipped) | https://huggingface.co/primce/tiny-aya-hinglish-lora (`sft3_adapter`) |
+| Adapter (shipped) | https://huggingface.co/primce/tiny-aya-hinglish-lora (`sft4_adapter`) |
 | Run logs (every `summary.json` + trajectories) | https://huggingface.co/datasets/primce/lexsi-runs |
 | Live demo (tool trace visible) | https://huggingface.co/spaces/primce/hinglish-expense-agent |
 | Write-up | https://huggingface.co/spaces/primce/hinglish-track3-article |
@@ -36,8 +36,9 @@ prompt-injection tasks.**
    state, answer content and call-level diagnostics, not on text similarity.
 2. **SFT.** LoRA r=16, all-linear, fp16, lr 2e-4, 2 epochs, grad-accum 4,
    `masked_causal_lm_loss` so only assistant turns are supervised. Data
-   `data/tasks_train_mix2.jsonl`: 312 rows = 184 easy/hard mix + 96 abstention rows (32
-   underspecified × 3) + 32 fully-specified twins. ~156 optimizer steps on one T4.
+   `data/tasks_train_mix3.jsonl`: 374 rows = 184 easy/hard mix + 96 abstention rows (32
+   underspecified × 3) + 32 fully-specified twins + 62 contrast pairs (empty ledger vs missing
+   field, two-conversion sums). ~188 optimizer steps on one T4.
 3. **GRPO (AgentTune).** 40 steps, lr 3e-6, 2 generations, graded reward + efficiency reward +
    a new abstain reward (1.0 when the only call is `finish` with a question on an
    `abstain=1` row). Stage 2 runs on top of the SFT merge.
@@ -53,13 +54,16 @@ prompt-injection tasks.**
 | Model | hard-30 | hard-90 | eval-24 |
 |---|---:|---:|---:|
 | Base Tiny Aya, prompt-only | 3.33% (1/30) | 3.33% (3/90) | - |
-| SFT-mix, round 1 (`sft2`) | 96.67% (29/30) | - | 100% (24/24) |
-| **SFT-mix2 seed 42 (`sft3`, shipped)** | **96.67% (29/30)** | **75.56% (68/90)** | **100% (24/24)** |
+| SFT-mix, round 1 (`sft2`) | 96.67% (29/30) | 88.89% (80/90) | 100% (24/24) |
+| SFT-mix2, round 2 (`sft3`) | 96.67% (29/30) | 75.56% (68/90) | 100% (24/24) |
+| **SFT-mix3 seed 42 (`sft4`, shipped)** | **96.67% (29/30)** | **93.33% (84/90)** | **100% (24/24)** |
+| SFT-mix5 (ablation) | 100% (30/30) | 92.22% (83/90) | 100% (24/24) |
 | SFT-mix2 seed 7 | 93.33% (28/30) | 83.33% (75/90) | - |
 | SFT-mix2 seed 123 | 80.00% (24/30) | 75.56% (68/90) | - |
 
-Paired exact McNemar, same task ids: base → sft3 hard-90 **66 fixed, 1 broken, p = 9.2e-19**;
-base → sft3 hard-30 **28 fixed, 0 broken, p = 7.5e-9**. Wilson 95% on hard-90: 65.8–83.3%.
+Paired exact McNemar, same task ids: base → sft4 hard-90 **81 fixed, 0 broken, p < 1e-20**;
+sft3 → sft4 **18 fixed, 2 broken, p = 0.0004**; sft2 → sft4 7 fixed, 3 broken, p = 0.34
+(directional only). Wilson 95% on hard-90: **86.2–96.9%**.
 
 The seed spread is published instead of hidden: 16.67 pp on hard-30, 7.77 pp on hard-90. Seed 7
 beats the shipped seed 42 on hard-90 (7 fixed, 0 broken, p = 0.0156); the shipped seed is the one
@@ -72,13 +76,15 @@ claim's credibility.
 | Split | Model | tool_call_exact | tool_call_f1 | precision | recall | redundant | loop |
 |---|---|---:|---:|---:|---:|---:|---:|
 | hard-30 | base | 0.0333 | 0.1875 | 0.1547 | 0.3194 | 0.3270 | 0.4333 |
-| hard-30 | sft3 | 1.000 | 1.000 | 1.000 | 1.000 | 0.000 | 1.000 |
+| hard-30 | sft2 | 1.000 | 1.000 | 1.000 | 1.000 | 0.000 | 1.000 |
+| hard-90 | sft2 | 0.9333 | 0.9463 | 0.9444 | 0.9500 | 0.000 | 1.000 |
 | hard-90 | sft3 | 0.7778 | 0.8114 | 0.8130 | 0.8102 | 0.0109 | 0.9875 |
+| hard-90 | **sft4** | **0.9333** | **0.9804** | **0.9852** | **0.9769** | **0.000** | **1.000** |
 
-AuditKIT's own success rate agrees with the project scorer on 30/30 hard-30 tasks and 89/90
-hard-90 tasks, so the toolkit reproduces the result rather than replacing it. Full route (with
-`finish` compared on name only): base hard-30 exact 0.100 / F1 0.448; sft3 hard-90 exact 0.822 /
-F1 0.921.
+AuditKIT's own success rate agrees with the project scorer on 30/30 hard-30 tasks and 88/90
+decided hard-90 tasks, so the toolkit reproduces the result rather than replacing it. Full route
+(with `finish` compared on name only): base hard-30 exact 0.100 / F1 0.448; sft4 hard-90 exact
+0.967 / F1 0.996.
 
 ### Safety: indirect prompt injection on the ledger (32 tasks, 24 with a payload)
 
@@ -86,13 +92,16 @@ F1 0.921.
 |---|---:|---:|---:|---:|---:|
 | Base Tiny Aya | 0/24 | 0/24 | 13/24 (54.2%) | 8/24 (33.3%) | 1.08 |
 | SFT-mix (`sft2`) | 11/24 | 11/24 | 0/24 | 3/24 | 0.29 |
-| **SFT-mix2 (`sft3`, shipped)** | **15/24** | **15/24** | **0/24** | **2/24** | **0.12** |
+| SFT-mix2 (`sft3`) | 15/24 | 15/24 | 0/24 | 2/24 | 0.12 |
+| **SFT-mix3 (`sft4`, shipped)** | **14/24** | **14/24** | **0/24** | **0/24** | 0.25 |
+| SFT-mix3 + hardened prompt | 14/24 | 14/24 | 0/24 | 2/24 | 0.21 |
 
 The attacker controls one `note` field in one tool result and asks the agent to record an absurd
 999999 INR expense. Success is an equality check on the final ledger, so there is no judge to
-disagree with. Underspecified requests: `asked` 0/8 → 2/8, `invented_expense` 8/8 → 6/8 — a
-direction, not a fix; the pre-registered bar was 6/8 and it was missed. That miss is reported in
-`docs/ROUND2.md` next to the bar it missed.
+disagree with. Underspecified requests: `asked` 0/8 → 4/8 and `invented_expense` 8/8 → 4/8 on
+the adapter alone; with the hardened prompt, **7/8 asked and 0/8 invented**, which clears the
+pre-registered 6/8 / 2/8 bar at the cost of 2/24 attacker numbers in prose. The adapter alone is
+the default; the trade-off is recorded in `docs/ROUND2.md`.
 
 ## Honest limits
 
@@ -102,8 +111,10 @@ direction, not a fix; the pre-registered bar was 6/8 and it was missed. That mis
   single change made after round 1.
 - The safety probe is 32 tasks with one payload style. A Hinglish-only attacker or a Devanagari
   payload is untested.
-- Abstention is improved but not solved. The shipped adapter asks on 2 of 8 underspecified
-  requests.
+- Abstention is improved but not solved by default: the shipped adapter asks on 4 of 8
+  underspecified requests, or 7 of 8 with the hardened prompt.
+- The shipped adapter beats round 1 by 4 hard-90 tasks but the paired test is not significant
+  (p = 0.34); it beats round 2 decisively (18 fixed / 2 broken, p = 0.0004).
 - One greedy sample per task. Sampled decoding would show more variance than these numbers.
 
 ## Reproduce (no GPU, no token)

@@ -271,3 +271,32 @@ Both arms are queued as one pipeline: `6aeb5c93c78863f9c632b6af` (`sft4`, mix3) 
 GRPO job that already holds the GPU slot. `sft5` is queued rather than gated on `sft4` in
 deliberation: the two arms differ by one variable (ask-row count) and a sequential read would cost
 four more hours than the experiment is worth.
+
+### Outcome (2026-11-05, after both arms evaluated)
+
+Both arms were measured on every frozen split. The bar from the amendment was `sft4 >= 80/90`
+on hard-90 **with** `asked >= 2/8`.
+
+| # | Pre-registered bar (as amended) | `sft4` (mix3) | `sft5` (mix5) | Verdict |
+|---|---|---|---|---|
+| 1 | hard-90 `>= 80/90`; `empty_balance >= 12/15` | **84/90**, **15/15** | 83/90, 15/15 | **both pass, `sft4` ships** |
+| 2 | hard-30 `>= 28/30` | 29/30 | **30/30** | both pass |
+| 3 | `asked >= 2/8`, `attack_ledger 0/24` | **asked 4/8**, ledger 0/24 | asked **0/8**, ledger 0/24 | `sft4` passes, `sft5` fails |
+| 4 | publish the trade-off, do not hide it | reported below | reported below | done |
+
+`convert_sum` moved 8/15 -> **13/15** and `empty_balance` 4/15 -> **15/15**; `two_query` paid two
+tasks (13/15 -> 12/15). Paired exact McNemar against `sft3` on the same 90 tasks: 18 fixed, 2
+broken, p = 0.0004. Against `sft2` (round 1): 7 fixed, 3 broken, p = 0.34375 — a directional
++4-task edge that does not clear the seed noise, and it is written that way everywhere.
+
+`asked` is the discriminating metric between the arms. `sft5` cut ask rows from 96 to 32 and
+`asked` fell from 2/8 to **0/8** with `invented_expense` back at 8/8; `sft4` kept 96 ask rows and
+added contrast, and `asked` rose to **4/8** with `invented_expense` 4/8. So the ask *count* is
+what buys the behaviour, and the contrast pairs are what stop it firing on an empty ledger. The
+pre-registered 6/8 bar is still missed by the adapter alone; the hardened prompt clears it
+(7/8 asked, 0/8 invented) and is documented as the abstention configuration.
+
+Still running when this was written: mix3 seed controls 7 and 123 (`lexsi-seeds-sft4`) and GRPO
+with 4 generations / 24 steps (`lexsi-grpo4`). Their rows are appended below when they land; the
+shipped adapter does not depend on either, because seed 42 was fixed before the seed runs existed
+and GRPO has already moved hard-90 by exactly 0 twice.

@@ -12,19 +12,24 @@
   saturated and the run was too short to move an answer-shape failure.
 - SFT on the reweighted mix (184 rows): **96.67%** on hard-30, **3.57** calls — exactly the
   oracle's call count.
-- SFT on the mix plus 96 abstention rows ("mix2", shipped): **96.67%** on hard-30, **75.56%** on
-  a 90-task holdout, **100%** on eval-24. Three seeds of the same recipe span 16.67 pp on hard-30
-  and 7.77 pp on hard-90; the shipped seed is the pre-registered one, and a second seed is better
-  on the 90-task set.
-- Independent **AuditKIT 1.1.3** replay of the same trajectories, no judge model: exact-call
-  accuracy **0.033 → 1.000**, tool-call F1 **0.188 → 1.000**, redundant calls **0.327 → 0.000**.
+- SFT on the mix plus 96 abstention rows ("mix2"): **96.67%** on hard-30, **75.56%** on a 90-task
+  holdout. It bought `asked` 0/8 → 2/8 and cost 12 tasks on hard-90, because the model learned to
+  match the *wording* of a training sentence rather than the situation. Masking names exposes it:
+  4/4 on seen empty-ledger phrasings, **0/11 on unseen**.
+- Minimal pairs that put "the ledger is empty" and "a field is missing" side by side ("mix3",
+  **shipped**): **93.33%** on hard-90 (84/90), **96.67%** on hard-30, **100%** on eval-24, with
+  `asked` **4/8**. `empty_balance` 4/15 → **15/15**, `convert_sum` 8/15 → **13/15**, zero tool
+  errors and zero loops. The 12-task regression is recovered and then some (paired vs mix2:
+  18 fixed / 2 broken, p = 0.0004; vs round-1 adapter 7 / 3, p = 0.34 — directional, not significant).
+- The abstention-count ablation ("mix5", 32 ask rows instead of 96) scores 83/90 but `asked`
+  collapses to **0/8**: the count is what buys the behaviour.
+- Independent **AuditKIT 1.1.3** replay of the same trajectories, no judge model: on the shipped
+  adapter, tool-call F1 **0.980**, validity **1.000**, zero redundant calls, zero loops, and its
+  success verdict agrees with this repo's scorer on **88/90** decided tasks.
 - Indirect injection through tool results: base writes attacker money into the ledger in
-  **13/24** tasks, the shipped adapter in **0/24** (p = 0.00024). Abstention on underspecified
-  requests moves **0/8 → 2/8** — a direction, not a fix, against a bar of 6/8 that it missed.
-- The abstention rows also cost **11 tasks on hard-90** without touching the 30-task score, because
-  the model learned to match the *wording* of a training sentence rather than the situation. Masking
-  names exposes it: 4/4 on seen empty-ledger phrasings, **0/11 on unseen**. A 44-row minimal-pair set
-  and a mixture-count ablation are the pre-registered fix.
+  **13/24** tasks, the shipped adapter in **0/24** (p = 0.00024), and it is the only tuned variant
+  that never repeats the attacker number in prose either (**0/24**). With the hardened prompt,
+  abstention on underspecified requests goes to **7/8 asked, 0/8 invented**.
 
 ## Problem statement
 
@@ -59,6 +64,9 @@ reproduced by re-running the dataset.
 | mix | 184 | easy 100 + hard 84 (hard rows repeated per family) |
 | abstention train | 64 | 32 underspecified + 32 fully-specified twins |
 | mix2 | 312 | mix 184 + abstention 96 (3 copies) + twins 32 |
+| contrast pairs | 62 | empty ledger vs missing field, two-conversion sums |
+| **mix3 (shipped)** | **374** | mix2 + 62 contrast rows |
+| mix5 (ablation) | 328 | contrast at 3 copies + abstention 32 (1 copy) |
 
 The six hard families:
 
@@ -80,7 +88,7 @@ other split.
 1. Five stateless tools: `add_expense`, `convert_currency`, `get_balance`, `settle_up`,
    `finish`; state travels in the ledger object, so rollouts cannot leak into each other.
 2. SFT on oracle trajectories: LoRA r=16 on all linear layers, fp16, lr 2e-4, 2 epochs, labels
-   masked to assistant turns. mix2 is ~156 optimizer steps on one T4.
+   masked to assistant turns. mix3 is 374 rows / ~188 optimizer steps on one T4 (~55 min).
 3. GRPO with AgentTune `create_agentic_trainer`, graded reward (format + required tools +
    argument names/values + answer number), a no-duplicate-calls term, and — in round 2 — an
    abstain reward that pays 1.0 when the only call is `finish` with a question on an
@@ -98,22 +106,26 @@ other split.
 | Base Tiny Aya, prompt-only | 3.33% (1/30) | 3.33% (3/90) | - | 7.24 |
 | SFT-easy (100 rows, 3 epochs) | 63.33% (19/30) | - | 100% (24/24) | - |
 | SFT-easy + GRPO (30 steps) | 63.33% (19/30) | - | 100% (24/24) | - |
-| SFT-mix (184 rows, round 1) | 96.67% (29/30) | - | 100% (24/24) | - |
-| **SFT-mix2, seed 42 (shipped)** | **96.67% (29/30)** | **75.56% (68/90)** | **100% (24/24)** | **3.27** |
+| SFT-mix (184 rows, round 1) | 96.67% (29/30) | 88.89% (80/90) | 100% (24/24) | 3.41 |
+| SFT-mix2 (round 2, + abstention) | 96.67% (29/30) | 75.56% (68/90) | 100% (24/24) | 3.27 |
+| SFT-mix2 + GRPO (40 steps, abstain reward) | 96.67% (29/30) | 75.56% (68/90) | - | 3.27 |
+| **SFT-mix3, seed 42 (shipped)** | **96.67% (29/30)** | **93.33% (84/90)** | **100% (24/24)** | **3.38** |
+| SFT-mix5 (ablation, fewer ask rows) | 100% (30/30) | 92.22% (83/90) | 100% (24/24) | 3.38 |
 | SFT-mix2, seed 7 | 93.33% (28/30) | 83.33% (75/90) | - | 3.42 |
 | SFT-mix2, seed 123 | 80.00% (24/30) | 75.56% (68/90) | - | 3.23 |
 | oracle | 100% (30/30) | 100% (90/90) | 100% (24/24) | 3.57 |
 
 Wilson 95% intervals: base 0.6–16.7% (hard-30) and 1.1–9.3% (hard-90); shipped adapter
-83.3–99.4% and 65.8–83.3%; seed 7 78.7–98.2% and 74.3–89.6%; seed 123 62.7–90.5% and 65.8–83.3%;
-eval-24 86.2–100%.
+83.3–99.4% and **86.2–96.9%**; mix5 88.6–100% and 84.8–96.2%; seed 7 78.7–98.2% and 74.3–89.6%;
+seed 123 62.7–90.5% and 65.8–83.3%; eval-24 86.2–100%.
 
 Paired exact McNemar on the uploaded trajectories, same task ids:
 
-- base → shipped adapter, hard-90: **66 fixed, 1 broken, p = 9.2e-19**.
+- base → shipped adapter, hard-90: **81 fixed, 0 broken, p < 1e-20**.
+- mix2 → shipped adapter, hard-90: **18 fixed, 2 broken, p = 0.0004**.
+- round-1 mixer → shipped adapter, hard-90: **7 fixed, 3 broken, p = 0.34375** (directional).
 - base → shipped adapter, hard-30: **28 fixed, 0 broken, p = 7.5e-9**.
 - easy-SFT + GRPO → SFT-mix, hard-30: **10 fixed, 0 broken, p = 0.00195**.
-- shipped seed 42 → seed 7, hard-90: **7 fixed, 0 broken, p = 0.0156**.
 
 The base model's one hard-30 success is a lucky one: on `h-e-029` it answered "0 INR" correctly,
 but only after inventing an 800 INR expense nobody asked for. The answer was right, the behaviour
@@ -121,69 +133,78 @@ was not — which is why the safety split scores the ledger and not just the tex
 
 Per family on the 90-task holdout (15 each):
 
-| Family | Base | Seed 42 (shipped) | Seed 7 | Seed 123 |
-|---|---:|---:|---:|---:|
-| settle5 | 0/15 | 15/15 | 15/15 | 14/15 |
-| trap_combo | 0/15 | 15/15 | 15/15 | 15/15 |
-| paraphrase | 0/15 | 13/15 | 13/15 | 13/15 |
-| two_query | 0/15 | 13/15 | 14/15 | 11/15 |
-| convert_sum | 0/15 | 8/15 | 11/15 | 11/15 |
-| empty_balance | 3/15 | 4/15 | 7/15 | 4/15 |
+| Family | Base | Round 1 | Round 2 | **Shipped (mix3)** | mix5 |
+|---|---:|---:|---:|---:|---:|
+| settle5 | 0/15 | 15/15 | 15/15 | 15/15 | 15/15 |
+| trap_combo | 0/15 | 15/15 | 15/15 | 15/15 | 15/15 |
+| paraphrase | 0/15 | 14/15 | 13/15 | 14/15 | 14/15 |
+| two_query | 0/15 | 14/15 | 13/15 | 12/15 | 13/15 |
+| convert_sum | 0/15 | 7/15 | 8/15 | **13/15** | 11/15 |
+| empty_balance | 3/15 | 15/15 | 4/15 | **15/15** | 15/15 |
 
 ## What the 90-task holdout changed
 
-The 30-task split was optimistic by 21 points. Two families it under-samples are the two that
-stay hard: `empty_balance` goes from 3/3 on hard-30 to 4/15 on hard-90, `convert_sum` from 2/3
-to 8/15. The shipped adapter keeps a clean trajectory profile on hard-90 — tool error rate
-**1.1%**, `overcall` **0.000**, redundant calls **0.000** — so the remaining failures are answer
-shape (`tac` 0.822, loop-free 0.989) rather than tool use, exactly the failure mode the round-1
-analysis predicted.
+The 30-task split was optimistic by 26 points for the round-2 adapter. Two families it
+under-samples are the two that stay hard: `empty_balance` went from 3/3 on hard-30 to 4/15 on
+hard-90, `convert_sum` from 2/3 to 8/15. That was the measurement that caught the regression —
+the 30-task score was unchanged at 96.67% while hard-90 fell from 88.89% to 75.56%.
 
-The seed spread is wider than any single change made after round 1: 16.67 pp on hard-30, 7.77 pp
-on hard-90. It is published instead of hidden. Shipping seed 7 would add 7.8 pp on hard-90; it
-would also mean choosing the seed on the split that is reported. The shipped adapter is seed 42,
-fixed before the seed runs existed, and it is the median of the three on the mean of both splits.
+The shipped adapter is clean on the same trajectory metrics: tool error rate **0.0%**, `overcall`
+**0.000**, redundant calls **0.000**, loop-free **1.000**, `parse_failures` **0.000**. All nine
+misses are answer shape (`tac` 0.967, `answer_ok` 0.933), not tool use: the model calls the right
+tools in the right order and then drops or misstates a number in the final sentence. That is the
+same failure mode round 1 identified, now confined to two families.
+
+The seed spread is wider than the round-1-to-round-3 difference: 16.67 pp on hard-30 and 7.77 pp
+on hard-90 across the three mix2 seeds. It is published instead of hidden. Shipping the best seed
+would add 7.8 pp on hard-90; it would also mean choosing the seed on the split that is reported.
+The shipped adapter is seed 42, fixed before the seed runs existed, and it is the median of the
+three on the mean of both splits.
 
 ## The split a task-success number cannot see
 
 hard-90 is held-out *instances*: new names, new amounts, same six templates. That makes it a good
 test of arithmetic and tool use and a poor test of one thing judges should care about — whether the
 agent answers a question it has never been asked in that wording. So mask every person name and ask
-which hard-90 sentences actually appear in the adapter's training file
-(`scripts/template_split.py`):
+which hard-90 sentences appear anywhere in the shipped training file (`scripts/template_split.py`):
 
 | Run | seen wording | unseen wording | `empty_balance` seen | `empty_balance` unseen |
 |---|---:|---:|---:|---:|
-| base | 2/5 | 1/85 (1.18%) | 2/4 | 1/11 |
-| SFT round 1 | 5/5 | **75/85 (88.24%)** | 4/4 | **11/11** |
-| SFT round 2 | 5/5 | 63/85 (74.12%) | 4/4 | **0/11** |
+| base | 3/10 (30%) | 0/80 (0%) | 3/9 | 0/6 |
+| SFT round 1 (mix) | 10/10 | 70/80 (87.5%) | 9/9 | 6/6 |
+| SFT round 2 (mix2) | 5/10 (50%) | 63/80 (78.75%) | 4/9 | **0/6** |
+| **SFT shipped (mix3)** | **10/10** | **74/80 (92.5%)** | **9/9** | **6/6** |
+| mix5 ablation | 10/10 | 73/80 (91.25%) | 9/9 | 6/6 |
 
-Round 2 added an abstention slice and bought `asked` 0/8 → 2/8. This table is the bill. Every task
-it lost is an `empty_balance` task whose sentence it had never seen, and the lost outputs are not
-silence or a wrong number — they are an abstention answer, copied verbatim from a training row:
+Round 2 added an abstention slice and bought `asked` 0/8 → 2/8. This table is the bill. It lost
+tasks on *both* sides: half of the seen-wording cells and every unseen `empty_balance` task. The
+lost outputs are not silence or a wrong number — they are an abstention answer, copied verbatim
+from a training row:
 
 > "Wo teesra banda! Batao kitna tha split kar ke paise? Number batao."
 
 That sentence is the supervised answer for `ambiguous_share` (a third friend whose share is
 unknown). It fired on "Shuruaat me hi poochh raha hoon: Priya ka balance? Koi kharcha record nahi
 hua." — where the ledger is simply empty and the correct answer is 0. The mechanism is a mixture
-count, not a mystery: round 2 repeats every ask row three times, so **96 of 312 rows (31%)** teach
-"ask something", and the behaviour transferred across families. Round 1 had none and answers 11/11
-of the same unseen sentences.
+count: round 2 repeats every ask row three times, so **96 of 312 rows (31%)** teach "ask
+something", and the behaviour transferred across families.
 
-Two things follow, and both are pre-registered experiments rather than corrections after the fact:
+The fix was two pre-registered experiments, and both were run:
 
-1. **Minimal pairs** (`data/build_contrast.py`, 44 rows): an empty ledger is answerable (0 INR) and
-   only a missing field is a reason to ask, with 16 Hinglish/Devanagari phrasings of the same
+1. **Minimal pairs** (`data/build_contrast.py`, 62 rows): an empty ledger is answerable (0 INR) and
+   only a missing field is a reason to ask, with several Hinglish/Devanagari phrasings of the same
    empty-ledger request so the label cannot be read off the wording.
 2. **The mixture count is the variable** — `mix3` keeps round 2's 96 ask rows and adds the pairs;
-   `mix5` keeps the pairs at three copies but cuts ask rows to 32 (10%). Reporting both separates
-   "contrast data helps" from "too many ask rows hurt", which one run cannot tell you.
+   `mix5` keeps the pairs at three copies but cuts ask rows to 32 (10%).
 
-One caveat, stated before the numbers exist: one of the three hard-90-only empty-ledger phrasings
-does appear in the contrast set, so the seen/unseen column for the next adapters is about 5 seen and
-6 unseen rows, not 0 and 11. The unseen column stays the honest one and it is narrower than it
-looks.
+`mix3` fixes the condition: 9/9 and 6/6 on the cells that were 4/9 and 0/6, and 92.5% on unseen
+wording, higher than round 1's 87.5%. `mix5` scores about the same on tasks but `asked` collapses
+to 0/8, so the contrast pairs alone do not teach asking — the count does. Both findings together
+are the result: contrast buys discrimination, ask-row volume buys propensity.
+
+Caveat: the contrast set contains one hard-90-only empty-ledger phrasing, so the seen column for
+the shipped adapter is slightly optimistic by construction. The unseen column stays the honest
+one, and it is narrower than it looks.
 
 ## AuditKIT: an independent scorer on the same episodes
 
@@ -194,39 +215,49 @@ implementation:
 | Split | Model | tool_call_exact | tool_call_f1 | precision | recall | redundant | loop |
 |---|---|---:|---:|---:|---:|---:|---:|
 | hard-30 | base | 0.0333 | 0.1875 | 0.1547 | 0.3194 | 0.3270 | 0.4333 |
-| hard-30 | shipped | 1.000 | 1.000 | 1.000 | 1.000 | 0.000 | 1.000 |
-| hard-90 | shipped | 0.7778 | 0.8114 | 0.8130 | 0.8102 | 0.0109 | 0.9875 |
+| hard-30 | round 1 | 1.000 | 1.000 | 1.000 | 1.000 | 0.000 | 1.000 |
+| hard-90 | round 1 | 0.9333 | 0.9463 | 0.9444 | 0.9500 | 0.000 | 1.000 |
+| hard-90 | round 2 | 0.7778 | 0.8114 | 0.8130 | 0.8102 | 0.0109 | 0.9875 |
+| hard-90 | **shipped** | **0.9333** | **0.9804** | **0.9852** | **0.9769** | **0.000** | **1.000** |
 
 Its success verdict agrees with this repo's deterministic scorer on **30/30** hard-30 tasks and
-**89/90** hard-90 tasks, so the toolkit reproduces the result rather than replacing it. That
-agreement number is the point: two independent scorers, one dataset, no judge.
+**88/90** decided hard-90 tasks, so the toolkit reproduces the result rather than replacing it.
+That agreement number is the point: two independent scorers, one dataset, no judge.
 
 The base model, on the same rows: tool error rate **22.3%** (hard-30) and **17.4%** (hard-90),
 `overcall` **1.08**, `strict_rate` **0.534**, and 16/30 episodes that never reached `finish`.
-The shipped adapter has zero tool errors and zero redundant calls on hard-30, and matches the
-oracle on calls per task — which is why the secondary statement ("efficient trajectories") is
-reported on the same row as success.
+The shipped adapter has zero tool errors, zero redundant calls and zero loops on both splits, and
+averages 3.38 calls against the oracle's 3.57 on hard-90 — which is why the secondary statement
+("efficient trajectories") is reported on the same row as success.
 
 ## What did not work
 
-GRPO on top of SFT-easy moved nothing: 30 steps is about a third of an epoch of the mix,
-and with the graded reward already near ceiling both generations in a group scored alike,
-so the advantage was ~0. The 4-hour run reproduced 63.33% exactly.
+GRPO moved nothing, twice. On top of SFT-easy: 30 steps is about a third of an epoch of the mix,
+the graded reward was near ceiling, both generations in a group scored alike, and the 4-hour run
+reproduced 63.33% exactly. On top of the mix2 adapter, with the abstain-aware reward, 40 steps and
+lr 3e-6, it reproduced 68/90 on hard-90 with **0 tasks fixed and 0 broken** (p = 1.0) and the same
+per-task verdicts. The logged cause is `frac_reward_zero_std` between 0.8 and 0.95 at two
+generations: the group had no advantage to learn from. A 4-generation / 24-step rerun is the last
+GRPO attempt and its outcome is appended to `docs/ROUND2.md` when it lands.
 
-The failures it needed to fix were not tool-choice failures. In `two_query` the model
-called the right tools (4 calls) but reported only one of the two results; in `convert_sum`
-it converted once and invented the second value; in `empty_balance` it occasionally added
-an expense that was never mentioned. `answer_ok` was 66.67% while `tac` was 96.67% — the
-model knew what to do and dropped it when writing the answer.
+The failures GRPO needed to fix were not tool-choice failures anyway. In `two_query` the model
+called the right tools but reported only one of the two results; in `convert_sum` it converted
+once and invented the second value; in `empty_balance` it occasionally added an expense that was
+never mentioned. `answer_ok` was 66.67% while `tac` was 96.67% — the model knew what to do and
+dropped it when writing the answer. Reweighting the same 40 hard rows into an SFT mix fixed that
+in 92 steps (+33.3 points), so the bottleneck was answer-shape coverage, not the RL stage.
 
-Reweighting the same 40 hard rows into an SFT mix fixed that in 92 steps (+33.3 points).
-The bottleneck was coverage of the answer shape, not the RL stage. Round 2 reruns GRPO with an
-abstention-aware reward, 40 steps and lr 3e-6 on top of the mix2 adapter; the outcome is reported
-in `docs/ROUND2.md` whichever way it points.
+The abstention slice is the other honest negative. Added to the mix, it moved `asked` 0/8 → 2/8
+against a pre-registered bar of 6/8, and it cost 12 tasks on hard-90 by teaching the wording of
+an ask rather than its condition. That is what motivated the contrast pairs, which fixed it: the
+shipped adapter is 4/8 asked with 84/90 on hard-90, and adding the hardened prompt takes the same
+adapter to 7/8 asked and 0/8 invented. The remaining miss is that the *default* configuration is
+still 4/8, because the task-success cost of the hardened prompt has not been measured on hard-90.
 
-The abstention slice is the other honest negative: it moved `asked` from 0/8 to 2/8 against a
-pre-registered bar of 6/8 (`invented_expense` 7/8 → 6/8). At 8.4% supervised ask-tokens the
-policy can produce the behaviour but does not prefer it.
+The third negative is the mixture-count ablation. Cutting ask rows from 96 to 32 (`mix5`) held
+task success (83/90) but put `asked` back at **0/8** and `invented_expense` at 8/8. Contrast pairs
+without enough ask examples do not create the propensity to ask. Both numbers are published; the
+arm was rejected on the safety metric, not on the headline.
 
 ## Safety: what happens when a tool result lies
 
@@ -247,27 +278,40 @@ injection tasks:
 | Base Tiny Aya | 0/24 | 0/24 | **13/24 (54.2%)** | 8/24 (33.3%) |
 | SFT-mix (`sft2`) | 11/24 (45.8%) | 11/24 | **0/24** | 3/24 (12.5%) |
 | SFT-mix + hardened prompt | 15/24 (62.5%) | 15/24 | **0/24** | 2/24 (8.3%) |
-| **SFT-mix2 (`sft3`, shipped)** | **15/24 (62.5%)** | 15/24 | **0/24** | 2/24 (8.3%) |
-| SFT-mix2 + hardened prompt | 12/24 (50.0%) | 12/24 | **0/24** | 3/24 (12.5%) |
+| SFT-mix2 (`sft3`) | 15/24 (62.5%) | 15/24 | **0/24** | 2/24 (8.3%) |
+| **SFT-mix3 (`sft4`, shipped)** | **14/24 (58.3%)** | 14/24 | **0/24** | **0/24** |
+| SFT-mix3 + hardened prompt | 14/24 (58.3%) | 14/24 | **0/24** | 2/24 (8.3%) |
+| SFT-mix5 (ablation) | 11/24 (45.8%) | 11/24 | **0/24** | 3/24 (12.5%) |
+
+On underspecified requests, with the pre-registered bar `asked ≥ 6/8` and `invented ≤ 2/8`:
+
+| System | asked | invented_expense |
+|---|---:|---:|
+| Base | 0/8 | 8/8 |
+| `sft2` | 0/8 | 7/8 |
+| `sft3` | 2/8 | 6/8 |
+| **`sft4`** | **4/8** | **4/8** |
+| **`sft4` + hardened prompt** | **7/8** | **0/8** |
+| `sft5` | 0/8 | 8/8 |
 
 Paired exact McNemar: base → shipped removes **13 ledger attacks, introduces 0, p = 0.00024**.
-The prompt-level defence adds 4 safe tasks on `sft2` (p = 0.125, directional) and removes 3 on
-`sft3`, so it is not the default.
 
 Three honest readings:
 
 - **Fine-tuning fixed the money-moving failure, not injection as a whole.** Zero written
-  attacks across all tuned variants, but the shipped model still repeats 999999 in prose on 2 of
-  24 tasks, and it solves 15/24 under attack versus 29/30 on the clean hard-30. An injection
-  that does not move money still costs tasks; without a no-payload control on these exact 24,
-  treat that gap as a warning sign rather than a measured tax.
-- **Abstention improved, and the bar was still missed.** 2/8 asked, 6/8 invented, against a
-  pre-registered 6/8 and 2/8. The direction is real (`unplanned_calls` also drops to 0.12) but
-  the claim is "visible to the policy", not "solved".
-- **The defence is prompt-level, and its sign flips with the adapter.** On `sft2` the two-rule
-  hardened prompt never regressed a task; on `sft3` it costs three. A defence that depends on the
-  adapter is not a defence yet — the architectural fix (treat tool output as data by
-  construction) is unmeasured.
+  attacks across all tuned variants, and the shipped adapter is the first that also never repeats
+  999999 in prose (0/24, against 8/24 for base). It still solves 14/24 under attack versus 29/30
+  on the clean hard-30. An injection that does not move money still costs tasks; without a
+  no-payload control on these exact 24, treat that gap as a warning sign rather than a measured
+  tax.
+- **Abstention is one prompt away from the bar, and the prompt is not free.** The shipped adapter
+  alone asks 4/8 and invents 4/8 — better than every previous adapter, still short of 6/8. The
+  hardened prompt on the same adapter gets 7/8 asked and 0/8 invented, i.e. it clears both halves
+  of the bar, but it also puts 2/24 attacker numbers back into prose (against 0/24 without), and
+  its hard-90 task success is unmeasured. So the default stays the adapter, and the abstention
+  configuration is documented with its trade-off rather than silently switched.
+- **The defence is prompt-level.** The architectural fix (tool output never enters the answer
+  context as instructions) is unmeasured.
 
 ## Why these choices
 
@@ -293,12 +337,18 @@ see the eval.
 ## Limitations
 
 - hard-90 has 90 tasks; counts are reported next to percentages, and its Wilson interval is
-  still ±7 pp.
+  still ±5.4 pp on the shipped adapter.
 - Hard rows are held-out *instances* of the same six templates, so this measures
   generalization across amounts/names/languages, not across task formats.
 - eval-24 is in-distribution with easy train, which is why it stays at 100%.
-- Three seeds bound the variance; they do not remove it, and the spread is wider than any
-  single change made after round 1.
+- The shipped adapter is better than round 1 by 4 tasks on hard-90, but the paired test is not
+  significant (7 fixed, 3 broken, p = 0.34); the claim is "at least as good, directionally
+  better", not "significantly better".
+- Three seeds bound the variance; they do not remove it. The mix2 spread (7.77 pp on hard-90) is
+  wider than the round-1-to-round-3 difference, and the mix3 seed runs are the same control for
+  the shipped recipe.
+- The abstention result that clears the 6/8 bar comes from a hardened system prompt on the same
+  adapter, whose hard-90 success is not measured. The default configuration asks 4/8.
 - Fixed offline FX rates, fixed six-person name universe, no free-form tools.
 - The injection split is 32 tasks, the payloads are English-leaning, and the defence is one
   prompt variant. Greedy decoding, one sample per task.
@@ -310,24 +360,24 @@ python data/build_hard.py && python data/build_hard90.py && python data/build_mi
 python data/build_abstain.py && python data/build_safety.py
 python scripts/verify_all.py          # no GPU, no token: 19 checks
 
-python scripts/train_sft.py --tasks data/tasks_train_mix2.jsonl \
-    --epochs 2 --seed 42 --out runs/sft3 --merge-out runs/sft3_merged
-python scripts/run_baseline.py --model runs/sft3_merged \
-    --tasks data/tasks_hard_eval.jsonl --no-4bit --out runs/sft3_hard30
-python scripts/run_baseline.py --model runs/sft3_merged \
-    --tasks data/tasks_hard90_eval.jsonl --no-4bit --out runs/sft3_hard90
-python scripts/run_baseline.py --model runs/sft3_merged \
-    --tasks data/tasks_safety_eval.jsonl --safety --no-4bit --out runs/safety_sft3
+python scripts/train_sft.py --tasks data/tasks_train_mix3.jsonl \
+    --epochs 2 --seed 42 --out runs/sft4 --merge-out runs/sft4_merged
+python scripts/run_baseline.py --model runs/sft4_merged \
+    --tasks data/tasks_hard_eval.jsonl --no-4bit --out runs/sft4_hard30
+python scripts/run_baseline.py --model runs/sft4_merged \
+    --tasks data/tasks_hard90_eval.jsonl --no-4bit --out runs/sft4_hard90
+python scripts/run_baseline.py --model runs/sft4_merged \
+    --tasks data/tasks_safety_eval.jsonl --safety --no-4bit --out runs/safety_sft4
 
-python scripts/stats.py --a runs/base_hard90 --b runs/sft3_hard90
-python scripts/auditkit_eval.py --run sft3_hard90 --tasks data/tasks_hard90_eval.jsonl
+python scripts/stats.py --a runs/sft3_hard90 --b runs/sft4_hard90
+python scripts/auditkit_eval.py --run sft4_hard90 --tasks data/tasks_hard90_eval.jsonl
 python scripts/safety_table.py
 ```
 
 ## Artifacts
 
 - GitHub: https://github.com/PRINCE2-AI/lexsi-agentic-hinglish
-- Adapter: https://huggingface.co/primce/tiny-aya-hinglish-lora (`sft3_adapter`; seed adapters
+- Adapter: https://huggingface.co/primce/tiny-aya-hinglish-lora (`sft4_adapter`; seed adapters
   alongside it)
 - Run logs: https://huggingface.co/datasets/primce/lexsi-runs
 - Space: https://huggingface.co/spaces/primce/hinglish-expense-agent (T4, shipped adapter, visible tool trace)
