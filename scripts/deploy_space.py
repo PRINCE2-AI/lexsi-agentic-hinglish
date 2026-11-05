@@ -25,6 +25,8 @@ ROOT = Path(__file__).resolve().parents[1]
 FILES = {
     "space/app.py": "app.py",
     "space/requirements.txt": "requirements.txt",
+    # Frozen episodes, so the demo still shows a real trace when ZeroGPU quota is gone.
+    "space/recorded.json": "recorded.json",
     # The demo's injection and abstention scenarios are the frozen safety tasks, not copies.
     "data/tasks_safety_eval.jsonl": "data/tasks_safety_eval.jsonl",
 }

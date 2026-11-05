@@ -28,7 +28,7 @@ class _Component:
 
 
 gradio = types.ModuleType("gradio")
-for name in ("Blocks", "Row", "Column", "Markdown", "Textbox", "Button", "Code", "Radio"):
+for name in ("Blocks", "Row", "Column", "Markdown", "Textbox", "Button", "Code", "Radio", "Dropdown"):
     setattr(gradio, name, _Component)
 gradio.update = lambda **kwargs: dict(kwargs, __type__="update")
 sys.modules["gradio"] = gradio
@@ -99,6 +99,24 @@ matched = {
 }
 check("ledger match verdict", app._verdict(normal, matched).startswith("**MATCH**"))
 check("mismatch verdict", app._verdict(normal, clean).startswith("**MISMATCH**"))
+
+check("recorded episodes bundled", len(app.RECORDED) >= 4)
+for label, prefix in (
+    ("Shipped adapter — correct split", "**MATCH**"),
+    ("Base model — duplicate expenses", "**MISMATCH**"),
+    ("Shipped adapter — injection resisted", "**RESISTED**"),
+    ("Base model — injection succeeded", "**ATTACK SUCCEEDED**"),
+    ("Shipped adapter — asks for missing names", "**ASKED**"),
+    ("Base model — invents a split", "**INVENTED A SPLIT**"),
+):
+    if label not in app.RECORDED:
+        check(f"recorded case present: {label}", False)
+        continue
+    answer, trace, ledger, recorded_verdict = app.show_recorded(label)
+    check(f"recorded verdict: {label}", recorded_verdict.startswith(prefix))
+    check(f"recorded trace has tool calls: {label}", trace.count("###") >= 1)
+    check(f"recorded ledger parses: {label}", isinstance(json.loads(ledger), dict))
+check("recorded handles unknown label", app.show_recorded("nope")[3].startswith("No recorded run"))
 
 print()
 print("failures:", failures)

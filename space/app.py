@@ -64,12 +64,32 @@ NORMAL_TASK = {
 
 _CACHE: dict = {}
 
+
+def _load_recorded() -> dict[str, dict]:
+    """Frozen episodes from the shipped evaluations, replayed without touching the GPU.
+
+    ZeroGPU gives each visitor a few GPU-minutes a day, so a judge who runs out of quota
+    still gets a full tool trace from `scripts/build_recorded_demo.py`.
+    """
+    for base in (HERE, HERE.parent, Path.cwd()):
+        path = base / "recorded.json"
+        if path.exists():
+            with path.open(encoding="utf-8") as handle:
+                return {row["label"]: row for row in json.load(handle)}
+    return {}
+
+
+RECORDED = _load_recorded()
+
 try:  # ZeroGPU on Hugging Face Spaces
     if not os.getenv("SPACES_ZERO_GPU"):
         raise RuntimeError("not a ZeroGPU space")
     import spaces
 
-    _gpu = spaces.GPU
+    try:
+        _gpu = spaces.GPU(duration=120)
+    except TypeError:
+        _gpu = spaces.GPU
 except Exception:  # noqa: BLE001 - dedicated T4 spaces do not need the decorator
     _gpu = lambda fn: fn  # noqa: E731
 
@@ -223,8 +243,8 @@ def run_agent(question: str, scenario: str, mode: str):
     task, note = _task_for(scenario, question)
     if task is None:
         return "", "No tool calls.", "{}", note or "Scenario unavailable."
-    episode = run_episode(_make_call(use_adapter), task, max_steps=8, hardened=hardened)
-    answer = episode["final_response"] or "(model did not call `finish` within 8 steps)"
+    episode = run_episode(_make_call(use_adapter), task, max_steps=6, hardened=hardened)
+    answer = episode["final_response"] or "(model did not call `finish` within 6 steps)"
     verdict = _verdict(task, episode) if note is None else note
     return answer, _trace_markdown(episode["steps"]), json.dumps(episode["ledger"], indent=2), verdict
 
@@ -234,6 +254,22 @@ def switch_scenario(scenario: str):
     if task is None:
         return gr.update(value=NORMAL_TASK["task"], interactive=True)
     return gr.update(value=task["task"], interactive=False)
+
+
+def show_recorded(label: str):
+    """Replay a frozen episode. No GPU, no model, no quota."""
+    entry = RECORDED.get(label)
+    if entry is None:
+        return "", "No tool calls.", "{}", "No recorded run selected."
+    task = entry["task"]
+    episode = entry["episode"]
+    answer = episode["final_response"] or "(the model never called `finish`)"
+    return (
+        answer,
+        _trace_markdown(episode["steps"]),
+        json.dumps(episode["ledger"], indent=2),
+        _verdict(task, episode),
+    )
 
 
 with gr.Blocks(title="Hinglish Expense Agent") as demo:
@@ -247,7 +283,9 @@ with gr.Blocks(title="Hinglish Expense Agent") as demo:
         "in answers, against the base model's 13/24 and 8/24.\n\n"
         "**Before/after in one click:** pick a scenario, run it with *Base model (adapter off)*, "
         "then run the same scenario with *Shipped adapter*. Same weights, same prompt, only the "
-        "adapter is switched at inference time."
+        "adapter is switched at inference time.\n\n"
+        "_This Space runs on ZeroGPU, which gives a few GPU-minutes per visitor per day. If you "
+        "see \"ZeroGPU quota exceeded\", log in with a Hugging Face account for a fresh quota._"
     )
     with gr.Row():
         scenario = gr.Radio(choices=list(SCENARIOS), value="Normal split (editable)", label="Scenario")
@@ -265,6 +303,20 @@ with gr.Blocks(title="Hinglish Expense Agent") as demo:
     scenario.change(switch_scenario, inputs=scenario, outputs=question)
     button.click(run_agent, inputs=[question, scenario, mode], outputs=[answer, trace, ledger, verdict])
     question.submit(run_agent, inputs=[question, scenario, mode], outputs=[answer, trace, ledger, verdict])
+
+    if RECORDED:
+        gr.Markdown(
+            "### No GPU left? Replay a frozen run\n"
+            "These episodes come from the shipped evaluations, not from a fresh generation. "
+            "The verdict is recomputed by the same scoring code as the live run, so the trace, "
+            "ledger and verdict are the real ones."
+        )
+        with gr.Row():
+            recorded = gr.Dropdown(choices=list(RECORDED), value=list(RECORDED)[0], label="Recorded run")
+            recorded_button = gr.Button("Show recorded run")
+        recorded_button.click(
+            show_recorded, inputs=recorded, outputs=[answer, trace, ledger, verdict]
+        )
 
 if __name__ == "__main__":
     demo.launch(server_name="0.0.0.0", server_port=int(os.getenv("PORT", "7860")))
