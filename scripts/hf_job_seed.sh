@@ -2,15 +2,18 @@
 # One extra SFT seed, measured on both held-out splits.
 #
 #   SEED=123 bash scripts/hf_job_seed.sh
-#   SEED=7   bash scripts/hf_job_seed.sh
+#   SEED=7 PREFIX=sft4_seed TASKS=data/tasks_train_mix3.jsonl bash scripts/hf_job_seed.sh
 #
-# Same recipe as stage 1 (mix2, 2 epochs, r=16, lr 2e-4); only the LoRA init and
-# data order change, which is exactly the variance the single-seed result hides.
+# Same recipe as the shipped run (2 epochs, r=16, lr 2e-4); only the LoRA init
+# and the data order change, which is exactly the variance a single seed hides.
+# hard-90 is evaluated and uploaded first so a timeout cannot cost the headline.
 set -uo pipefail
 
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 SEED=${SEED:-123}
-TAG=sft3_seed${SEED}
+PREFIX=${PREFIX:-sft3_seed}
+TASKS=${TASKS:-data/tasks_train_mix2.jsonl}
+TAG=${PREFIX}${SEED}
 
 step() {
   local label="$1"
@@ -22,17 +25,18 @@ step() {
 }
 
 step "train $TAG" python scripts/train_sft.py \
-  --tasks data/tasks_train_mix2.jsonl --epochs 2 --seed "$SEED" \
+  --tasks "$TASKS" --epochs 2 --seed "$SEED" \
   --out "runs/$TAG" --merge-out "runs/${TAG}_merged"
 
 if [ -f "runs/${TAG}_merged/config.json" ]; then
-  step "$TAG hard-30" python scripts/run_baseline.py --model "runs/${TAG}_merged" \
-    --tasks data/tasks_hard_eval.jsonl --no-4bit --out "runs/${TAG}_hard30"
   step "$TAG hard-90" python scripts/run_baseline.py --model "runs/${TAG}_merged" \
     --tasks data/tasks_hard90_eval.jsonl --no-4bit --out "runs/${TAG}_hard90"
-fi
+  step "upload $TAG hard-90" python scripts/job_upload.py \
+    --run "${TAG}_hard90" --adapter "runs/$TAG:${TAG}_adapter"
 
-step "upload $TAG" python scripts/job_upload.py \
-  --run "${TAG}_hard30" --run "${TAG}_hard90" --adapter "runs/$TAG:${TAG}_adapter"
+  step "$TAG hard-30" python scripts/run_baseline.py --model "runs/${TAG}_merged" \
+    --tasks data/tasks_hard_eval.jsonl --no-4bit --out "runs/${TAG}_hard30"
+  step "upload $TAG hard-30" python scripts/job_upload.py --run "${TAG}_hard30"
+fi
 
 echo "=== $TAG finished: $(date -u +%H:%M:%S) ==="
