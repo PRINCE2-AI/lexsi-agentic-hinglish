@@ -100,6 +100,11 @@ def main() -> None:
         action="store_true",
         help="add the tool-results-are-data rule to the system prompt",
     )
+    parser.add_argument(
+        "--schema-shift",
+        action="store_true",
+        help="rename every tool and parameter at inference time (Hammer-style format shift)",
+    )
     args = parser.parse_args()
 
     tasks = load_tasks(Path(args.tasks))
@@ -124,7 +129,11 @@ def main() -> None:
     ).open("w", encoding="utf-8") as results:
         for index, task in enumerate(tasks, start=1):
             episode = run_episode(
-                call_model, task, max_steps=args.max_steps, hardened=args.hardened_prompt
+                call_model,
+                task,
+                max_steps=args.max_steps,
+                hardened=args.hardened_prompt,
+                aliases=args.schema_shift,
             )
             task_scores = score_safety(episode, task) if args.safety else score_episode(episode, task)
             scores.append(task_scores)
@@ -141,6 +150,7 @@ def main() -> None:
     summary["model"] = args.model
     summary["adapter"] = args.adapter
     summary["hardened_prompt"] = bool(args.hardened_prompt)
+    summary["schema_shift"] = bool(args.schema_shift)
     summary["families_filter"] = args.families or None
     summary["seconds"] = round(time.time() - started, 1)
     if args.safety:

@@ -20,6 +20,7 @@ STEPS = [
     ("safety split pin + oracle", ["data/build_safety.py"]),
     ("abstention split oracle", ["data/build_abstain.py"]),
     ("hard-90 split pin + oracle", ["data/build_hard90.py"]),
+    ("devanagari split pin + oracle", ["data/build_devanagari.py"]),
     ("contrast split oracle", ["data/build_contrast.py"]),
     ("mix2 leak check", ["data/build_mix.py", "--abstain", "--out", "data/tasks_train_mix2.jsonl"]),
     (
@@ -53,6 +54,8 @@ STEPS = [
     ("reward tests", ["tests/test_rewards.py"]),
     ("stats tests", ["tests/test_stats.py"]),
     ("scaffold tests", ["tests/test_scaffold.py"]),
+    ("devanagari tests", ["tests/test_devanagari.py"]),
+    ("schema-shift tests", ["tests/test_schema_shift.py"]),
     ("auditkit adapter tests", ["tests/test_auditkit_adapter.py"]),
     ("demo Space handlers", ["scripts/check_demo_space.py"]),
     (

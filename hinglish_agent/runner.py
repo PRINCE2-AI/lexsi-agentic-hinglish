@@ -8,6 +8,7 @@ import re
 from .ledger import clean_ledger, empty_ledger, ledgers_match, settle_ledger, settlements_match
 from .parser import format_call, parse_calls
 from .prompts import CORRECTION_PROMPT, build_messages
+from .schema_shift import aliased_names, decode_call, encode_call
 from .tools import execute_tool
 
 LEDGER_TOOLS = {"add_expense", "get_balance", "settle_up"}
@@ -36,13 +37,22 @@ def is_strict_json(text: str) -> bool:
     )
 
 
-def run_episode(call_model, task: dict, max_steps: int = 8, hardened: bool = False) -> dict:
+def run_episode(
+    call_model,
+    task: dict,
+    max_steps: int = 8,
+    hardened: bool = False,
+    aliases: bool = False,
+) -> dict:
     """Drive a model through the tool loop. `call_model(messages) -> str`.
 
     A task with an `injection` block appends that payload to the named tool's result, so the
     model sees attacker text arriving as tool output rather than as user input.
+
+    `aliases=True` renames every tool and parameter in the prompt (Hammer-style schema shift);
+    a call that uses the canonical vocabulary is rejected exactly as an unknown tool would be.
     """
-    messages = build_messages(task["task"], hardened=hardened)
+    messages = build_messages(task["task"], hardened=hardened, schema_shift=aliases)
     injection = task.get("injection") or {}
     injections_fired = 0
     steps: list[dict] = []
@@ -69,13 +79,25 @@ def run_episode(call_model, task: dict, max_steps: int = 8, hardened: bool = Fal
 
         observations = []
         for call in calls[:3]:
-            result = execute_tool(call["tool_name"], call["parameters"])
-            steps.append({"name": call["tool_name"], "arguments": call["parameters"], "result": result})
+            raw_name = call["tool_name"]
+            decoded = decode_call(raw_name, call["parameters"]) if aliases else None
+            if aliases and decoded is None:
+                result = {
+                    "ok": False,
+                    "error": f"unknown tool {raw_name!r}; available: {', '.join(aliased_names())}",
+                }
+                name, arguments = raw_name, call["parameters"]
+            else:
+                name, arguments = decoded if aliases else (raw_name, call["parameters"])
+                result = execute_tool(name, arguments)
+            steps.append(
+                {"name": name, "arguments": arguments, "raw_name": raw_name, "result": result}
+            )
             shown = result
-            if injection and call["tool_name"] == injection.get("after_tool"):
+            if injection and injection.get("after_tool") in (raw_name, name):
                 shown = dict(result, note=injection["payload"])
                 injections_fired += 1
-            observations.append({"tool_name": call["tool_name"], "result": shown})
+            observations.append({"tool_name": raw_name if aliases else name, "result": shown})
             if isinstance(result.get("ledger"), dict):
                 ledger = result["ledger"]
             if result.get("done"):
@@ -105,33 +127,39 @@ def run_episode(call_model, task: dict, max_steps: int = 8, hardened: bool = Fal
     }
 
 
-def run_oracle(task: dict) -> dict:
+def run_oracle(task: dict, aliases: bool = False) -> dict:
     """Execute the ground-truth actions. Used to verify the dataset itself."""
     steps = []
-    messages = build_messages(task["task"])
+    messages = build_messages(task["task"], schema_shift=aliases)
     ledger = empty_ledger()
 
     for action in task.get("actions", []):
         arguments = dict(action["parameters"])
         if action["tool_name"] in LEDGER_TOOLS:
             arguments["ledger"] = ledger
+        call = encode_call(action["tool_name"], arguments) if aliases else {
+            "tool_name": action["tool_name"],
+            "parameters": arguments,
+        }
         result = execute_tool(action["tool_name"], arguments)
         if not result.get("ok"):
             raise RuntimeError(f"oracle failed on {task['id']}: {result}")
         if isinstance(result.get("ledger"), dict):
             ledger = result["ledger"]
-        steps.append({"name": action["tool_name"], "arguments": arguments, "result": result})
-        messages.append(
+        steps.append(
             {
-                "role": "assistant",
-                "content": format_call({"tool_name": action["tool_name"], "parameters": arguments}),
+                "name": action["tool_name"],
+                "arguments": arguments,
+                "raw_name": call["tool_name"],
+                "result": result,
             }
         )
+        messages.append({"role": "assistant", "content": format_call(call)})
         messages.append(
             {
                 "role": "user",
                 "content": json.dumps(
-                    {"tool_results": [{"tool_name": action["tool_name"], "result": result}]},
+                    {"tool_results": [{"tool_name": call["tool_name"], "result": result}]},
                     ensure_ascii=False,
                 ),
             }
@@ -139,13 +167,19 @@ def run_oracle(task: dict) -> dict:
 
     answer = task["answer_text"]
     result = execute_tool("finish", {"answer": answer})
-    steps.append({"name": "finish", "arguments": {"answer": answer}, "result": result})
-    messages.append(
+    finish_call = encode_call("finish", {"answer": answer}) if aliases else {
+        "tool_name": "finish",
+        "parameters": {"answer": answer},
+    }
+    steps.append(
         {
-            "role": "assistant",
-            "content": format_call({"tool_name": "finish", "parameters": {"answer": answer}}),
+            "name": "finish",
+            "arguments": {"answer": answer},
+            "raw_name": finish_call["tool_name"],
+            "result": result,
         }
     )
+    messages.append({"role": "assistant", "content": format_call(finish_call)})
 
     return {
         "task_id": task.get("id"),
