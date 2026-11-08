@@ -36,7 +36,7 @@ one tuned episode on a free T4. Reproduce commands for every number: [docs/RESUL
 
 ## Problem statement (Track 3)
 
-The live Track 3 statements are on [hackathon.lexsi.ai/tracks](https://hackathon.lexsi.ai/tracks). This project targets one as primary and measures a second:
+The live Track 3 statements are on [hackathon.lexsi.ai](https://hackathon.lexsi.ai/) (three tracks, nine problem statements). This project targets one as primary and measures a second:
 
 > **Reliable tool calling** — *Train an agent with reinforcement learning on real tool-calling rollouts to choose the right tool, pass well-formed arguments and call tools in the right order.*
 
