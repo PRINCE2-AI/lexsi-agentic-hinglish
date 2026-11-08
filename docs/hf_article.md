@@ -123,7 +123,7 @@ other split.
 | SFT-mix3, seed 123 | 96.67% (29/30) | 92.22% (83/90) | - | 3.37 |
 | SFT-mix2, seed 7 | 93.33% (28/30) | 83.33% (75/90) | - | 3.42 |
 | SFT-mix2, seed 123 | 80.00% (24/30) | 75.56% (68/90) | - | 3.23 |
-| oracle | 100% (30/30) | 100% (90/90) | 100% (24/24) | 3.57 |
+| oracle | 100% (30/30) | 100% (90/90) | 100% (24/24) | 3.41 |
 
 Wilson 95% intervals: base 0.6–16.7% (hard-30) and 1.1–9.3% (hard-90); shipped adapter
 83.3–99.4% and **86.2–96.9%**; mix5 88.6–100% and 84.8–96.2%; seed 7 78.7–98.2% and 74.3–89.6%;
@@ -269,7 +269,8 @@ That agreement number is the point: two independent scorers, one dataset, no jud
 The base model, on the same rows: tool error rate **22.3%** (hard-30) and **17.4%** (hard-90),
 `overcall` **1.08**, `strict_rate` **0.534**, and 16/30 episodes that never reached `finish`.
 The shipped adapter has zero tool errors, zero redundant calls and zero loops on both splits, and
-averages 3.38 calls against the oracle's 3.57 on hard-90 — which is why the secondary statement
+averages 3.38 calls against the oracle's 3.41 on hard-90 (87 of 90 tasks take exactly the oracle
+number of calls, 3 take one fewer, none take more) — which is why the secondary statement
 ("efficient trajectories") is reported on the same row as success.
 
 ## What did not work

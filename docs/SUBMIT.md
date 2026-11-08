@@ -76,7 +76,8 @@ Everything the form asks for already exists as a file. Paste, do not write:
 - **Model**: Cohere Labs Tiny Aya (`CohereLabs/tiny-aya-global`), LoRA, 3.35B.
 - **One-line result**: 3.33% → 96.67% task success on a frozen 30-task hard split (28 fixed,
   0 broken, exact McNemar p = 7.5e-9) and 3.33% → 93.33% on a 90-task holdout (81 fixed, 0
-  broken, p < 1e-20), at 3.38 calls against the oracle's 3.57.
+  broken, p < 1e-20), at 3.38 calls per task on hard-90 against an oracle 3.41 (87/90 tasks take
+  exactly the oracle number of calls, 3 take one fewer, none take more).
 - **Toolkits**: AgentTune (GRPO stage, `scripts/train_grpo.py`) and AuditKIT 1.1.3
   (`scripts/auditkit_eval.py`), scored without a judge model: exact-call accuracy 0.033 → 1.000
   and tool-call F1 0.188 → 1.000 on the same 30 tasks.

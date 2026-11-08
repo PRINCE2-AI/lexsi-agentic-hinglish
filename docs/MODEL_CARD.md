@@ -26,6 +26,8 @@ Live demo: https://huggingface.co/spaces/primce/hinglish-expense-agent ·
 Demo video (1:44): https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4 ·
 Write-up: https://huggingface.co/spaces/primce/hinglish-track3-article
 
+![Same task, same prompt, same weights: base model ends in MISMATCH, this adapter matches the ledger](demo_before_after.gif)
+
 ## Results
 
 Frozen 2026-11-05. Greedy decoding, single sample, no LLM judge — success is checked against the
@@ -54,7 +56,8 @@ seed adapters are kept for the ablation and variance controls.
   round-2 adapter, **18 fixed, 2 broken, p = 0.0004**; against the round-1 adapter, 7 fixed,
   3 broken, p = 0.34 (directional, not significant).
 - Tool calls per task: **3.57** on hard-30, exactly the oracle's count (base: 7.03). On hard-90:
-  3.38 against a base 7.24.
+  3.38 against an oracle 3.41 and a base 7.24 — 87 of 90 tasks take exactly the oracle number of
+  calls, 3 take one fewer, none take more.
 - Tool error rate **0.00%** on both splits, loop collapse **0.00%**, redundant calls **0.00%**,
   parse failures **0.00%** (base: 22.3% tool errors, 16 of 30 episodes never finishing,
   `overcall` 1.08).
