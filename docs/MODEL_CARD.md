@@ -149,8 +149,15 @@ tool call per turn, ledger returned by every ledger tool and copied into the nex
   the 7.77 pp mix2 spread is the wider contrast, not this recipe's noise.
 - The adapter can ask for missing details but does not prefer to: 4 of 8 underspecified requests,
   or 7 of 8 with the hardened system prompt.
-- Hinglish + English only. Devanagari paraphrases appear in the eval, but generation is not
-  evaluated in Devanagari.
+- Hinglish, English and Devanagari. On a Devanagari version of the 30-task hard split (Latin
+  person names, ISO currency codes) the adapter scores 25/30 against 29/30 canonical; answers
+  stay in Latin script. That comparison is nominal, because the Devanagari file re-ids its rows.
+- Robust to the tool schema, not tied to tool-name strings: with every tool and parameter
+  renamed (`record_split`, `fx_convert`, `member_balance`, `settle`, `done`) it scores 25/30,
+  while the untuned base under the same rename scores 0/30 (loop collapse 0.60). The 4-task cost
+  is 4 broken / 0 fixed, exact McNemar p = 0.125 — not significant at n = 30.
+- These two probes cost about 4 tasks each and hit different families (`two_query` for the rename,
+  `paraphrase` for Devanagari). Both are diagnostics at n = 30, not headline numbers.
 
 ## Licence and provenance
 

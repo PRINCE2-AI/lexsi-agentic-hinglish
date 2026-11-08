@@ -210,6 +210,45 @@ recovers is the one where the clean prompt reports only one of two results. The 
 ships as the default, because the rule is prompt-level rather than an architectural defence, and
 the 2/24 return of attacker text in prose is a real cost. Full family counts: `docs/SAFETY.md`.
 
+### Generalisation probes (2026-11-08, no new training)
+
+Two probes on the shipped `sft4` adapter, 30 tasks each, same deterministic scorer, no LLM judge,
+one T4, greedy, `--no-4bit`. Every run is in `primce/lexsi-runs`.
+
+| Run | n | success | tac | arr | calls | strict_rate | parse_fail | seconds |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| `sft4_hard30` — canonical (reference) | 30 | 96.67% (29/30) | 100% | 100% | 3.57 | 100% | 0.00 | 1598 |
+| `sft4_shift_hard30` — every tool and parameter renamed | 30 | 83.33% (25/30) | 90.00% | 100% | 3.47 | 99.33% | 0.03 | 3138 |
+| `sft4_devanagari30` — same tasks, Devanagari | 30 | 83.33% (25/30) | 93.33% | 100% | 3.60 | 98.89% | 0.03 | 3030 |
+| `base_shift_hard30` — untuned base, renamed schema | 30 | 0.00% (0/30) | 23.33% | 80.73% | 7.00 | 37.44% | 0.00 | 2820 |
+
+**Renamed schema (Hammer-style).** `add_expense` → `record_split`, `convert_currency` →
+`fx_convert`, `get_balance` → `member_balance`, `settle_up` → `settle`, `finish` → `done`, every
+parameter with them; the canonical name is rejected as an unknown tool, so a model that memorised
+strings cannot score. The adapter loses 4 tasks (4 broken, 0 fixed, exact McNemar p = 0.125 — not
+significant at n = 30). The loss is 3 of 6 `two_query` and 1 of 6 `paraphrase`; `convert_sum` stays
+2/3 and the other three families are 3/3 and 6/6 as before. Broken: `h-e-007`, `-009`, `-012`,
+`-024`.
+
+The untuned base under the same rename is **0/30**: tool accuracy 0.233, loop collapse 0.60,
+7.0 calls per task, 80.73% argument reliability. The rename is a real schema test, not a
+relabelling.
+
+**Devanagari.** The same 30 tasks and the same expected ledgers, written in Devanagari with Latin
+person names and ISO currency codes, canonical tool schema: **25/30**, tool accuracy 0.933,
+arguments 1.000, strict JSON 98.89%, answers still in Latin script. The dose lands elsewhere:
+3 of 6 `paraphrase` and 1 of 6 `two_query`, while `convert_sum` stays at 2/3. Failures
+`dv-008`, `-020`, `-022`, `-023`, `-025`.
+
+There is no paired test against canonical for the Devanagari run: the file re-ids its rows
+(`dv-001 … dv-030`), so that comparison is nominal and is reported as such. The schema shift
+shares task ids with hard-30, so it does carry the exact test above.
+
+Read together: 83.33% twice, against 0/30 for the untuned base under the rename. The adapter is
+not riding on tool-name strings and not only on Latin script. Each change costs about 4 of 30
+tasks and neither cost is distinguishable from noise at this n, which is the honest reading at a
+probe of this size.
+
 ### What round 3 changed
 
 Twelve tasks on hard-90 were the price of teaching "ask". Round 3 identified that the model had

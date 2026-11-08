@@ -72,10 +72,10 @@ money answers at scale. Adapter, dataset, frozen eval, trajectories and the Spac
 - **Why is round 1 -> shipped only p = 0.34?** Because 7 fix and 3 break: the gain is directional,
   not proven. The proven step is round 2 -> shipped, 18 against 2.
 - **What would you do with $200 of compute?** Seeds are done: mix3 has three, and the spread is
-  1.11 pp on hard-90. The hardened prompt is measured too (86/90 against 84/90 on clean hard-90).
-  Next is a schema-shift eval (rename tools and parameters) to see whether the adapter learned the
-  task or the format, a Devanagari generation eval (today only Hinglish inputs are tested), and a
-  Hinglish-only injection payload set.
+  1.11 pp on hard-90. The hardened prompt is measured (86/90 against 84/90), and so are the two
+  generalisation probes: renamed tool schema 25/30 against 29/30 with the untuned base at 0/30, and
+  the same tasks in Devanagari at 25/30. Next is a Hinglish-only injection payload set, a
+  Devanagari payload, and the schema shift on hard-90 instead of hard-30.
 - **Is the agent safe?** We measured it: 32-task indirect-injection split with no LLM judge. Base
   writes attacker money in 13/24 tasks and repeats the attacker number in 8/24 answers; the shipped
   adapter in **0/24 and 0/24** (p = 0.00024). It asks on 4 of 8 underspecified requests — the same

@@ -71,6 +71,24 @@ fixed before the seed runs existed, and it is the median of the three on the mea
 Choosing the best of three seeds on the split we report would have added 7.8 pp and removed the
 claim's credibility.
 
+### Generalisation, with no new training (2026-11-08)
+
+| Probe on `sft4`, 30 tasks each | success | tool accuracy | calls |
+|---|---:|---:|---:|
+| canonical tools (reference) | 96.67% (29/30) | 100% | 3.57 |
+| every tool and parameter renamed | 83.33% (25/30) | 90.00% | 3.47 |
+| same tasks written in Devanagari | 83.33% (25/30) | 93.33% | 3.60 |
+| untuned base, renamed tools | 0.00% (0/30) | 23.33% | 7.00 |
+
+The renamed schema rejects canonical tool names as unknown, so this is not relabelling: the
+untuned base goes to 0/30 with 0.60 loop collapse, while the adapter keeps 25/30 (4 broken,
+0 fixed, exact McNemar p = 0.125 — not significant at n = 30). The losses are 3 of 6 `two_query`
+and 1 of 6 `paraphrase`; `convert_sum` stays at 2/3. Devanagari costs a different four tasks —
+3 of 6 `paraphrase` and 1 of 6 `two_query` — with arguments still at 1.000 and strict JSON at
+98.89%, answers still in Latin script. The Devanagari comparison is nominal because that file
+re-ids its rows; the schema shift shares task ids and carries the paired test. Runs:
+`sft4_shift_hard30`, `sft4_devanagari30`, `base_shift_hard30` in `primce/lexsi-runs`.
+
 ### AuditKIT before/after (independent scorer, no LLM judge)
 
 | Split | Model | tool_call_exact | tool_call_f1 | precision | recall | redundant | loop |
@@ -121,7 +139,7 @@ the default; the trade-off is recorded in `docs/ROUND2.md`.
 
 ```bash
 git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
-python scripts/verify_all.py      # 20 checks: pins, oracle 30/30, safety, contrast, reward, stats, AuditKIT adapter, demo handlers
+python scripts/verify_all.py      # 23 checks: pins, oracle 30/30, safety, contrarian splits, Devanagari, schema shift, reward, stats, AuditKIT adapter, demo handlers
 ```
 
 On a T4 (one GPU is enough):

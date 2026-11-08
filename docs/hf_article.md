@@ -173,6 +173,31 @@ exact McNemar p = 1.0). Five tasks are missed by all three seeds (`h9-019`, `-02
 The spread mix2 showed came from the abstention rows; mix3's contrast pairs are what shrink it
 from 7.77 pp to 1.11 pp.
 
+## Two probes: renamed tools and Devanagari
+
+hard-30 asks new amounts and names inside the same schema and the same script. Two probes change
+those two things independently, on the shipped adapter, with no new training (2026-11-08, one T4,
+greedy).
+
+| Probe | n | success | tool accuracy | calls | strict JSON |
+|---|---:|---:|---:|---:|---:|
+| canonical tools (reference) | 30 | 96.67% (29/30) | 100% | 3.57 | 100% |
+| every tool and parameter renamed | 30 | 83.33% (25/30) | 90.00% | 3.47 | 99.33% |
+| same tasks in Devanagari | 30 | 83.33% (25/30) | 93.33% | 3.60 | 98.89% |
+| untuned base, renamed tools | 30 | 0.00% (0/30) | 23.33% | 7.00 | 37.44% |
+
+`add_expense` becomes `record_split`, `convert_currency` becomes `fx_convert`, `get_balance`
+becomes `member_balance`, and the canonical name is rejected as unknown, so a model that
+memorised tool strings cannot score. The adapter drops 4 tasks — 4 broken, 0 fixed, exact
+McNemar p = 0.125, not significant at n = 30 — and the untuned base drops to **0/30** with 0.60
+loop collapse and 7.0 calls per task. That base row is what makes the probe honest: the rename
+really does break a model that has not learned the task.
+
+Devanagari costs a different four tasks: `paraphrase` 6/6 → 3/6 and `two_query` 6/6 → 5/6, with
+argument reliability still 1.000 and strict JSON 98.89%, answers still in Latin script. The rename
+instead takes 3 of 6 `two_query`. Two probes, two different failure sets — neither is a single
+mechanism, and neither is a headline number: both are 83.33% at n = 30 (Wilson 66.4–92.7%).
+
 ## The split a task-success number cannot see
 
 hard-90 is held-out *instances*: new names, new amounts, same six templates. That makes it a good
@@ -346,10 +371,13 @@ Three honest readings:
 - **DeepSeekMath** (arXiv:2402.03300) for GRPO, **Tiny Aya** (arXiv:2603.11510) for the model.
 
 What we did **not** run, so no claim is made about it: cold-start GRPO without SFT (the
-control that would test whether SFT is necessary here), a Hammer-style schema-shift eval,
-verification-iteration repair beyond the parse-error correction prompt, a no-payload control
-on the 24 injection tasks, a seed sweep of the safety split, and an adaptive attacker that can
-see the eval.
+control that would test whether SFT is necessary here), verification-iteration repair beyond
+the parse-error correction prompt, a no-payload control on the 24 injection tasks, a seed sweep
+of the safety split, a Devanagari injection payload, and an adaptive attacker that can see the
+eval.
+
+Two probes that used to be on this list now have numbers: the Hammer-style schema shift (25/30
+against 29/30, untuned base 0/30) and a Devanagari version of the same 30 tasks (25/30).
 
 ## Limitations
 

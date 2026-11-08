@@ -252,6 +252,21 @@ the seed runs existed and the median of the three on the mean of both splits. Mi
 is published as the contrast, and seed 7 of mix2 is better than mix2 seed 42 on hard-90. Full
 per-metric summaries live in the uploaded `summary.json` files under `primce/lexsi-runs`.
 
+Two generalisation probes on the shipped adapter, no new training (2026-11-08, one T4, greedy):
+
+| Probe, 30 tasks each | success | tool accuracy | calls |
+|---|---:|---:|---:|
+| canonical tools (reference) | 96.67% (29/30) | 100% | 3.57 |
+| every tool and parameter renamed | 83.33% (25/30) | 90.00% | 3.47 |
+| same tasks written in Devanagari | 83.33% (25/30) | 93.33% | 3.60 |
+| untuned base, renamed tools | 0.00% (0/30) | 23.33% | 7.00 |
+
+Canonical tool names are rejected as unknown once renamed, and the untuned base falls to 0/30 with
+0.60 loop collapse, so the probe tests the task rather than the string. The adapter keeps 25/30
+(4 broken, 0 fixed, exact McNemar p = 0.125, not significant at n = 30). The two probes break
+different families: `two_query` under the rename, `paraphrase` in Devanagari. Details:
+[docs/RESULTS.md](docs/RESULTS.md).
+
 AuditKIT replay of the recorded episodes, no judge model: on hard-30, exact-call accuracy
 0.033 -> 1.000, tool-call F1 0.188 -> 1.000, redundant calls 0.327 -> 0.000; on hard-90 the
 shipped adapter is exact 0.933, tool-call F1 0.980, validity 1.000, zero redundant calls and zero
