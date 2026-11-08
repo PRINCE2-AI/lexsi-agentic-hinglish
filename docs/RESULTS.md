@@ -208,7 +208,7 @@ clears it (7/8 and 0/8) and also raises overall safety from 18/32 to 22/32, at t
 The task-success cost of that switch is now measured on the clean holdout. The same `sft4` merged
 weights with the hardened prompt score **86/90 (95.56%)** on hard-90 against 84/90 (93.33%)
 without it: two tasks fixed (`h9-019`, `h9-029`, both `two_query`, which moves 12/15 → 14/15),
-none broken, exact McNemar p = 0.5, 5461 s on one T4 (`primce/lexsi-runs` →
+none broken, exact McNemar p = 0.5, 4850 s on one T4 (`primce/lexsi-runs` →
 `sft4_hard90_hardened`). The rule does not buy safety by spending accuracy, and the family it
 recovers is the one where the clean prompt reports only one of two results. The adapter still
 ships as the default, because the rule is prompt-level rather than an architectural defence, and
