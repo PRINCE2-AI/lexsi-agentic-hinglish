@@ -23,7 +23,7 @@ that null is reported, not hidden, and the gain is attributed to the data mix.
 
 ```bash
 git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
-python scripts/verify_all.py    # 20 checks, no GPU, no token
+python scripts/verify_all.py    # 23 checks, no GPU, no token
 ```
 
 Or run [`notebooks/colab_reproduce.ipynb`](notebooks/colab_reproduce.ipynb): CPU cells in ~2 min,
@@ -145,7 +145,7 @@ python scripts/verify_all.py
 
 That single command regenerates the hard, hard-90 and safety splits, checks every SHA-256 pin,
 runs every test suite, replays the oracle and runs the AuditKIT adapter tests. It prints
-`all 20 checks passed` when the dataset and the scoring are consistent.
+`all 23 checks passed` when the dataset and the scoring are consistent.
 
 
 ### Tiny Aya access
@@ -221,7 +221,7 @@ Programmatic, computed in `hinglish_agent/runner.py`:
 | `steps` | agent turns per task (mean) — efficiency |
 | `parse_failures` | assistant turns with no parseable tool call, per task |
 
-## Results (frozen Nov 5, 2026)
+## Results (frozen Nov 5, 2026; generalisation probes added Nov 8)
 
 The shipped adapter is `sft4`: SFT on the mix3 data (hard mix + abstention pairs + contrast
 pairs), seed 42. Rounds 1 and 2 are kept as the before-columns. Provenance, configs, caveats and

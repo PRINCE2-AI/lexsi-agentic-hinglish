@@ -394,7 +394,9 @@ against 29/30, untuned base 0/30) and a Devanagari version of the same 30 tasks 
   all three seeds miss land in the same answer-shape bucket, so that residue is not a seed
   artefact.
 - The abstention result that clears the 6/8 bar comes from a hardened system prompt on the same
-  adapter, whose hard-90 success is not measured. The default configuration asks 4/8.
+  adapter. That prompt is not an accuracy tax: it scores 86/90 against 84/90 on clean hard-90
+  (2 fixed, 0 broken, exact McNemar p = 0.5). It still returns 2/24 attacker numbers to prose, so
+  the default configuration remains the adapter alone, which asks 4/8.
 - Fixed offline FX rates, fixed six-person name universe, no free-form tools.
 - The injection split is 32 tasks, the payloads are English-leaning, and the defence is one
   prompt variant. Greedy decoding, one sample per task.
@@ -429,7 +431,7 @@ instead of calling that a pass.
 ```bash
 python data/build_hard.py && python data/build_hard90.py && python data/build_mix.py
 python data/build_abstain.py && python data/build_safety.py
-python scripts/verify_all.py          # no GPU, no token: 20 checks
+python scripts/verify_all.py          # no GPU, no token: 23 checks
 
 python scripts/train_sft.py --tasks data/tasks_train_mix3.jsonl \
     --epochs 2 --seed 42 --out runs/sft4 --merge-out runs/sft4_merged
