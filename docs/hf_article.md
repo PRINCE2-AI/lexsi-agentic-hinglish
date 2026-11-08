@@ -47,6 +47,16 @@ validity (`ter`/`arr`), ordering (final ledger correctness), redundancy (`rad`),
 (`lcf`), and calls/steps per task. The required Track 3 toolkits are both used: **AgentTune**
 for the GRPO stage and **AuditKIT** for an independent agentic evaluation of the recorded runs.
 
+Track 3 lists nine statements. This entry claims three of them — the ones a measured number
+backs — and says so instead of spraying coverage:
+
+| # | Statement | Claimed | Evidence |
+|---|---|---|---|
+| 1 | Reliable tool calling | yes | 96.67% (29/30), 93.33% (84/90), exact calls, no invalid calls, no loops; the RL stage ran twice and its null is reported |
+| 2 | Efficient trajectories | yes | 3.57 and 3.38 calls per task against oracle 3.57 and 3.41, zero redundant calls, base at 7.03 |
+| 6 | Data and database agents | yes | a deterministic integer-paise ledger, rewarded on verified final state |
+| 3–5, 7–9 | distillation, RAG, synthetic multi-hop, workflow, self-healing, reward design | no | not claimed; the injection split probes reward gaming, it is not a reward-design result |
+
 ## Why this task
 
 Cohere Labs chat templates do not render `tools`, so the model has to read a tool schema

@@ -20,6 +20,19 @@ prompt-injection tasks and repeating the attacker number in 0 of 24 answers.**
 | ROI (optional deliverable) | [docs/roi.md](https://github.com/PRINCE2-AI/lexsi-agentic-hinglish/blob/main/docs/roi.md) — measured tokens and latency, $53.42 vs $79.74 per 10,000 requests (0.67x) |
 | HF Collection | https://huggingface.co/collections/primce/lexsi-track-3-hinglish-expense-agent-6aeb3207e10dfc7dda6329d6 |
 
+## Problem statements this entry claims
+
+Track 3 lists nine problem statements. A statement is claimed here only when a measured number
+backs it; the rest are listed as not claimed, on purpose.
+
+| # | Statement | Claimed | Evidence |
+|---|---|---|---|
+| 1 | Reliable tool calling | yes | 96.67% (29/30) and 93.33% (84/90) with exact calls, zero invalid calls, zero loops; the RL stage was run twice and its null is reported, not hidden |
+| 2 | Efficient trajectories | yes | 3.57 calls/task on hard-30 (oracle 3.57) and 3.38 on hard-90 (oracle 3.41), zero redundant calls, zero loops; base takes 7.03 calls and 16/30 episodes never reach `finish` |
+| 6 | Data and database agents | yes | five tools over a deterministic integer-paise ledger, rewarded on the verified final state, never on text similarity |
+| 3 | Agentic distillation | no | no teacher model was distilled; this entry is SFT on oracle trajectories plus GRPO |
+| 4, 5, 7, 8, 9 | RAG / synthetic multi-hop / workflow / self-healing / reward design | no | not claimed; the injection split is a probe against reward gaming, not a reward-design result |
+
 ## Track 3 requirements, and where each is met
 
 | Requirement | Evidence in this repo |
