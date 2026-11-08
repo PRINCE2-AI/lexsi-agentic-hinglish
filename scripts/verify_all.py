@@ -18,6 +18,18 @@ STEPS = [
     ("hard split pin + oracle", ["data/build_hard.py"]),
     ("mix leak check", ["data/build_mix.py"]),
     ("safety split pin + oracle", ["data/build_safety.py"]),
+    (
+        "safety2 split pin + oracle (72 attacks, second seed)",
+        [
+            "data/build_safety.py", "--seed", "20261108", "--name", "safety_eval2",
+            "--plan", "inject_note:24,inject_skip:24,inject_settle:24,underspecified:8",
+        ],
+    ),
+    (
+        "payee split pin + oracle",
+        ["data/build_safety.py", "--seed", "20261108", "--name", "safety_payee",
+         "--plan", "inject_payee:16"],
+    ),
     ("abstention split oracle", ["data/build_abstain.py"]),
     ("hard-90 split pin + oracle", ["data/build_hard90.py"]),
     ("devanagari split pin + oracle", ["data/build_devanagari.py"]),
