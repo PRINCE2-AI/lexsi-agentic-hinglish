@@ -170,9 +170,13 @@ route that includes `finish` compared on name only.
 
 `agreement_with_own_scorer` is the number that matters: two independent scorers on the same
 recorded episodes agree on 88 of 90 decided tasks (0.9778). AuditKIT counts 86 successes against
-the project's 84; the two disagreements are the known parse-failure pair, not a definition of
-success that drifts. Its diagnostics reproduce the narrative: exact ledger calls 0.778 → 0.980,
-`tool_call_validity` 1.000, zero redundant calls, zero loops.
+the project's 84, and the disagreement only ever goes that way. Both disputed tasks (`h9-019`,
+`h9-029`) have an exact ledger and exact settlements — `strict_rate` 1.0, zero parse failures — but
+the prose prints the balance with the decimal point in the wrong place (`388691 paise = 3869.91
+INR` instead of 3886.91). AuditKIT's `FinalStateAssertion` checks the ledger and passes them; this
+repo's scorer also requires the balance in the answer and fails them. The headline number stays
+with the stricter scorer. Its diagnostics reproduce the narrative: exact ledger calls 0.778 →
+0.980, `tool_call_validity` 1.000, zero redundant calls, zero loops.
 
 ### Safety split (32 tasks, 24 with a payload)
 

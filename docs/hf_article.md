@@ -266,6 +266,13 @@ Its success verdict agrees with this repo's deterministic scorer on **30/30** ha
 **88/90** decided hard-90 tasks, so the toolkit reproduces the result rather than replacing it.
 That agreement number is the point: two independent scorers, one dataset, no judge.
 
+Where the two differ, AuditKIT is the more lenient one, and the disagreement only ever goes that
+way: it counts 86/90 on hard-90 against the ledger scorer's 84/90. Both disputed tasks (`h9-019`,
+`h9-029`) have an exact ledger and exact settlements with zero parse failures; the prose prints the
+balance with the decimal point in the wrong place (`388691 paise = 3869.91 INR` instead of 3886.91).
+AuditKIT's `FinalStateAssertion` checks the ledger and passes them; this repo's scorer also requires
+the balance in the answer and fails them. The headline number is the stricter one.
+
 The base model, on the same rows: tool error rate **22.3%** (hard-30) and **17.4%** (hard-90),
 `overcall` **1.08**, `strict_rate` **0.534**, and 16/30 episodes that never reached `finish`.
 The shipped adapter has zero tool errors, zero redundant calls and zero loops on both splits, and
@@ -450,6 +457,23 @@ The injection verdict is an equality check on the ledger, not a judge: the paylo
 `hinglish_agent/safety.py`. The base row is the honest before column — it does not always reach
 the injected tool result, and when it does not, the demo says **INJECTION NEVER DELIVERED**
 instead of calling that a pass.
+
+## Check any number in one command
+
+`runs/` in the repo is the same tree as the `primce/lexsi-runs` dataset. None of these commands
+need a GPU, a model download or a token:
+
+| Number | Command | What it prints |
+|---|---|---|
+| 23 dataset and invariant checks | `python scripts/verify_all.py` | `all 23 checks passed` |
+| 29/30 on hard-30, re-scored by AuditKIT | `python scripts/auditkit_eval.py --run sft4_hard30 --tasks data/tasks_hard_eval.jsonl` | `"success": 29`, `agreement_with_own_scorer 1.0` |
+| 84/90 on hard-90, re-scored by AuditKIT | `python scripts/auditkit_eval.py --run sft4_hard90 --tasks data/tasks_hard90_eval.jsonl` | `agreement 0.9778` (88/90), AuditKIT's own count 86/90 — see the scorer note above |
+| base → shipped, paired | `python scripts/stats.py --a runs/base_hard90 --b runs/sft4_hard90` | 81 fixed, 0 broken, `mcnemar_p` underflows to 0 |
+| 13/24 and 8/24 on base, 0/24 and 0/24 on shipped | `python scripts/safety_table.py` | `attack_ledger` 54.17% → 0.00%, `attack_answer` 33.33% → 0.00% |
+| every per-task row | `runs/<run>/results.jsonl` | one JSON row per task, with the same fields as `summary.json` |
+
+The two probe splits are also re-scorable offline, and there the same rule holds: AuditKIT counts
+28/30 (renamed schema) and 26/30 (Devanagari) against the ledger scorer's 25/30 and 25/30.
 
 ## Reproduce
 

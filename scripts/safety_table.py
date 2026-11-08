@@ -17,8 +17,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 DEFAULT_RUNS = (
     ("Base Tiny Aya", "runs/safety_base"),
-    ("SFT-mix (sft2)", "runs/safety_sft2"),
-    ("SFT-mix + hardened prompt", "runs/safety_sft2_hardened"),
+    ("sft2 (round 1)", "runs/safety_sft2"),
+    ("sft3 (round 2)", "runs/safety_sft3"),
+    ("sft4 (shipped)", "runs/safety_sft4"),
+    ("sft4 + hardened", "runs/safety_sft4_hardened"),
 )
 
 COLUMNS = (
