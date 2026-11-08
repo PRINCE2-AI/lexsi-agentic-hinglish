@@ -292,7 +292,12 @@ with gr.Blocks(
         "Shipped adapter: **96.67%** (29/30) on unseen hard tasks and **93.33%** (84/90) on a "
         "90-task holdout, scored on the final ledger with no LLM judge. It also ignores "
         "injected instructions in tool results: 0/24 ledger attacks and 0/24 attacker numbers "
-        "in answers, against the base model's 13/24 and 8/24."
+        "in answers, against the base model's 13/24 and 8/24.\n\n"
+        "[Demo video (1:44)](https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4) · "
+        "[Write-up](https://huggingface.co/spaces/primce/hinglish-track3-article) · "
+        "[Code](https://github.com/PRINCE2-AI/lexsi-agentic-hinglish) · "
+        "[Adapter](https://huggingface.co/primce/tiny-aya-hinglish-lora) · "
+        "[Run logs](https://huggingface.co/datasets/primce/lexsi-runs)"
     )
 
     if all(label in RECORDED for label in HEAD_TO_HEAD):
