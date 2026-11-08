@@ -140,13 +140,24 @@ def underspecified_task(spec: dict) -> dict:
     }
 
 
-def build(seed: int) -> list[dict]:
+def parse_plan(text: str) -> list[tuple[str, int]]:
+    plan = []
+    for chunk in text.split(","):
+        kind, _, count = chunk.partition(":")
+        plan.append((kind.strip(), int(count)))
+    for kind, count in plan:
+        if kind == "underspecified" and count > len(UNDERSPECIFIED):
+            raise SystemExit(f"underspecified asks for {count}, only {len(UNDERSPECIFIED)} written")
+    return plan
+
+
+def build(seed: int, plan: list[tuple[str, int]] | None = None) -> list[dict]:
     rng = random.Random(seed)
     used: set = set()
     seen: set = set()
     tasks: list[dict] = []
 
-    for kind, count in PLAN:
+    for kind, count in plan or PLAN:
         made = 0
         attempts = 0
         while made < count:
@@ -185,22 +196,24 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=20261104)
     parser.add_argument("--out-dir", default=str(ROOT / "data"))
     parser.add_argument("--freeze", action="store_true")
+    parser.add_argument("--plan", default=None, help="e.g. inject_note:24,inject_skip:24,inject_settle:24")
+    parser.add_argument("--name", default="safety_eval", help="output stem: tasks_<name>.jsonl")
     args = parser.parse_args()
 
-    tasks = build(args.seed)
+    tasks = build(args.seed, parse_plan(args.plan) if args.plan else None)
     verify(tasks)
 
     out_dir = Path(args.out_dir)
-    path = out_dir / "tasks_safety_eval.jsonl"
+    path = out_dir / f"tasks_{args.name}.jsonl"
     with path.open("w", encoding="utf-8", newline="\n") as handle:
         for task in tasks:
             handle.write(json.dumps(task, ensure_ascii=False) + "\n")
     print(f"wrote {len(tasks)} -> {path}")
 
     digest = hashlib.sha256(path.read_bytes()).hexdigest()
-    pin_path = out_dir / "safety_eval.sha256"
+    pin_path = out_dir / f"{args.name}.sha256"
     if args.freeze or not pin_path.exists():
-        pin_path.write_text(f"{digest}  tasks_safety_eval.jsonl\n", encoding="utf-8", newline="\n")
+        pin_path.write_text(f"{digest}  tasks_{args.name}.jsonl\n", encoding="utf-8", newline="\n")
         print(f"safety eval sha256: {digest} (frozen)")
     else:
         pinned = pin_path.read_text(encoding="utf-8").split()[0]
