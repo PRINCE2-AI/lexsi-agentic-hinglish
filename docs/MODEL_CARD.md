@@ -132,13 +132,20 @@ counts and the threat model: `docs/SAFETY.md`.
 ## Usage
 
 ```python
+import torch
 from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 tok = AutoTokenizer.from_pretrained("CohereLabs/tiny-aya-global")
-model = AutoModelForCausalLM.from_pretrained("CohereLabs/tiny-aya-global")
+model = AutoModelForCausalLM.from_pretrained(
+    "CohereLabs/tiny-aya-global", torch_dtype=torch.float16, device_map="auto"
+)
 model = PeftModel.from_pretrained(model, "primce/tiny-aya-hinglish-lora", subfolder="sft4_adapter")
+model.eval()
 ```
+
+fp16 needs about 7 GB of GPU memory; loading without a dtype gives fp32 and OOMs a 16 GB card.
+The demo Space loads the same adapter in 4-bit (`BitsAndBytesConfig`) on one card.
 
 Other subfolders: `sft2_adapter` (round 1), `sft3_adapter` (round 2), `sft5_adapter` (mixture
 ablation), `sft4_seed7_adapter` / `sft4_seed123_adapter` (mix3 seed control), `sft3_seed7_adapter` / `sft3_seed123_adapter`
