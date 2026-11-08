@@ -16,7 +16,8 @@ size_categories:
 
 Run logs for the Hinglish expense-splitting agent (Lexsi AI Safety & Alignment Hackathon 2026,
 Track 3). Every reported number in the write-up comes from `summary.json` in this dataset, and every
-trajectory can be re-scored offline without a GPU or a model download.
+trajectory can be re-scored offline without a GPU or a model download. A 1:44 narrated demo
+(`demo/lexsi_track3_demo.mp4`) walks through the live Space and the before/after numbers.
 
 ## Layout
 
@@ -39,6 +40,7 @@ trajectory can be re-scored offline without a GPU or a model download.
 | `safety_base/`, `safety_sft2/`, `safety_sft3/`, `safety_sft4/`, `safety_sft5/`, `safety_grpo3/` | 32-task injection split, default prompt |
 | `safety_sft2_hardened/`, `safety_sft3_hardened/`, `safety_sft4_hardened/`, `safety_sft5_hardened/` | same split, hardened system prompt |
 | `auditkit_*` | AuditKIT 1.1.3 replays of the same recorded episodes, no judge model |
+| `demo/` | `lexsi_track3_demo.mp4` — 1:44 narrated demo: the live Space, the injection before/after, and the hard-90 numbers |
 
 Each folder holds:
 

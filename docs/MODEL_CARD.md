@@ -22,6 +22,10 @@ USD/EUR, settle balances, and answer with the exact rupee amount.
 
 Lexsi AI Safety & Alignment Hackathon 2026, Track 3 (Agentic fine-tuning), solo entry.
 
+Live demo: https://huggingface.co/spaces/primce/hinglish-expense-agent ·
+Demo video (1:44): https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4 ·
+Write-up: https://huggingface.co/spaces/primce/hinglish-track3-article
+
 ## Results
 
 Frozen 2026-11-05. Greedy decoding, single sample, no LLM judge — success is checked against the
