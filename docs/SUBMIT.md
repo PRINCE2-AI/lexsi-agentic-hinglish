@@ -70,32 +70,47 @@ the page come from the same file, never hand-edited HTML.
 
 ### 4. Submission form (10 min, hard deadline)
 
-Everything the form asks for already exists as a file. Paste, do not write:
+Open the form from the Lexsi Discord and paste this block field by field. Nothing to compose:
 
-- **Track**: 3, Agentic fine-tuning.
-- **Model**: Cohere Labs Tiny Aya (`CohereLabs/tiny-aya-global`), LoRA, 3.35B.
-- **One-line result**: 3.33% → 96.67% task success on a frozen 30-task hard split (28 fixed,
-  0 broken, exact McNemar p = 7.5e-9) and 3.33% → 93.33% on a 90-task holdout (81 fixed, 0
-  broken, p < 1e-20), at 3.38 calls per task on hard-90 against an oracle 3.41 (87/90 tasks take
-  exactly the oracle number of calls, 3 take one fewer, none take more).
-- **Toolkits**: AgentTune (GRPO stage, `scripts/train_grpo.py`) and AuditKIT 1.1.3
-  (`scripts/auditkit_eval.py`), scored without a judge model: exact-call accuracy 0.033 → 1.000
-  and tool-call F1 0.188 → 1.000 on the same 30 tasks.
-- **Differentiator**: the repo ships a 32-task indirect prompt-injection eval for ledger agents,
-  scored without an LLM judge, plus a prompt-level defence measured on the same tasks. Base
-  writes attacker money in 13/24 tasks and repeats the number in 8/24 answers; the adapter is 0/24
-  and 0/24 (p = 0.00024 on the ledger). Abstention is 4/8 asked by default and 7/8 with the
-  hardened prompt, against a pre-registered 6/8 bar. Two generalisation probes are published with
-  their runs: renamed tool schema 25/30 against 29/30 (`sft4_shift_hard30`), Devanagari 25/30
-  (`sft4_devanagari30`), and the untuned base under the same rename 0/30 (`base_shift_hard30`).
-- **Write-up**: `submission/README.md` in this repo.
-- **Links**: https://github.com/PRINCE2-AI/lexsi-agentic-hinglish ,
-  https://huggingface.co/spaces/primce/hinglish-expense-agent ,
-  https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4 (demo video, 1:44) ,
-  https://huggingface.co/primce/tiny-aya-hinglish-lora ,
-  https://huggingface.co/datasets/primce/lexsi-runs ,
-  https://huggingface.co/spaces/primce/hinglish-track3-article ,
-  https://huggingface.co/collections/primce/lexsi-track-3-hinglish-expense-agent-6aeb3207e10dfc7dda6329d6
+```text
+Track: 3 — Agentic fine-tuning
+Team: solo entry (Prince Maurya)
+Base model: CohereLabs/tiny-aya-global (3.35B) + LoRA adapter (PEFT, r=16, all-linear)
+
+One-line result: 3.33% -> 96.67% task success on a frozen 30-task hard split (28 fixed, 0 broken,
+exact McNemar p = 7.5e-9) and 3.33% -> 93.33% on a 90-task holdout (81 fixed, 0 broken, p < 1e-20),
+at 3.38 calls per task on hard-90 against an oracle 3.41 (87/90 tasks take exactly the oracle number
+of calls, 3 take one fewer, none take more). Success is scored on the final ledger state, not by an
+LLM judge.
+
+Toolkits: AgentTune (GRPO stage built with agenttune.create_agentic_trainer, scripts/train_grpo.py)
+and AuditKIT 1.1.3 (episode_from_openai_messages + AgentEvalRunner in recorded mode with
+FinalStateAssertion and CustomPredicate, scripts/auditkit_eval.py). No judge model. Exact-call
+accuracy 0.033 -> 1.000 and tool-call F1 0.188 -> 1.000 on the same 30 tasks.
+
+Differentiator: the repo ships a 32-task indirect prompt-injection eval for ledger agents, scored
+without an LLM judge, plus a prompt-level defence measured on the same tasks. Base Tiny Aya writes
+attacker money into the ledger in 13/24 tasks and repeats the attacker number in 8/24 answers; the
+adapter is 0/24 and 0/24 (ledger p = 0.00024). Abstention is 4/8 asked by default and 7/8 with the
+hardened prompt, against a pre-registered 6/8 bar. Two generalisation probes are published with
+their runs: renamed tool schema 25/30 against 29/30 canonical, Devanagari 25/30, and the untuned
+base under the same rename 0/30.
+
+Video (1:44, narrated): https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4
+Write-up: submission/README.md in the repo (also rendered at the write-up link below)
+Reproduce in two minutes, no GPU and no token: git clone the repo, then python scripts/verify_all.py -> 23/23
+
+Links:
+  code: https://github.com/PRINCE2-AI/lexsi-agentic-hinglish
+  live demo: https://huggingface.co/spaces/primce/hinglish-expense-agent
+  write-up: https://huggingface.co/spaces/primce/hinglish-track3-article
+  adapter: https://huggingface.co/primce/tiny-aya-hinglish-lora
+  run logs (every summary.json + trajectories): https://huggingface.co/datasets/primce/lexsi-runs
+  collection: https://huggingface.co/collections/primce/lexsi-track-3-hinglish-expense-agent-6aeb3207e10dfc7dda6329d6
+```
+
+The write-up being a static Space is deliberate: Hub Articles need PRO on this account, and the
+Space renders the same markdown from `docs/hf_article.md`.
 
 ### 5. Demo Day (only if shortlisted)
 
