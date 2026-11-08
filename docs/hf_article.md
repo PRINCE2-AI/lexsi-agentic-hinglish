@@ -454,6 +454,7 @@ instead of calling that a pass.
 ## Reproduce
 
 ```bash
+git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
 python data/build_hard.py && python data/build_hard90.py && python data/build_mix.py
 python data/build_abstain.py && python data/build_safety.py
 python scripts/verify_all.py          # no GPU, no token: 23 checks
