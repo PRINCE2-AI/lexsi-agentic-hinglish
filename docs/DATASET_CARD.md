@@ -39,7 +39,7 @@ trajectory can be re-scored offline without a GPU or a model download. A 1:44 na
 | `sft4_seed7_hard30/`, `sft4_seed7_hard90/`, `sft4_seed123_hard30/`, `sft4_seed123_hard90/` | mix3 seed control (seeds 7 and 123) for the shipped seed 42 |
 | `safety_base/`, `safety_sft2/`, `safety_sft3/`, `safety_sft4/`, `safety_sft5/`, `safety_grpo3/` | 32-task injection split, default prompt |
 | `safety_sft2_hardened/`, `safety_sft3_hardened/`, `safety_sft4_hardened/`, `safety_sft5_hardened/` | same split, hardened system prompt |
-| `auditkit_*` | AuditKIT 1.1.3 replays of the same recorded episodes, no judge model |
+| `auditkit_*` | AuditKIT replays of the same recorded episodes, no judge model (scored on 1.1.3, re-checked on 1.1.6, same verdicts) |
 | `demo/` | `lexsi_track3_demo.mp4` — 1:44 narrated demo: the live Space, the injection before/after, and the hard-90 numbers |
 
 Each folder holds:

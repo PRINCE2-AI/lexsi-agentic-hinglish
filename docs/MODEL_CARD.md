@@ -61,10 +61,11 @@ seed adapters are kept for the ablation and variance controls.
 - Tool error rate **0.00%** on both splits, loop collapse **0.00%**, redundant calls **0.00%**,
   parse failures **0.00%** (base: 22.3% tool errors, 16 of 30 episodes never finishing,
   `overcall` 1.08).
-- Independent AuditKIT 1.1.3 replay: hard-30 exact-call accuracy **0.033 → 1.000**, tool-call F1
-  **0.188 → 1.000**, redundant calls **0.327 → 0.000**. On hard-90: exact 0.933, F1 **0.980**,
-  validity 1.000, zero redundant calls and zero loops; its success verdict agrees with the repo
-  scorer on 88/90 decided tasks.
+- Independent AuditKIT replay, scored on 1.1.3 and re-scored on the current 1.1.6 with identical
+  verdicts: hard-30 exact-call accuracy **0.033 → 1.000**, tool-call F1 **0.188 → 1.000**,
+  redundant calls **0.327 → 0.000**. On hard-90: exact 0.933, F1 **0.980**, validity 1.000, zero
+  redundant calls and zero loops; its success verdict agrees with the repo scorer on 88/90 decided
+  tasks.
 
 Three seeds of the mix2 recipe span 16.67 pp on hard-30 and 7.77 pp on hard-90; three seeds of the
 mix3 recipe that ships span **3.33 pp and 1.11 pp** on the same splits. Mix3 seeds 42 / 7 / 123

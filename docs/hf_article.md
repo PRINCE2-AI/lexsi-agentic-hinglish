@@ -283,6 +283,10 @@ balance with the decimal point in the wrong place (`388691 paise = 3869.91 INR` 
 AuditKIT's `FinalStateAssertion` checks the ledger and passes them; this repo's scorer also requires
 the balance in the answer and fails them. The headline number is the stricter one.
 
+The runs were first scored on AuditKIT 1.1.3 and re-scored on the current 1.1.6, which landed on
+2026-11-07 after our freeze: same verdict on every replayed run — 29/30 (hard-30), 86/90 (hard-90),
+28/30 (renamed schema), 26/30 (Devanagari), agreement unchanged at 1.000, 0.9778, 0.900 and 0.967.
+
 The base model, on the same rows: tool error rate **22.3%** (hard-30) and **17.4%** (hard-90),
 `overcall` **1.08**, `strict_rate` **0.534**, and 16/30 episodes that never reached `finish`.
 The shipped adapter has zero tool errors, zero redundant calls and zero loops on both splits, and

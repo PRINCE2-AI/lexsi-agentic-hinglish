@@ -38,7 +38,7 @@ backs it; the rest are listed as not claimed, on purpose.
 | Requirement | Evidence in this repo |
 |---|---|
 | **AgentTune used** | `scripts/train_grpo.py` builds the trainer through `agenttune.create_agentic_trainer` and runs 40 GRPO steps on top of the SFT warm start (`scripts/hf_job_stage2.sh`, HF Job `6aeb328dc78863f9c6328d08`). |
-| **AuditKIT used** | `scripts/auditkit_eval.py` rebuilds every recorded episode as an `auditkit.agent_eval.AgentCase` + `episode_from_openai_messages`, runs `AgentEvalRunner` in `mode="recorded"` with `FinalStateAssertion` and `CustomPredicate`, and scores `tool_call_f1`, `tool_call_f1_name`, `tool_call_validity`, `redundant_tool_calls`, `agent_loop_detection`. No judge model is used. |
+| **AuditKIT used** | `scripts/auditkit_eval.py` rebuilds every recorded episode as an `auditkit.agent_eval.AgentCase` + `episode_from_openai_messages`, runs `AgentEvalRunner` in `mode="recorded"` with `FinalStateAssertion` and `CustomPredicate`, and scores `tool_call_f1`, `tool_call_f1_name`, `tool_call_validity`, `redundant_tool_calls`, `agent_loop_detection`. No judge model is used. Replayed on 1.1.3 and on the current 1.1.6: identical verdicts on all four runs (29/30, 86/90, 28/30, 26/30). |
 | **Before/after metrics, more than one** | Success, exact-call accuracy, tool-call F1/precision/recall, redundant calls, loop detection, ledger-attack rate, abstention — tables below. |
 | **HF Collection** | linked above. |
 | **Write-up** | this file; rendered version in the article Space. |
