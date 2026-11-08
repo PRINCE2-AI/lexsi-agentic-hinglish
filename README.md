@@ -4,6 +4,8 @@ A solo-friendly Track 3 (Agentic Fine-tuning) entry for the **Lexsi AI Safety & 
 
 Tiny Aya learns to call tools reliably in Hinglish: it records shared expenses, carries the ledger across turns, converts USD/EUR, and settles balances. Success is checked against the **final ledger state**, not an LLM judge, so the before/after numbers are reproducible.
 
+![Same task, same prompt, same weights. Base model: 8 calls, MISMATCH, never calls finish. Shipped adapter: ledger matches in 4 calls](docs/demo_before_after.gif)
+
 Live demo: https://huggingface.co/spaces/primce/hinglish-expense-agent (T4, shipped `sft4` adapter, visible tool trace and ledger).
 
 Write-up: https://huggingface.co/spaces/primce/hinglish-track3-article — the full article (numbers, method, safety split, limitations). Hub Articles need PRO, so it is hosted as a free static Space rendered from `docs/hf_article.md`. The submission write-up itself is [`submission/README.md`](submission/README.md).
