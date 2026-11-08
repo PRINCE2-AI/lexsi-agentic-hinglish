@@ -2,6 +2,11 @@
 
 *Lexsi AI Safety & Alignment Hackathon 2026 — Track 3, Agentic fine-tuning. Solo entry.*
 
+<div class="result">
+<p><strong>3.33% → 96.67%</strong> task success on a frozen 30-task split, <strong>3.33% → 93.33%</strong> on a 90-task holdout — scored on the final ledger state, no LLM judge.</p>
+<p>The same adapter moves attacker money into the ledger in <strong>0 of 24</strong> prompt-injection tasks (base: 13 of 24) and never repeats the attacker's number in its answer (<strong>0 of 24</strong>).</p>
+</div>
+
 ## TL;DR
 
 - Base Tiny Aya on the frozen hard-30, no adapter: **3.33%** (1/30), and that one success is

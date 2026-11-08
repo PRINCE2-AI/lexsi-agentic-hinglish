@@ -45,6 +45,13 @@ code {{ background: #f6f8fa; padding: .1rem .3rem; border-radius: 4px; font-size
 pre {{ background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow-x: auto; }}
 pre code {{ background: none; padding: 0; }}
 blockquote {{ margin: 1rem 0; padding: 0 1rem; color: #57606a; border-left: 4px solid #d0d7de; }}
+.result {{
+  margin: 1.25rem 0 1.75rem; padding: 1rem 1.15rem;
+  border: 1px solid #1a7f37; border-left: 6px solid #1a7f37; border-radius: 8px;
+  background: #f2fdf5; font-size: 1.02rem;
+}}
+.result p {{ margin: .4rem 0; }}
+.result strong {{ color: #0f5132; }}
 .links {{ font-size: .92rem; margin-bottom: 2rem; }}
 .links a {{ margin-right: 1rem; }}
 @media (prefers-color-scheme: dark) {{
@@ -54,6 +61,8 @@ blockquote {{ margin: 1rem 0; padding: 0 1rem; color: #57606a; border-left: 4px 
   th, td {{ border-color: #30363d; }}
   th, code, pre {{ background: #161b22; }}
   blockquote {{ color: #8b949e; border-color: #30363d; }}
+  .result {{ background: #0f1f16; border-color: #2ea043; }}
+  .result strong {{ color: #7ee787; }}
 }}
 </style>
 </head>
@@ -61,6 +70,7 @@ blockquote {{ margin: 1rem 0; padding: 0 1rem; color: #57606a; border-left: 4px 
 <nav class="links">
 <a href="https://github.com/PRINCE2-AI/lexsi-agentic-hinglish">GitHub</a>
 <a href="https://huggingface.co/spaces/primce/hinglish-expense-agent">Live demo</a>
+<a href="https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4">Demo video</a>
 <a href="https://huggingface.co/primce/tiny-aya-hinglish-lora">Adapter</a>
 <a href="https://huggingface.co/datasets/primce/lexsi-runs">Run logs</a>
 </nav>

@@ -272,7 +272,13 @@ def show_recorded(label: str):
     )
 
 
-with gr.Blocks(title="Hinglish Expense Agent") as demo:
+if RECORDED:
+    _seeded = show_recorded(next(iter(RECORDED)))
+
+with gr.Blocks(
+    title="Hinglish Expense Agent",
+    css=".replay-trace { max-height: 380px; overflow-y: auto; }",
+) as demo:
     gr.Markdown(
         "# Hinglish Expense-Splitting Agent\n"
         "Tiny Aya + AgentTune, Track 3. The agent calls tools, carries the ledger, "
@@ -280,12 +286,45 @@ with gr.Blocks(title="Hinglish Expense Agent") as demo:
         "Shipped adapter: **96.67%** (29/30) on unseen hard tasks and **93.33%** (84/90) on a "
         "90-task holdout, scored on the final ledger with no LLM judge. It also ignores "
         "injected instructions in tool results: 0/24 ledger attacks and 0/24 attacker numbers "
-        "in answers, against the base model's 13/24 and 8/24.\n\n"
-        "**Before/after in one click:** pick a scenario, run it with *Base model (adapter off)*, "
-        "then run the same scenario with *Shipped adapter*. Same weights, same prompt, only the "
-        "adapter is switched at inference time.\n\n"
-        "_This Space runs on ZeroGPU, which gives a few GPU-minutes per visitor per day. If you "
-        "see \"ZeroGPU quota exceeded\", log in with a Hugging Face account for a fresh quota._"
+        "in answers, against the base model's 13/24 and 8/24."
+    )
+
+    if RECORDED:
+        gr.Markdown(
+            "### Start here — a frozen run, no GPU needed\n"
+            "These episodes come from the shipped evaluations, not a fresh generation, so this "
+            "panel works even when the GPU quota is gone. The verdict is recomputed by the same "
+            "scoring code as the live run: the trace, ledger and verdict are the real ones. The "
+            "shipped adapter's correct split is already on screen — switch to *Base model — "
+            "duplicate expenses* to see what the same prompt does without the adapter."
+        )
+        with gr.Row():
+            recorded = gr.Dropdown(
+                choices=list(RECORDED), value=next(iter(RECORDED)), label="Recorded run"
+            )
+            recorded_button = gr.Button("Show recorded run", variant="primary")
+        r_verdict = gr.Markdown(_seeded[3])
+        with gr.Row():
+            with gr.Column(scale=2):
+                r_answer = gr.Markdown(_seeded[0])
+            with gr.Column(scale=3):
+                r_trace = gr.Markdown(_seeded[1], elem_classes=["replay-trace"])
+                r_ledger = gr.Code(value=_seeded[2], language="json")
+        recorded_button.click(
+            show_recorded, inputs=recorded, outputs=[r_answer, r_trace, r_ledger, r_verdict]
+        )
+        recorded.change(
+            show_recorded, inputs=recorded, outputs=[r_answer, r_trace, r_ledger, r_verdict]
+        )
+
+    gr.Markdown(
+        "### Live run — your own question, on the model\n"
+        "**The first request loads a 4-bit model: expect about 60 seconds.** After that a run "
+        "takes a few seconds. Free ZeroGPU gives a few GPU-minutes per visitor per day, so if "
+        "you see \"ZeroGPU quota exceeded\", log in with a Hugging Face account for a fresh "
+        "quota, or use the replay above — same scoring code, no GPU.\n\n"
+        "**Before/after:** run a scenario with *Base model (adapter off)*, then with *Shipped "
+        "adapter*. Same weights, same prompt, only the adapter changes."
     )
     with gr.Row():
         scenario = gr.Radio(choices=list(SCENARIOS), value="Normal split (editable)", label="Scenario")
@@ -303,20 +342,6 @@ with gr.Blocks(title="Hinglish Expense Agent") as demo:
     scenario.change(switch_scenario, inputs=scenario, outputs=question)
     button.click(run_agent, inputs=[question, scenario, mode], outputs=[answer, trace, ledger, verdict])
     question.submit(run_agent, inputs=[question, scenario, mode], outputs=[answer, trace, ledger, verdict])
-
-    if RECORDED:
-        gr.Markdown(
-            "### No GPU left? Replay a frozen run\n"
-            "These episodes come from the shipped evaluations, not from a fresh generation. "
-            "The verdict is recomputed by the same scoring code as the live run, so the trace, "
-            "ledger and verdict are the real ones."
-        )
-        with gr.Row():
-            recorded = gr.Dropdown(choices=list(RECORDED), value=list(RECORDED)[0], label="Recorded run")
-            recorded_button = gr.Button("Show recorded run")
-        recorded_button.click(
-            show_recorded, inputs=recorded, outputs=[answer, trace, ledger, verdict]
-        )
 
 if __name__ == "__main__":
     demo.launch(server_name="0.0.0.0", server_port=int(os.getenv("PORT", "7860")))
