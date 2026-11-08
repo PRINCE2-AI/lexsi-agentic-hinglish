@@ -385,6 +385,25 @@ eval.
 Two probes that used to be on this list now have numbers: the Hammer-style schema shift (25/30
 against 29/30, untuned base 0/30) and a Devanagari version of the same 30 tasks (25/30).
 
+## Cost: is it worth running? (ROI)
+
+Measured from the frozen logs: **1,738 input tokens and 184 output tokens per request**, over 3.57
+turns. Self-hosted on one T4-class card at an assumed \$0.35/h, at an assumed 10,000 requests a
+month:
+
+| System | s / request | GPU-hours / month | \$ / month at \$0.35/h |
+|---|---:|---:|---:|
+| Closed API (assumed \$3/M in, \$15/M out) | - | - | \$79.74 |
+| Base Tiny Aya, 4-bit | 80.95 | 224.9 | \$78.70 |
+| Shipped `sft4`, 4-bit | 54.95 | 152.6 | **\$53.42 (0.67x)** |
+
+The honest headline: **at base-model latency, self-hosting is a wash** — the bill is the same and
+you have bought 3.33% success instead of 96.67%. The tuned adapter is cheaper than the API because
+GPU time follows turns: 7.03 calls on base, 3.57 on the adapter, not because the model is small.
+Latency is measured batch-1 greedy on a shared T4; the API price and the GPU hour are labelled
+assumptions with the arithmetic shown in [`docs/roi.md`](https://github.com/PRINCE2-AI/lexsi-agentic-hinglish/blob/main/docs/roi.md),
+so any reader can re-price both columns.
+
 ## Limitations
 
 - hard-90 has 90 tasks; counts are reported next to percentages, and its Wilson interval is

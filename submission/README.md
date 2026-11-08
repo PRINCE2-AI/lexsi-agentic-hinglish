@@ -17,6 +17,7 @@ prompt-injection tasks and repeating the attacker number in 0 of 24 answers.**
 | Live demo (tool trace visible) | https://huggingface.co/spaces/primce/hinglish-expense-agent |
 | Demo video (1:44, narrated) | https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4 |
 | Write-up | https://huggingface.co/spaces/primce/hinglish-track3-article |
+| ROI (optional deliverable) | [docs/roi.md](https://github.com/PRINCE2-AI/lexsi-agentic-hinglish/blob/main/docs/roi.md) — measured tokens and latency, $53.42 vs $79.74 per 10,000 requests (0.67x) |
 | HF Collection | https://huggingface.co/collections/primce/lexsi-track-3-hinglish-expense-agent-6aeb3207e10dfc7dda6329d6 |
 
 ## Track 3 requirements, and where each is met

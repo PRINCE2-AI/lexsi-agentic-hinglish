@@ -62,7 +62,7 @@ fp16/4-bit, so a single T4-class card serves one request at a time at the latenc
 | Model | s / request | GPU-hours / month | Cost / month |
 |---|---:|---:|---:|
 | Base Tiny Aya (measured, 4-bit, 30 tasks / 2428.4 s) | 80.95 | 224.9 | \$78.70 |
-| SFT-mix (measured, 4-bit, 30 tasks / 1648.6 s) | 54.95 | 152.6 | \$53.43 |
+| SFT-mix (measured, 4-bit, 30 tasks / 1648.6 s) | 54.95 | 152.6 | \$53.42 |
 
 The eval-24 run writes a third data point: 1212.5 s / 24 = 50.52 s per request, the same
 adapter on the in-distribution split.
