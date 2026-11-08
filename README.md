@@ -8,6 +8,8 @@ Tiny Aya learns to call tools reliably in Hinglish: it records shared expenses, 
 
 Live demo: https://huggingface.co/spaces/primce/hinglish-expense-agent (T4, shipped `sft4` adapter, visible tool trace and ledger).
 
+Demo video (1:44, narrated): https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4 — the same prompt on the base model and the shipped adapter, the injection scenario in both modes, and the probe results.
+
 Write-up: https://huggingface.co/spaces/primce/hinglish-track3-article — the full article (numbers, method, safety split, limitations). Hub Articles need PRO, so it is hosted as a free static Space rendered from `docs/hf_article.md`. The submission write-up itself is [`submission/README.md`](submission/README.md).
 
 ## Judge's 60-second view

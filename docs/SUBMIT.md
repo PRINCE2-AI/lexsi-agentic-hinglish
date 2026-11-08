@@ -19,7 +19,7 @@ independent AuditKIT pass. Everything left is packaging, and packaging is what m
 
 | Attack | Answer today |
 |---|---|
-| "Track says RL, your win is SFT" | "GRPO ran twice: 0/30 in round 1, and 0 tasks fixed / 0 broken on hard-90 in round 2 (p = 1.0) with the abstain reward, 40 steps and lr 3e-6. That zero is measured, diagnosed (`frac_reward_zero_std` 0.8–0.95 at 2 generations) and reported, and round 3 shows the real bottleneck was data coverage, not RL (`docs/ROUND2.md`)." |
+| "Track says RL, your win is SFT" | "GRPO ran twice and moved **0 of 30** tasks in round 1 (19/30 → 19/30) and 0 fixed / 0 broken on hard-90 in round 2 (68/90 → 68/90, p = 1.0) with the abstain reward, 40 steps and lr 3e-6. That zero is measured, diagnosed (`frac_reward_zero_std` 0.8–0.95 at 2 generations) and reported, and round 3 shows the real bottleneck was data coverage, not RL (`docs/ROUND2.md`)." |
 | "30 tasks, 1 seed" | "90-task holdout at 15 per family (93.33%), paired against base at p < 1e-20, and against round 2 at 18 fixed / 2 broken, p = 0.0004. Five seed controls across two recipes. Mix3, the shipped recipe, has three seeds — 96.67 / 100 / 96.67 on hard-30 and 92.22 / 93.33 / 93.33 on hard-90 — an 1.11 pp spread on hard-90, no seed pair significant (p = 1.0), and five tasks all three seeds miss. Mix2's 7.77 pp spread is published too, and it is the contrast that shows what the contrast rows bought." |
 | "It learned the tool names, not the task" | "Rename every tool and parameter — the canonical name is then rejected as unknown — and it keeps **25/30** (4 broken, 0 fixed, exact McNemar p = 0.125). The untuned base under the same rename is **0/30** with 0.60 loop collapse and 7.0 calls per task. The same 30 tasks written in Devanagari: **25/30**. The two probes break different families (`two_query` under the rename, `paraphrase` in Devanagari), and both are reported as n = 30 diagnostics, not headline numbers." |
 | "Abstention is still 1/8" | "It is 4/8 on the adapter and 7/8 with the hardened prompt (0/8 invented), against a pre-registered 6/8 bar. `attack_ledger` is 0/24 and `attack_answer` is 0/24 on the same runs. The hardened prompt is not an accuracy tax either: 86/90 against 84/90 on clean hard-90 (2 fixed, 0 broken, p = 0.5)." |
@@ -90,6 +90,7 @@ Everything the form asks for already exists as a file. Paste, do not write:
 - **Write-up**: `submission/README.md` in this repo.
 - **Links**: https://github.com/PRINCE2-AI/lexsi-agentic-hinglish ,
   https://huggingface.co/spaces/primce/hinglish-expense-agent ,
+  https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4 (demo video, 1:44) ,
   https://huggingface.co/primce/tiny-aya-hinglish-lora ,
   https://huggingface.co/datasets/primce/lexsi-runs ,
   https://huggingface.co/spaces/primce/hinglish-track3-article ,

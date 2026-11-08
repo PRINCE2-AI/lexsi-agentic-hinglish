@@ -15,6 +15,7 @@ prompt-injection tasks and repeating the attacker number in 0 of 24 answers.**
 | Adapter (shipped) | https://huggingface.co/primce/tiny-aya-hinglish-lora (`sft4_adapter`) |
 | Run logs (every `summary.json` + trajectories) | https://huggingface.co/datasets/primce/lexsi-runs |
 | Live demo (tool trace visible) | https://huggingface.co/spaces/primce/hinglish-expense-agent |
+| Demo video (1:44, narrated) | https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4 |
 | Write-up | https://huggingface.co/spaces/primce/hinglish-track3-article |
 | HF Collection | https://huggingface.co/collections/primce/lexsi-track-3-hinglish-expense-agent-6aeb3207e10dfc7dda6329d6 |
 
