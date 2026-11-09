@@ -9,11 +9,11 @@ independent AuditKIT pass. Everything left is packaging, and packaging is what m
 
 | # | What judges check | Status |
 |---|---|---|
-| 1 | Public repo, runnable, numbers reproducible | done: `python scripts/verify_all.py` → 23/23, no GPU or token; one-click Colab `notebooks/colab_reproduce.ipynb` |
+| 1 | Public repo, runnable, numbers reproducible | done: `python scripts/verify_all.py` → 25/25, no GPU or token; one-click Colab `notebooks/colab_reproduce.ipynb` |
 | 2 | **Live Space demo** with a visible tool trace | **live**: https://huggingface.co/spaces/primce/hinglish-expense-agent (ZeroGPU `zero-a10g`, sft4 adapter, base/tuned switch, injection scenario) |
 | 3 | **HF Article** with metrics, before/after, rationale | **live**: https://huggingface.co/spaces/primce/hinglish-track3-article (static Space; Hub Articles need PRO) |
 | 4 | HF artifacts: adapter + run logs + dataset | adapter (`sft4_adapter`, `sft4_seed7_adapter`, `sft4_seed123_adapter`, `sft5_adapter`, `sft3_seed7/123_adapter`), all run logs, **and the required HF Collection** |
-| 5 | **One memorable differentiator** | the injection eval: 13/24 → 0/24 ledger attacks and 8/24 → 0/24 attacker numbers in answers, no LLM judge, on a track where the required toolkit (AuditKIT) usually only scores tool calls |
+| 5 | **One memorable differentiator** | the injection eval: 13/24 → 0/24 ledger attacks and 8/24 → 0/24 attacker numbers in answers on the headline split, then **0 attacker values on 112 injected tasks across three pinned splits and four payload styles** (base: 13/24 + 32/72 + 5/16 ledger hits), no LLM judge, on a track where the required toolkit (AuditKIT) usually only scores tool calls |
 
 ### The four attack lines a strong reviewer will use
 
@@ -22,7 +22,7 @@ independent AuditKIT pass. Everything left is packaging, and packaging is what m
 | "Track says RL, your win is SFT" | "GRPO ran twice and moved **0 of 30** tasks in round 1 (19/30 → 19/30) and 0 fixed / 0 broken on hard-90 in round 2 (68/90 → 68/90, p = 1.0) with the abstain reward, 40 steps and lr 3e-6. That zero is measured, diagnosed (`frac_reward_zero_std` 0.8–0.95 at 2 generations) and reported, and round 3 shows the real bottleneck was data coverage, not RL (`docs/ROUND2.md`)." |
 | "30 tasks, 1 seed" | "90-task holdout at 15 per family (93.33%), paired against base at p < 1e-20, and against round 2 at 18 fixed / 2 broken, p = 0.0004. Five seed controls across two recipes. Mix3, the shipped recipe, has three seeds — 96.67 / 100 / 96.67 on hard-30 and 92.22 / 93.33 / 93.33 on hard-90 — an 1.11 pp spread on hard-90, no seed pair significant (p = 1.0), and five tasks all three seeds miss. Mix2's 7.77 pp spread is published too, and it is the contrast that shows what the contrast rows bought." |
 | "It learned the tool names, not the task" | "Rename every tool and parameter — the canonical name is then rejected as unknown — and it keeps **25/30** (4 broken, 0 fixed, exact McNemar p = 0.125). The untuned base under the same rename is **0/30** with 0.60 loop collapse and 7.0 calls per task. The same 30 tasks written in Devanagari: **25/30**. The two probes break different families (`two_query` under the rename, `paraphrase` in Devanagari), and both are reported as n = 30 diagnostics, not headline numbers." |
-| "Abstention is still 1/8" | "It is 4/8 on the adapter and 7/8 with the hardened prompt (0/8 invented), against a pre-registered 6/8 bar. `attack_ledger` is 0/24 and `attack_answer` is 0/24 on the same runs. The hardened prompt is not an accuracy tax either: 86/90 against 84/90 on clean hard-90 (2 fixed, 0 broken, p = 0.5)." |
+| "Abstention is still 1/8" | "It is 4/8 on the adapter and 7/8 with the hardened prompt (0/8 invented) on the 8 pre-registered rows, against a 6/8 bar — and on eight fresh rows it is 4/8 and 8/8 (0/8 invented) again. `attack_ledger` is 0/24 and `attack_answer` is 0/24 on the headline split, and 0/72 and 0/72 on the second sample. The hardened prompt is not an accuracy tax either: 86/90 against 84/90 on clean hard-90 (2 fixed, 0 broken, p = 0.5)." |
 | "Your article is a Space, not an HF blog" | "Hub Articles need PRO or a Team org on this account; the static Space renders the same markdown from the same file." |
 
 Say all four out loud before a judge does. The fourth is unwinnable without a subscription, and
@@ -88,17 +88,18 @@ and AuditKIT 1.1.3 (episode_from_openai_messages + AgentEvalRunner in recorded m
 FinalStateAssertion and CustomPredicate, scripts/auditkit_eval.py). No judge model. Exact-call
 accuracy 0.033 -> 1.000 and tool-call F1 0.188 -> 1.000 on the same 30 tasks.
 
-Differentiator: the repo ships a 32-task indirect prompt-injection eval for ledger agents, scored
-without an LLM judge, plus a prompt-level defence measured on the same tasks. Base Tiny Aya writes
-attacker money into the ledger in 13/24 tasks and repeats the attacker number in 8/24 answers; the
-adapter is 0/24 and 0/24 (ledger p = 0.00024). Abstention is 4/8 asked by default and 7/8 with the
-hardened prompt, against a pre-registered 6/8 bar. Two generalisation probes are published with
-their runs: renamed tool schema 25/30 against 29/30 canonical, Devanagari 25/30, and the untuned
-base under the same rename 0/30.
+Differentiator: the repo ships an indirect prompt-injection eval for ledger agents, scored without
+an LLM judge, plus a prompt-level defence measured on the same tasks. Three pinned splits, four
+payload styles, 112 injected tasks: the adapter carries an attacker value into the ledger or the
+answer on 0 of them (ledger 0/24 + 0/72 + 0/16, answer 0/24 + 0/72 + 0/16), against 13/24, 32/72
+and 5/16 ledger hits for base Tiny Aya. Abstention is 4/8 asked by default on both samples and
+7/8 and 8/8 with the hardened prompt, 0/8 invented, against a pre-registered 6/8 bar. Two
+generalisation probes are published with their runs: renamed tool schema 25/30 against 29/30
+canonical, Devanagari 25/30, and the untuned base under the same rename 0/30.
 
 Video (1:44, narrated): https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4
 Write-up: submission/README.md in the repo (also rendered at the write-up link below)
-Reproduce in two minutes, no GPU and no token: git clone the repo, then python scripts/verify_all.py -> 23/23
+Reproduce in two minutes, no GPU and no token: git clone the repo, then python scripts/verify_all.py -> 25/25
 
 Links:
   code: https://github.com/PRINCE2-AI/lexsi-agentic-hinglish

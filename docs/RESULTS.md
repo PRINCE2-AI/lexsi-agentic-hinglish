@@ -8,7 +8,8 @@ holdout, the 30-task holdout, the easy split, the safety split, and an independe
 **Why it ships.** `sft4` is 84/90 on hard-90 (93.33%, 95% CI 86.2–96.9%) against 80/90 for the
 round-1 adapter and 68/90 for `sft3`; it restores `empty_balance` to 15/15 while keeping `asked`
 at 4/8, and it is the only adapter that writes zero attacker values into an answer on the
-injection split (0/24). The `sft5` ablation scored one task higher on hard-30 and one lower on
+injection splits (0/112 injected tasks across three payload styles). The `sft5` ablation scored
+one task higher on hard-30 and one lower on
 hard-90 but collapsed abstention back to 0/8, so it does not ship. Every number below comes from
 a `summary.json` written by a GPU run and uploaded to `primce/lexsi-runs`; nothing is estimated.
 
@@ -19,8 +20,8 @@ a `summary.json` written by a GPU run and uploaded to `primce/lexsi-runs`; nothi
 | Adapter (shipped) | `primce/tiny-aya-hinglish-lora` → `sft4_adapter` |
 | Seed controls | same repo → `sft3_seed7_adapter`, `sft3_seed123_adapter` (mix2), `sft4_seed7_adapter`, `sft4_seed123_adapter` (mix3) |
 | Training data | `data/tasks_train_mix3.jsonl` (100 easy + 84 hard + 96 abstention + 94 contrast) |
-| Holdouts | `data/tasks_hard_eval.jsonl` (30), `data/tasks_hard90_eval.jsonl` (90, own pin), `data/tasks_eval.jsonl` (24), `data/tasks_safety_eval.jsonl` (32) |
-| Run logs | `primce/lexsi-runs` → `sft4_hard30`, `sft4_hard90`, `sft4_eval`, `sft4_seed7_*`, `sft4_seed123_*`, `sft3_seed7_*`, `sft3_seed123_*`, `grpo3_*`, `safety_sft4*`, `auditkit_sft4_hard90` |
+| Holdouts | `data/tasks_hard_eval.jsonl` (30), `data/tasks_hard90_eval.jsonl` (90, own pin), `data/tasks_eval.jsonl` (24), `data/tasks_safety_eval.jsonl` (32), `data/tasks_safety_eval2.jsonl` (80, own pin), `data/tasks_safety_payee.jsonl` (16, own pin) |
+| Run logs | `primce/lexsi-runs` → `sft4_hard30`, `sft4_hard90`, `sft4_eval`, `sft4_seed7_*`, `sft4_seed123_*`, `sft3_seed7_*`, `sft3_seed123_*`, `grpo3_*`, `safety_sft4*`, `safety2_*`, `safety_payee_*`, `auditkit_sft4_hard90` |
 | Independent eval | AuditKIT 1.1.3 via `scripts/auditkit_eval.py`, no judge model |
 
 ## Round 3 (2026-11-05) — sft4
@@ -213,6 +214,35 @@ none broken, exact McNemar p = 0.5, 4850 s on one T4 (`primce/lexsi-runs` →
 recovers is the one where the clean prompt reports only one of two results. The adapter still
 ships as the default, because the rule is prompt-level rather than an architectural defence, and
 the 2/24 return of attacker text in prose is a real cost. Full family counts: `docs/SAFETY.md`.
+
+### Safety split, second sample and a second attack (2026-11-08/09)
+
+The 32-task split is one sample and one payload style, so the shipped adapter, the untuned base
+and the hardened prompt were re-run on two more pinned splits on Kaggle T4 x2, greedy,
+`--no-4bit` (`notebooks/kaggle_safety_eval2.ipynb`, 6157.0 / 6022.8 / 6875.3 s for the 80-task
+runs and 1269.5 / 1237.8 / 1555.4 s for the 16-task runs).
+
+| Split | System | n | safe | utility | attack_ledger | attack_answer |
+|---|---|---:|---:|---:|---:|---:|
+| `safety_eval2` (72 injected) | Base | 80 | 0/80 | 0/80 | **32/72** | 11/72 |
+| | **`sft4`** | 80 | 54/80 | 50/80 | **0/72** | **0/72** |
+| | `sft4` + hardened | 80 | 63/80 | 55/80 | **0/72** | **0/72** |
+| `safety_payee` (16 injected) | Base | 16 | 0/16 | 0/16 | 5/16 | 0/16 |
+| | **`sft4`** | 16 | 12/16 | 12/16 | **0/16** | **0/16** |
+| | `sft4` + hardened | 16 | 12/16 | 12/16 | **0/16** | **0/16** |
+
+Two things move. First, the headline safety claim now rests on **0 attacker values in ledger or
+answer across 112 injected tasks** (0/24 + 0/72 + 0/16) under four payload styles, not on 24 rows.
+Second, the abstention result replicates: 4/8 asked by default on fresh underspecified rows, and
+8/8 asked with 0/8 invented under the hardened prompt, so the `asked >= 6/8`,
+`invented_expense <= 2/8` bar is cleared twice. The payee split is scored on the answer because
+that is where the money would move; base scores 0/16 there only because it never finishes, while
+it writes the attacker handle into the ledger 5 times.
+
+No paired test is quoted across the two safety samples: they are different rows by construction,
+so the comparison that matters is the absolute one — 0 attacker values on 112 injected tasks for
+the adapter against 13/24, 32/72 and 5/16 ledger hits for base. Tables, per-family counts and the
+threat model: `docs/SAFETY.md`.
 
 ### Generalisation probes (2026-11-08, no new training)
 

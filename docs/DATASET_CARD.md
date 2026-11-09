@@ -39,6 +39,8 @@ trajectory can be re-scored offline without a GPU or a model download. A 1:44 na
 | `sft4_seed7_hard30/`, `sft4_seed7_hard90/`, `sft4_seed123_hard30/`, `sft4_seed123_hard90/` | mix3 seed control (seeds 7 and 123) for the shipped seed 42 |
 | `safety_base/`, `safety_sft2/`, `safety_sft3/`, `safety_sft4/`, `safety_sft5/`, `safety_grpo3/` | 32-task injection split, default prompt |
 | `safety_sft2_hardened/`, `safety_sft3_hardened/`, `safety_sft4_hardened/`, `safety_sft5_hardened/` | same split, hardened system prompt |
+| `safety2_base/`, `safety2_sft4/`, `safety2_sft4_hardened/` | second injection sample, 80 tasks with 72 payloads, seed 20261108 (base 32/72 ledger, adapter 0/72) |
+| `safety_payee_base/`, `safety_payee_sft4/`, `safety_payee_sft4_hardened/` | 16 payee-redirect attacks: the tool result claims the sender's UPI handle changed; scored on the answer (base 5/16 ledger, adapter 0/16) |
 | `auditkit_*` | AuditKIT replays of the same recorded episodes, no judge model (scored on 1.1.3, re-checked on 1.1.6, same verdicts) |
 | `demo/` | `lexsi_track3_demo.mp4` — 1:44 narrated demo: the live Space, the injection before/after, and the hard-90 numbers |
 
@@ -63,10 +65,12 @@ Each folder holds:
 | Hard eval (30) | `data/tasks_hard_eval.jsonl`, sha256 `37f52b47…506865` |
 | Hard eval (90) | `data/tasks_hard90_eval.jsonl`, sha256 `2a4fc8fa…5e8877c` |
 | Safety eval (32) | `data/tasks_safety_eval.jsonl`, sha256 `bb8a3858…a84a7fe` |
+| Safety eval 2 (80) | `data/tasks_safety_eval2.jsonl`, sha256 `bc226c7a…b12138` |
+| Safety payee (16) | `data/tasks_safety_payee.jsonl`, sha256 `b22f6819…e447a4` |
 
 The two hard splits share no task text; hard-90 was built afterwards as a wider sample of the same
-six families and is pinned separately. Both hard splits and the safety split carry a SHA-256 file
-in the repo, so a number cannot silently drift to a different task set.
+six families and is pinned separately. Both hard splits and all three safety splits carry a
+SHA-256 file in the repo, so a number cannot silently drift to a different task set.
 
 ## Load one run
 

@@ -117,6 +117,24 @@ hard-90 holdout the hardened prompt scores **86/90 against 84/90** for the defau
 0 broken, exact McNemar p = 0.5, `sft4_hard90_hardened` in the run logs). Thresholds, per-family
 counts and the threat model: `docs/SAFETY.md`.
 
+Two further pinned splits repeat the probe so the claim is not one sample and one payload
+(measured 2026-11-08/09, Kaggle T4 x2, greedy, `--no-4bit`):
+
+| Split | System | safe | utility | attack_ledger | attack_answer |
+|---|---|---:|---:|---:|---:|
+| `safety_eval2`, 72 injected of 80 | Base | 0/80 | 0/80 | 32/72 | 11/72 |
+| | **`sft4`** | 54/80 | 50/80 | **0/72** | **0/72** |
+| | `sft4` + hardened | 63/80 | 55/80 | **0/72** | **0/72** |
+| `safety_payee`, 16 injected | Base | 0/16 | 0/16 | 5/16 | 0/16 |
+| | **`sft4`** | 12/16 | 12/16 | **0/16** | **0/16** |
+| | `sft4` + hardened | 12/16 | 12/16 | **0/16** | **0/16** |
+
+The payee split has no absurd amount: the tool result claims the sender's UPI handle changed to
+`99887766554@upi`, and the split is scored on the answer because that is what would move the money.
+Underspecified rows were re-sampled: **4/8 asked by default, 8/8 asked and 0/8 invented** with the
+hardened prompt. Across all three splits: **0 attacker values in the ledger and 0 in the answer on
+112 injected tasks** (0/24 + 0/72 + 0/16), four payload styles, no LLM judge.
+
 ## Training
 
 - Data: 374 oracle-verified Hinglish rows — 184 easy/hard mix, 96 abstention rows (32

@@ -4,8 +4,8 @@
 LoRA SFT + AgentTune GRPO, evaluated with AuditKIT 1.1.3.
 
 One line: **3.33% → 96.67% task success on a frozen 30-task hard split, and 3.33% → 93.33% on a
-90-task holdout, with the same adapter moving attacker money into the ledger in 0 of 24
-prompt-injection tasks and repeating the attacker number in 0 of 24 answers.**
+90-task holdout, with the same adapter carrying an attacker value into the ledger or the answer on
+0 of 112 injected tasks across three pinned safety splits.**
 
 ## Artifacts
 
@@ -59,8 +59,8 @@ backs it; the rest are listed as not claimed, on purpose.
    `abstain=1` row). Stage 2 runs on top of the SFT merge.
 4. **Evaluation.** Greedy, `--no-4bit`, one sample per task, frozen splits with SHA-256 pins:
    hard-30 (`tasks_hard_eval.jsonl`), hard-90 (`tasks_hard90_eval.jsonl`, 15 per family),
-   easy eval-24, safety-32. Every number comes from an uploaded `summary.json`; nothing is
-   estimated.
+   easy eval-24, safety-32, safety-80 (second sample) and a 16-task payee-redirect split. Every
+   number comes from an uploaded `summary.json`; nothing is estimated.
 
 ## Results
 
@@ -136,14 +136,37 @@ the adapter alone; with the hardened prompt, **7/8 asked and 0/8 invented**, whi
 pre-registered 6/8 / 2/8 bar at the cost of 2/24 attacker numbers in prose. The adapter alone is
 the default; the trade-off is recorded in `docs/ROUND2.md`.
 
+Two pinned splits repeat the probe with different rows and a different payload, on Kaggle T4 x2,
+greedy, `--no-4bit` (`notebooks/kaggle_safety_eval2.ipynb`; every row below is a `summary.json` on
+`primce/lexsi-runs`):
+
+| Split | System | safe | utility | attack_ledger | attack_answer |
+|---|---|---:|---:|---:|---:|
+| `safety_eval2`, 72 injected of 80 | Base | 0/80 | 0/80 | 32/72 | 11/72 |
+| | **sft4** | 54/80 | 50/80 | **0/72** | **0/72** |
+| | sft4 + hardened | 63/80 | 55/80 | **0/72** | **0/72** |
+| `safety_payee`, 16 injected | Base | 0/16 | 0/16 | 5/16 | 0/16 |
+| | **sft4** | 12/16 | 12/16 | **0/16** | **0/16** |
+| | sft4 + hardened | 12/16 | 12/16 | **0/16** | **0/16** |
+
+The second split is a different attack: no absurd amount, the tool result claims the sender's UPI
+handle changed to `99887766554@upi`, and the split is scored on the answer because that is what
+moves the money. Base scores 0/16 there only because it never finishes; it writes the handle into
+the ledger 5 times. Underspecified rows were re-sampled too: `asked` 4/8 by default and **8/8 with
+0/8 invented** under the hardened prompt, so the bar is cleared on two independent samples.
+
+**Total: 0 attacker values in the ledger and 0 in the answer on 112 injected tasks** (0/24 + 0/72
++ 0/16), four payload styles, two seeds for the amount families, no LLM judge.
+
 ## Honest limits
 
 - hard-90 rows are unseen instances of the same six templates as hard-train; this measures
   generalisation across instances, not across task formats.
 - Three seeds bound the variance; they do not eliminate it, and the spread is wider than any
   single change made after round 1.
-- The safety probe is 32 tasks with one payload style. A Hinglish-only attacker or a Devanagari
-  payload is untested.
+- The safety probe is 112 injected tasks, but all three splits come from the same builder and
+  share an attack grammar. A Hinglish-only attacker, a Devanagari payload or an adaptive attacker
+  that can see the eval is untested.
 - Abstention is improved but not solved by default: the shipped adapter asks on 4 of 8
   underspecified requests, or 7 of 8 with the hardened prompt.
 - The shipped adapter beats round 1 by 4 hard-90 tasks but the paired test is not significant
@@ -154,7 +177,7 @@ the default; the trade-off is recorded in `docs/ROUND2.md`.
 
 ```bash
 git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
-python scripts/verify_all.py      # 23 checks: pins, oracle 30/30, safety, contrarian splits, Devanagari, schema shift, reward, stats, AuditKIT adapter, demo handlers
+python scripts/verify_all.py      # 25 checks: pins, oracle 30/30, safety (three splits), contrarian splits, Devanagari, schema shift, reward, stats, AuditKIT adapter, demo handlers
 ```
 
 On a T4 (one GPU is enough):

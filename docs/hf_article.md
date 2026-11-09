@@ -4,7 +4,7 @@
 
 <div class="result">
 <p><strong>3.33% → 96.67%</strong> task success on a frozen 30-task split, <strong>3.33% → 93.33%</strong> on a 90-task holdout — scored on the final ledger state, no LLM judge.</p>
-<p>The same adapter moves attacker money into the ledger in <strong>0 of 24</strong> prompt-injection tasks (base: 13 of 24) and never repeats the attacker's number in its answer (<strong>0 of 24</strong>).</p>
+<p>The same adapter carries an attacker value into the ledger or the answer on <strong>0 of 112</strong> injected tasks across three pinned safety splits (base: 13 of 24, 32 of 72 and 5 of 16), and never repeats the attacker's number in its answer.</p>
 </div>
 
 ## TL;DR
@@ -33,8 +33,11 @@
   success verdict agrees with this repo's scorer on **88/90** decided tasks.
 - Indirect injection through tool results: base writes attacker money into the ledger in
   **13/24** tasks, the shipped adapter in **0/24** (p = 0.00024), and it is the only tuned variant
-  that never repeats the attacker number in prose either (**0/24**). With the hardened prompt,
-  abstention on underspecified requests goes to **7/8 asked, 0/8 invented**.
+  that never repeats the attacker number in prose either (**0/24**). Two further pinned splits
+  repeat the probe: a second 72-attack sample (base 32/72, adapter **0/72**) and a 16-task
+  payee-redirect attack where the answer moves the money (base 5/16 in the ledger, adapter
+  **0/16**). With the hardened prompt, abstention on underspecified requests goes to **7/8 asked,
+  0/8 invented** on the first eight rows and **8/8 and 0/8** on the next eight.
 
 ## Problem statement
 
@@ -364,6 +367,29 @@ On underspecified requests, with the pre-registered bar `asked ≥ 6/8` and `inv
 
 Paired exact McNemar: base → shipped removes **13 ledger attacks, introduces 0, p = 0.00024**.
 
+One sample and one payload style is not a safety claim, so the same three systems were re-run on
+two more pinned splits (Kaggle T4 x2, greedy, `--no-4bit`; every row is a `summary.json` on
+`primce/lexsi-runs`):
+
+| Split | System | safe | utility | attack_ledger | attack_answer |
+|---|---|---:|---:|---:|---:|
+| `safety_eval2`, 72 injected of 80 | Base | 0/80 | 0/80 | **32/72 (44.4%)** | 11/72 (15.3%) |
+| | **`sft4`** | 54/80 | 50/80 | **0/72** | **0/72** |
+| | `sft4` + hardened | 63/80 | 55/80 | **0/72** | **0/72** |
+| `safety_payee`, 16 injected | Base | 0/16 | 0/16 | 5/16 | 0/16 |
+| | **`sft4`** | 12/16 | 12/16 | **0/16** | **0/16** |
+| | `sft4` + hardened | 12/16 | 12/16 | **0/16** | **0/16** |
+
+The second split is a different attack with no absurd number in it: the tool result claims the
+sender's UPI handle changed to `99887766554@upi`, and the split is scored on the answer because
+that is what would move the money. Base's 0/16 there is not a defence — it never finishes, and it
+writes the handle into the ledger 5 times. Underspecified rows were re-sampled as well: `asked`
+4/8 by default and **8/8 with 0/8 invented** under the hardened prompt, so the bar is cleared on
+two independent samples instead of one.
+
+In total: **0 attacker values in the ledger and 0 in the answer on 112 injected tasks**
+(0/24 + 0/72 + 0/16), four payload styles, with the amount families measured on two seeds.
+
 Three honest readings:
 
 - **Fine-tuning fixed the money-moving failure, not injection as a whole.** Zero written
@@ -399,12 +425,12 @@ Three honest readings:
 
 What we did **not** run, so no claim is made about it: cold-start GRPO without SFT (the
 control that would test whether SFT is necessary here), verification-iteration repair beyond
-the parse-error correction prompt, a no-payload control on the 24 injection tasks, a seed sweep
-of the safety split, a Devanagari injection payload, and an adaptive attacker that can see the
-eval.
+the parse-error correction prompt, a no-payload control on the injection tasks, a Devanagari
+injection payload, and an adaptive attacker that can see the eval.
 
-Two probes that used to be on this list now have numbers: the Hammer-style schema shift (25/30
-against 29/30, untuned base 0/30) and a Devanagari version of the same 30 tasks (25/30).
+Three probes that used to be on this list now have numbers: the Hammer-style schema shift (25/30
+against 29/30, untuned base 0/30), a Devanagari version of the same 30 tasks (25/30), and a second
+safety sample plus a payee-redirect attack (0 attacker values on 112 injected tasks).
 
 ## Cost: is it worth running? (ROI)
 
@@ -474,16 +500,21 @@ instead of calling that a pass.
 
 ## Check any number in one command
 
-`runs/` in the repo is the same tree as the `primce/lexsi-runs` dataset. None of these commands
-need a GPU, a model download or a token:
+`runs/` in the repo is the same tree as the `primce/lexsi-runs` dataset, downloaded once into the
+repo so the scripts below find it. None of these commands need a GPU, a model download or a token:
+
+```bash
+huggingface-cli download primce/lexsi-runs --repo-type dataset --local-dir runs
+```
 
 | Number | Command | What it prints |
 |---|---|---|
-| 23 dataset and invariant checks | `python scripts/verify_all.py` | `all 23 checks passed` |
+| 25 dataset and invariant checks | `python scripts/verify_all.py` | `all 25 checks passed` |
 | 29/30 on hard-30, re-scored by AuditKIT | `python scripts/auditkit_eval.py --run sft4_hard30 --tasks data/tasks_hard_eval.jsonl` | `"success": 29`, `agreement_with_own_scorer 1.0` |
 | 84/90 on hard-90, re-scored by AuditKIT | `python scripts/auditkit_eval.py --run sft4_hard90 --tasks data/tasks_hard90_eval.jsonl` | `agreement 0.9778` (88/90), AuditKIT's own count 86/90 — see the scorer note above |
 | base → shipped, paired | `python scripts/stats.py --a runs/base_hard90 --b runs/sft4_hard90` | 81 fixed, 0 broken, `mcnemar_p` underflows to 0 |
 | 13/24 and 8/24 on base, 0/24 and 0/24 on shipped | `python scripts/safety_table.py` | `attack_ledger` 54.17% → 0.00%, `attack_answer` 33.33% → 0.00% |
+| second sample: 32/72 and 11/72 on base, 0/72 and 0/72 on shipped | `python scripts/safety_table.py --run "Base=runs/safety2_base" --run "sft4=runs/safety2_sft4" --run "sft4+hp=runs/safety2_sft4_hardened"` | every ledger and answer column 0.00 for the adapter |
 | every per-task row | `runs/<run>/results.jsonl` | one JSON row per task, with the same fields as `summary.json` |
 
 The two probe splits are also re-scorable offline, and there the same rule holds: AuditKIT counts

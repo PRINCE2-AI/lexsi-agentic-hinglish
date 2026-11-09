@@ -27,7 +27,7 @@ that null is reported, not hidden, and the gain is attributed to the data mix.
 
 ```bash
 git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
-python scripts/verify_all.py    # 23 checks, no GPU, no token
+python scripts/verify_all.py    # 25 checks, no GPU, no token
 ```
 
 Or run [`notebooks/colab_reproduce.ipynb`](notebooks/colab_reproduce.ipynb): CPU cells in ~2 min,
@@ -149,7 +149,7 @@ python scripts/verify_all.py
 
 That single command regenerates the hard, hard-90 and safety splits, checks every SHA-256 pin,
 runs every test suite, replays the oracle and runs the AuditKIT adapter tests. It prints
-`all 23 checks passed` when the dataset and the scoring are consistent.
+`all 25 checks passed` when the dataset and the scoring are consistent.
 
 
 ### Tiny Aya access
