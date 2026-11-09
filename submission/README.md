@@ -191,6 +191,12 @@ no LLM judge.
 - The shipped adapter beats round 1 by 4 hard-90 tasks but the paired test is not significant
   (p = 0.34); it beats round 2 decisively (18 fixed / 2 broken, p = 0.0004).
 - One greedy sample per task. Sampled decoding would show more variance than these numbers.
+- The adapter never says it ignored an injection: 0 of 136 answers mention it
+  (`python scripts/warn_scan.py`). Stopping the money and telling the user are different
+  capabilities, and only the first one is measured here.
+- The base is 3.35B and the adapter is 121 MB. The closest public Track 3 entry reports attack
+  numbers on an 8B base; the splits differ, so the honest reading is that the defence does not
+  need the larger model, not that this beats it.
 
 ## Reproduce (no GPU, no token)
 

@@ -484,6 +484,20 @@ tokens, not verified successes. Earlier versions of this section assumed \$3/\$1
 the script: [`docs/roi.md`](https://github.com/PRINCE2-AI/lexsi-agentic-hinglish/blob/main/docs/roi.md),
 `python scripts/roi.py`.
 
+### Model size
+
+The base is 3.35B and the shipped adapter adds about 60M trainable parameters: 121 MB of
+safetensors, LoRA r=16 all-linear. The strongest public Track 3 entry that reports attack numbers
+uses an 8B base (Aya Expanse) with QLoRA DPO+SFT and reports 0.7% residual attack success and 95.6%
+normal-task success on its own split. Different splits, so the rates are not comparable row for
+row, and this article does not claim a like-for-like win.
+
+What it does support is the narrower claim: **the defence does not need the larger model**. 0
+attacker values on 136 injected tasks, 93.33% on the 90-task holdout, 50 s/task on one T4, and a
+121 MB artifact that loads on a free GPU. The 8B entry also reports warning behaviour we do not
+have — 0 of 136 answers name the injection — which is measured in `docs/SAFETY.md` and is the
+next experiment rather than a shipped property.
+
 ## Limitations
 
 - hard-90 has 90 tasks; counts are reported next to percentages, and its Wilson interval is
@@ -543,6 +557,8 @@ huggingface-cli download primce/lexsi-runs --repo-type dataset --local-dir runs
 | Number | Command | What it prints |
 |---|---|---|
 | 26 dataset and invariant checks | `python scripts/verify_all.py` | `all 26 checks passed` |
+| Every interval, and the bound on the 0/136 | `python scripts/bootstrap.py` | writes `docs/STATS.md`: Wilson + task bootstrap, paired bootstrap, rule of three |
+| Answers that name the injection | `python scripts/warn_scan.py` | adapter `0` of 136, from `final_response` |
 | 29/30 on hard-30, re-scored by AuditKIT | `python scripts/auditkit_eval.py --run sft4_hard30 --tasks data/tasks_hard_eval.jsonl` | `"success": 29`, `agreement_with_own_scorer 1.0` |
 | 84/90 on hard-90, re-scored by AuditKIT | `python scripts/auditkit_eval.py --run sft4_hard90 --tasks data/tasks_hard90_eval.jsonl` | `agreement 0.9778` (88/90), AuditKIT's own count 86/90 — see the scorer note above |
 | base → shipped, paired | `python scripts/stats.py --a runs/base_hard90 --b runs/sft4_hard90` | 81 fixed, 0 broken, `mcnemar_p` underflows to 0 |

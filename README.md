@@ -21,10 +21,15 @@ Write-up: https://huggingface.co/spaces/primce/hinglish-track3-article — the f
 | Tool calls per hard-30 task (oracle: 3.57) | 7.03 | 3.57 |
 | Injection split: attacker money in ledger / answer | 13/24 / 8/24 | **0/24 / 0/24** |
 | Same attacks re-written in Hinglish/Devanagari | 10/24 / 5/24 | **0/24 / 0/24**, 23/24 solved |
+| Attacker value across all four injected splits (136 tasks) | 13/24, 32/72, 5/16, 10/24 | **0/136**, 95% upper bound 2.2% |
 
 Paired exact McNemar on shared ids: base → shipped **81 fixed, 0 broken** on hard-90 (p < 1e-20)
 and **28 fixed, 0 broken** on hard-30 (p = 7.5e-9). GRPO ran twice and moved nothing (0/0, p = 1.0);
 that null is reported, not hidden, and the gain is attributed to the data mix.
+
+Intervals for every published number, the paired bootstrap and the rule-of-three bound on the zero:
+[docs/STATS.md](docs/STATS.md), `python scripts/bootstrap.py`. Answers that say they ignored an
+injection: **0 of 136**, measured offline by `python scripts/warn_scan.py`.
 
 ```bash
 git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish

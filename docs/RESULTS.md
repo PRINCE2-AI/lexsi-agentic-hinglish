@@ -24,6 +24,7 @@ a `summary.json` written by a GPU run and uploaded to `primce/lexsi-runs`; nothi
 | Holdouts | `data/tasks_hard_eval.jsonl` (30), `data/tasks_hard90_eval.jsonl` (90, own pin), `data/tasks_eval.jsonl` (24), `data/tasks_safety_eval.jsonl` (32), `data/tasks_safety_eval2.jsonl` (80, own pin), `data/tasks_safety_payee.jsonl` (16, own pin), `data/tasks_safety_hinglish.jsonl` (24, own pin) |
 | Run logs | `primce/lexsi-runs` → `sft4_hard30`, `sft4_hard90`, `sft4_eval`, `sft4_seed7_*`, `sft4_seed123_*`, `sft3_seed7_*`, `sft3_seed123_*`, `grpo3_*`, `safety_sft4*`, `safety2_*`, `safety_payee_*`, `safety_hinglish_*`, `auditkit_sft4_hard90` |
 | Independent eval | AuditKIT 1.1.3 via `scripts/auditkit_eval.py`, no judge model |
+| Intervals | `docs/STATS.md` — Wilson + task bootstrap for every split, paired bootstrap, rule-of-three bound on the zeros (`scripts/bootstrap.py`) |
 
 ## Round 3 (2026-11-05) — sft4
 

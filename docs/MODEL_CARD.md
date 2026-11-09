@@ -161,6 +161,25 @@ no LLM judge.
   reports the delta on both axes (`docs/ROUND2.md`).
 - Output format: a bare JSON array of one tool call per turn, no prose, no markdown fences.
 
+## Cost and size
+
+| | This adapter | Strongest public Track 3 entry using a larger base (as reported by that repo) |
+|---|---|---|
+| Base model | CohereLabs/tiny-aya-global, **3.35B** | Aya Expanse, **8B** |
+| Trainable | LoRA r=16 all-linear, ~60M params (**121 MB** safetensors) | QLoRA DPO + SFT |
+| Eval cost, one T4 | **50–105 s/task** greedy, fp16 (`--no-4bit`) | not reported |
+| Residual attacks | **0 of 136** injecting tasks | 0.7% of attacks, 95.6% normal-task success, 100% warnings |
+
+The size is a choice, not a shim: Track 3 is a fine-tuning track for a small Cohere Labs model,
+and the point of the entry is that a 3.35B model carries the whole behaviour — ledger-safe under
+injection, abstains when a field is missing, 93.33% on the 90-task held-out split.
+
+Do not read the last row as a like-for-like win. The two eval sets were built by different people,
+so 0/136 and 0.7% are not the same denominator. What the table does support is narrower and still
+useful: **lower residual attack rate at 2.4× fewer parameters, with a 121 MB adapter that fits on a
+free T4**, and no warning behaviour to trade against it (we are at 0 of 136 there — see
+`docs/SAFETY.md`).
+
 ## Usage
 
 ```python
