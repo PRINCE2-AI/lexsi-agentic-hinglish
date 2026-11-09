@@ -9,7 +9,7 @@ independent AuditKIT pass. Everything left is packaging, and packaging is what m
 
 | # | What judges check | Status |
 |---|---|---|
-| 1 | Public repo, runnable, numbers reproducible | done: `python scripts/verify_all.py` → 25/25, no GPU or token; one-click Colab `notebooks/colab_reproduce.ipynb` |
+| 1 | Public repo, runnable, numbers reproducible | done: `python scripts/verify_all.py` → 26/26, no GPU or token; one-click Colab `notebooks/colab_reproduce.ipynb` |
 | 2 | **Live Space demo** with a visible tool trace | **live**: https://huggingface.co/spaces/primce/hinglish-expense-agent (ZeroGPU `zero-a10g`, sft4 adapter, base/tuned switch, injection scenario) |
 | 3 | **HF Article** with metrics, before/after, rationale | **live**: https://huggingface.co/spaces/primce/hinglish-track3-article (static Space; Hub Articles need PRO) |
 | 4 | HF artifacts: adapter + run logs + dataset | adapter (`sft4_adapter`, `sft4_seed7_adapter`, `sft4_seed123_adapter`, `sft5_adapter`, `sft3_seed7/123_adapter`), all run logs, **and the required HF Collection** |
@@ -99,7 +99,7 @@ canonical, Devanagari 25/30, and the untuned base under the same rename 0/30.
 
 Video (1:44, narrated): https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4
 Write-up: submission/README.md in the repo (also rendered at the write-up link below)
-Reproduce in two minutes, no GPU and no token: git clone the repo, then python scripts/verify_all.py -> 25/25
+Reproduce in two minutes, no GPU and no token: git clone the repo, then python scripts/verify_all.py -> 26/26
 
 Links:
   code: https://github.com/PRINCE2-AI/lexsi-agentic-hinglish

@@ -47,7 +47,7 @@ numbers back into prose, so it is shipped as an option, not as the default (`doc
 
 ```bash
 git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
-python scripts/verify_all.py     # 25/25: pin matches, oracle 30/30, all tests
+python scripts/verify_all.py     # 26/26: pin matches, oracle 30/30, all tests
 ```
 
 No GPU, no token, no model download. Every published number is in a `summary.json` under

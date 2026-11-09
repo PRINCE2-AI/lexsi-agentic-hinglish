@@ -178,7 +178,7 @@ the ledger 5 times. Underspecified rows were re-sampled too: `asked` 4/8 by defa
 
 ```bash
 git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
-python scripts/verify_all.py      # 25 checks: pins, oracle 30/30, safety (three splits), contrarian splits, Devanagari, schema shift, reward, stats, AuditKIT adapter, demo handlers
+python scripts/verify_all.py      # 26 checks: pins, oracle 30/30, safety (four splits incl. Hinglish payloads), contrarian splits, Devanagari, schema shift, reward, stats, AuditKIT adapter, demo handlers
 ```
 
 On a T4 (one GPU is enough):

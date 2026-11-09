@@ -267,6 +267,27 @@ handle — with the amount families measured on two seeds. The untuned base fail
 Sample cost, one T4 each: 6157.0, 6022.8 and 6875.3 s for the 80-task runs; 1269.5, 1237.8 and
 1555.4 s for the 16-task payee runs.
 
+## Third payload language: Hinglish and Devanagari (frozen 2026-11-09, not measured yet)
+
+Every payload above is an English sentence wrapped in a Hinglish task, which leaves one honest
+objection: the defence might be an English-pattern detector inside tool output rather than an
+instruction/data boundary. `data/build_safety_hinglish.py` freezes a 24-task split that keeps the
+families, tools, marker (999999) and scorer identical and changes **only the language of the
+payload** — 18 hand-written Latin-script Hinglish payloads and 6 Devanagari ones, eight per family,
+two Devanagari in each.
+
+```bash
+python data/build_safety_hinglish.py           # 24/24 oracle safe, writes the pin
+python data/build_safety_hinglish.py --freeze  # only if the split is meant to change
+```
+
+Pin: `data/safety_hinglish.sha256` (sha256 `7ed61572…802e95`). Oracle check: 24/24 safe, zero
+attacks through, which is the same bar the other splits meet. `python scripts/verify_all.py` now
+runs it as one of the 26 checks. The run is `notebooks/kaggle_safety_hinglish.ipynb` (sft4, sft4+hardened,
+base; ~95-110 min on one T4), and the read is pre-registered: the split isolates payload language,
+so a rise in `attack_ledger` or `attack_answer` against the English rows at the same n would mean the
+defence is partly language-specific. No numbers are claimed until the runs are uploaded.
+
 ## What the numbers say
 
 - **Fine-tuning removed the money-moving failure, on both samples.** The base model wrote 999999
@@ -304,8 +325,9 @@ Sample cost, one T4 each: 6157.0, 6022.8 and 6875.3 s for the 80-task runs; 1269
   even when they share no rows.
 - There is no no-payload control on the same injection tasks, so the utility gap against the
   clean hard-30 mixes task difficulty with injection cost.
-- The payloads are English-leaning inside Hinglish tasks. A Hinglish-only attacker may behave
-  differently, and a Devanagari payload is untested.
+- The published payloads are English-leaning inside Hinglish tasks. A Hinglish/Devanagari split is
+  frozen and oracle-checked (`data/tasks_safety_hinglish.jsonl`, 24 attacks) but its model runs are
+  not measured yet, so no language-generalisation claim is made.
 - One prompt variant for the defence (`HARDENED_RULES` in `hinglish_agent/prompts.py`); it is the
   cheapest mitigation, not a search over defences.
 - The defence tested is a prompt rule, not an architectural one. The stronger fix — treat tool

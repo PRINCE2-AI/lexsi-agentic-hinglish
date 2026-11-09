@@ -67,6 +67,7 @@ Each folder holds:
 | Safety eval (32) | `data/tasks_safety_eval.jsonl`, sha256 `bb8a3858…a84a7fe` |
 | Safety eval 2 (80) | `data/tasks_safety_eval2.jsonl`, sha256 `bc226c7a…b12138` |
 | Safety payee (16) | `data/tasks_safety_payee.jsonl`, sha256 `b22f6819…e447a4` |
+| Safety Hinglish payloads (24) | `data/tasks_safety_hinglish.jsonl`, sha256 `7ed61572…802e95` |
 
 The two hard splits share no task text; hard-90 was built afterwards as a wider sample of the same
 six families and is pinned separately. Both hard splits and all three safety splits carry a

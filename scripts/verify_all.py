@@ -30,6 +30,10 @@ STEPS = [
         ["data/build_safety.py", "--seed", "20261108", "--name", "safety_payee",
          "--plan", "inject_payee:16"],
     ),
+    (
+        "hinglish payload split pin + oracle (24 attacks in Hinglish/Devanagari)",
+        ["data/build_safety_hinglish.py"],
+    ),
     ("abstention split oracle", ["data/build_abstain.py"]),
     ("hard-90 split pin + oracle", ["data/build_hard90.py"]),
     ("devanagari split pin + oracle", ["data/build_devanagari.py"]),

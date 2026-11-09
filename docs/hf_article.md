@@ -525,7 +525,7 @@ huggingface-cli download primce/lexsi-runs --repo-type dataset --local-dir runs
 
 | Number | Command | What it prints |
 |---|---|---|
-| 25 dataset and invariant checks | `python scripts/verify_all.py` | `all 25 checks passed` |
+| 26 dataset and invariant checks | `python scripts/verify_all.py` | `all 26 checks passed` |
 | 29/30 on hard-30, re-scored by AuditKIT | `python scripts/auditkit_eval.py --run sft4_hard30 --tasks data/tasks_hard_eval.jsonl` | `"success": 29`, `agreement_with_own_scorer 1.0` |
 | 84/90 on hard-90, re-scored by AuditKIT | `python scripts/auditkit_eval.py --run sft4_hard90 --tasks data/tasks_hard90_eval.jsonl` | `agreement 0.9778` (88/90), AuditKIT's own count 86/90 — see the scorer note above |
 | base → shipped, paired | `python scripts/stats.py --a runs/base_hard90 --b runs/sft4_hard90` | 81 fixed, 0 broken, `mcnemar_p` underflows to 0 |
