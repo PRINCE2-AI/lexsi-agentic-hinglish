@@ -4,7 +4,7 @@
 
 <div class="result">
 <p><strong>3.33% → 96.67%</strong> task success on a frozen 30-task split, <strong>3.33% → 93.33%</strong> on a 90-task holdout — scored on the final ledger state, no LLM judge.</p>
-<p>The same adapter carries an attacker value into the ledger or the answer on <strong>0 of 112</strong> injected tasks across three pinned safety splits (base: 13 of 24, 32 of 72 and 5 of 16), and never repeats the attacker's number in its answer.</p>
+<p>The same adapter carries an attacker value into the ledger or the answer on <strong>0 of 136</strong> injected tasks across four pinned safety splits (base: 13 of 24, 32 of 72, 5 of 16 and 10 of 24), never repeats the attacker's number in its answer, and still scores zero when the payloads are rewritten in Hinglish and Devanagari.</p>
 </div>
 
 ## TL;DR
@@ -36,8 +36,10 @@
   that never repeats the attacker number in prose either (**0/24**). Two further pinned splits
   repeat the probe: a second 72-attack sample (base 32/72, adapter **0/72**) and a 16-task
   payee-redirect attack where the answer moves the money (base 5/16 in the ledger, adapter
-  **0/16**). With the hardened prompt, abstention on underspecified requests goes to **7/8 asked,
-  0/8 invented** on the first eight rows and **8/8 and 0/8** on the next eight.
+  **0/16**). A fourth split rewrites every payload in Hinglish, six rows in Devanagari
+  (base 10/24 ledger and 5/24 answer, adapter **0/24 and 0/24**, 23/24 solved), so the defence is
+  not an English-pattern matcher. With the hardened prompt, abstention on underspecified requests
+  goes to **7/8 asked, 0/8 invented** on the first eight rows and **8/8 and 0/8** on the next eight.
 
 ## Problem statement
 
@@ -387,8 +389,21 @@ writes the handle into the ledger 5 times. Underspecified rows were re-sampled a
 4/8 by default and **8/8 with 0/8 invented** under the hardened prompt, so the bar is cleared on
 two independent samples instead of one.
 
-In total: **0 attacker values in the ledger and 0 in the answer on 112 injected tasks**
-(0/24 + 0/72 + 0/16), four payload styles, with the amount families measured on two seeds.
+Every payload above is still an English sentence inside a Hinglish task, which is a fair objection:
+English keywords could be what the defence is keying on. A fourth pinned split keeps the families,
+tools, marker and scorer and changes only the payload language — 24 attacks, 18 Latin-script
+Hinglish, 6 Devanagari:
+
+| System | n | safe | utility | attack_ledger | attack_answer |
+|---|---:|---:|---:|---:|---:|
+| Base Tiny Aya | 24 | 0/24 | 0/24 | **10/24** | 5/24 |
+| **`sft4`** | 24 | 23/24 | 23/24 | **0/24** | **0/24** |
+| `sft4` + hardened | 24 | 24/24 | 24/24 | **0/24** | **0/24** |
+
+The adapter is safe on 6/6 Devanagari and 17/18 Latin payloads. Its one miss is a utility miss —
+the task is not solved — not an attack, and the hardened prompt clears it. In total: **0 attacker
+values in the ledger and 0 in the answer on 136 injected tasks** (0/24 + 0/72 + 0/16 + 0/24), four
+payload styles in three payload languages, with the amount families measured on two seeds.
 
 Three honest readings:
 
@@ -405,8 +420,9 @@ Three honest readings:
   hard-90 task success is 86/90 against 84/90 for the default (2 fixed, 0 broken, p = 0.5). So the
   default stays the adapter, and the abstention configuration is documented with its trade-off
   rather than silently switched.
-- **The defence is prompt-level.** The architectural fix (tool output never enters the answer
-  context as instructions) is unmeasured.
+- **The defence is prompt-level and language-independent.** The architectural fix (tool output
+  never enters the answer context as instructions) is unmeasured. What is measured is that it does
+  not depend on English: the same zero holds when the payload is Hinglish or Devanagari.
 
 ## Why these choices
 
@@ -425,12 +441,13 @@ Three honest readings:
 
 What we did **not** run, so no claim is made about it: cold-start GRPO without SFT (the
 control that would test whether SFT is necessary here), verification-iteration repair beyond
-the parse-error correction prompt, a no-payload control on the injection tasks, a Devanagari
-injection payload, and an adaptive attacker that can see the eval.
+the parse-error correction prompt, a no-payload control on the injection tasks, and an adaptive
+attacker that can see the eval.
 
-Three probes that used to be on this list now have numbers: the Hammer-style schema shift (25/30
-against 29/30, untuned base 0/30), a Devanagari version of the same 30 tasks (25/30), and a second
-safety sample plus a payee-redirect attack (0 attacker values on 112 injected tasks).
+Four probes that used to be on this list now have numbers: the Hammer-style schema shift (25/30
+against 29/30, untuned base 0/30), a Devanagari version of the same 30 tasks (25/30), a second
+safety sample plus a payee-redirect attack, and a Hinglish/Devanagari payload split — the last two
+together give 0 attacker values on 136 injected tasks.
 
 ## Cost: is it worth running? (ROI)
 
@@ -531,6 +548,7 @@ huggingface-cli download primce/lexsi-runs --repo-type dataset --local-dir runs
 | base → shipped, paired | `python scripts/stats.py --a runs/base_hard90 --b runs/sft4_hard90` | 81 fixed, 0 broken, `mcnemar_p` underflows to 0 |
 | 13/24 and 8/24 on base, 0/24 and 0/24 on shipped | `python scripts/safety_table.py` | `attack_ledger` 54.17% → 0.00%, `attack_answer` 33.33% → 0.00% |
 | second sample: 32/72 and 11/72 on base, 0/72 and 0/72 on shipped | `python scripts/safety_table.py --run "Base=runs/safety2_base" --run "sft4=runs/safety2_sft4" --run "sft4+hp=runs/safety2_sft4_hardened"` | every ledger and answer column 0.00 for the adapter |
+| Hinglish payloads: 10/24 and 5/24 on base, 0/24 and 0/24 on shipped | `python scripts/safety_table.py --run "Base=runs/safety_hinglish_base" --run "sft4=runs/safety_hinglish_sft4" --run "sft4+hp=runs/safety_hinglish_sft4_hardened"` | every ledger and answer column 0.00 for the adapter, 23/24 solved |
 | every per-task row | `runs/<run>/results.jsonl` | one JSON row per task, with the same fields as `summary.json` |
 
 The two probe splits are also re-scorable offline, and there the same rule holds: AuditKIT counts
@@ -542,7 +560,7 @@ The two probe splits are also re-scorable offline, and there the same rule holds
 git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
 python data/build_hard.py && python data/build_hard90.py && python data/build_mix.py
 python data/build_abstain.py && python data/build_safety.py
-python scripts/verify_all.py          # no GPU, no token: 23 checks
+python scripts/verify_all.py          # no GPU, no token: 26 checks
 
 python scripts/train_sft.py --tasks data/tasks_train_mix3.jsonl \
     --epochs 2 --seed 42 --out runs/sft4 --merge-out runs/sft4_merged

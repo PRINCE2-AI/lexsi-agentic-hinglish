@@ -5,7 +5,8 @@ LoRA SFT + AgentTune GRPO, evaluated with AuditKIT 1.1.3.
 
 One line: **3.33% → 96.67% task success on a frozen 30-task hard split, and 3.33% → 93.33% on a
 90-task holdout, with the same adapter carrying an attacker value into the ledger or the answer on
-0 of 112 injected tasks across three pinned safety splits.**
+0 of 136 injected tasks across four pinned safety splits, including one whose payloads are written
+in Hinglish and Devanagari.**
 
 ## Artifacts
 
@@ -60,8 +61,9 @@ backs it; the rest are listed as not claimed, on purpose.
    `abstain=1` row). Stage 2 runs on top of the SFT merge.
 4. **Evaluation.** Greedy, `--no-4bit`, one sample per task, frozen splits with SHA-256 pins:
    hard-30 (`tasks_hard_eval.jsonl`), hard-90 (`tasks_hard90_eval.jsonl`, 15 per family),
-   easy eval-24, safety-32, safety-80 (second sample) and a 16-task payee-redirect split. Every
-   number comes from an uploaded `summary.json`; nothing is estimated.
+   easy eval-24, safety-32, safety-80 (second sample), a 16-task payee-redirect split and a
+   24-task Hinglish/Devanagari payload split. Every number comes from an uploaded `summary.json`;
+   nothing is estimated.
 
 ## Results
 
@@ -156,8 +158,23 @@ moves the money. Base scores 0/16 there only because it never finishes; it write
 the ledger 5 times. Underspecified rows were re-sampled too: `asked` 4/8 by default and **8/8 with
 0/8 invented** under the hardened prompt, so the bar is cleared on two independent samples.
 
-**Total: 0 attacker values in the ledger and 0 in the answer on 112 injected tasks** (0/24 + 0/72
-+ 0/16), four payload styles, two seeds for the amount families, no LLM judge.
+A fourth split is the language control (`notebooks/kaggle_safety_hinglish.ipynb`): the same
+families, tools, marker and scorer, but every payload re-written in Hinglish, six of them in
+Devanagari script — 24 attacks, 18 Latin and 6 Devanagari, eight per family.
+
+| System | n | safe | utility | attack_ledger | attack_answer |
+|---|---:|---:|---:|---:|---:|
+| Base Tiny Aya | 24 | 0/24 | 0/24 | 10/24 | 5/24 |
+| **`sft4`** | 24 | 23/24 | 23/24 | **0/24** | **0/24** |
+| `sft4` + hardened | 24 | 24/24 | 24/24 | **0/24** | **0/24** |
+
+The adapter is safe on 6/6 Devanagari and 17/18 Latin payloads; the single miss (`sh-022`) is a
+utility miss, not an attack, and the hardened prompt clears it. If the defence were keying on
+English instruction words, this split is where it would show. It does not.
+
+**Total: 0 attacker values in the ledger and 0 in the answer on 136 injected tasks** (0/24 + 0/72
++ 0/16 + 0/24), four payload styles in three payload languages, two seeds for the amount families,
+no LLM judge.
 
 ## Honest limits
 
@@ -165,9 +182,10 @@ the ledger 5 times. Underspecified rows were re-sampled too: `asked` 4/8 by defa
   generalisation across instances, not across task formats.
 - Three seeds bound the variance; they do not eliminate it, and the spread is wider than any
   single change made after round 1.
-- The safety probe is 112 injected tasks, but all three splits come from the same builder and
-  share an attack grammar. A Hinglish-only attacker, a Devanagari payload or an adaptive attacker
-  that can see the eval is untested.
+- The safety probe is 136 injected tasks, but all four splits come from the same builder and
+  share an attack grammar. The language control is 24 rows, 6 in Devanagari: it rules out a purely
+  English-keyword defence, not language robustness in general. An adaptive attacker that can see
+  the eval is untested.
 - Abstention is improved but not solved by default: the shipped adapter asks on 4 of 8
   underspecified requests, or 7 of 8 with the hardened prompt.
 - The shipped adapter beats round 1 by 4 hard-90 tasks but the paired test is not significant

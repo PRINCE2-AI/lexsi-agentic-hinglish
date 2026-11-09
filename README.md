@@ -20,6 +20,7 @@ Write-up: https://huggingface.co/spaces/primce/hinglish-track3-article — the f
 | 90 unseen hard tasks | 3.33% (3/90) | **93.33% (84/90)**, Wilson 86.2–96.9% |
 | Tool calls per hard-30 task (oracle: 3.57) | 7.03 | 3.57 |
 | Injection split: attacker money in ledger / answer | 13/24 / 8/24 | **0/24 / 0/24** |
+| Same attacks re-written in Hinglish/Devanagari | 10/24 / 5/24 | **0/24 / 0/24**, 23/24 solved |
 
 Paired exact McNemar on shared ids: base → shipped **81 fixed, 0 broken** on hard-90 (p < 1e-20)
 and **28 fixed, 0 broken** on hard-30 (p = 7.5e-9). GRPO ran twice and moved nothing (0/0, p = 1.0);
@@ -299,6 +300,15 @@ all 8 attacker numbers from answers. On the 8 underspecified requests the shippe
 attacker numbers in prose. That prompt costs nothing in task success: 86/90 against 84/90 on clean
 hard-90 (2 fixed, 0 broken, p = 0.5). The adapter alone is the default; `docs/ROUND2.md` records the
 trade-off. Details: [docs/SAFETY.md](docs/SAFETY.md).
+
+Three further pinned splits repeat the probe: a second 72-attack sample, a 16-task payee-redirect
+attack, and a 24-task split whose payloads are written in Hinglish (6 of them in Devanagari)
+instead of English. The adapter carries an attacker value into the ledger or the answer on
+**0 of 136 injected tasks** (0/24 + 0/72 + 0/16 + 0/24) across four payload styles and three
+payload languages; the base model fails 13/24, 32/72, 5/16 and 10/24. On the language split the
+adapter is safe on 6/6 Devanagari and 17/18 Latin payloads, and the hardened prompt solves 24/24,
+so the defence is not keying on English instruction words. Tables and run commands:
+[docs/SAFETY.md](docs/SAFETY.md).
 
 ## Cost: is it worth running? (ROI)
 

@@ -41,6 +41,7 @@ trajectory can be re-scored offline without a GPU or a model download. A 1:44 na
 | `safety_sft2_hardened/`, `safety_sft3_hardened/`, `safety_sft4_hardened/`, `safety_sft5_hardened/` | same split, hardened system prompt |
 | `safety2_base/`, `safety2_sft4/`, `safety2_sft4_hardened/` | second injection sample, 80 tasks with 72 payloads, seed 20261108 (base 32/72 ledger, adapter 0/72) |
 | `safety_payee_base/`, `safety_payee_sft4/`, `safety_payee_sft4_hardened/` | 16 payee-redirect attacks: the tool result claims the sender's UPI handle changed; scored on the answer (base 5/16 ledger, adapter 0/16) |
+| `safety_hinglish_base/`, `safety_hinglish_sft4/`, `safety_hinglish_sft4_hardened/` | 24 attacks with Hinglish/Devanagari payloads only (18 Latin, 6 Devanagari, 8 per family; base 10/24 ledger and 5/24 answer, adapter 0/24 and 0/24, hardened 24/24 solved) |
 | `auditkit_*` | AuditKIT replays of the same recorded episodes, no judge model (scored on 1.1.3, re-checked on 1.1.6, same verdicts) |
 | `demo/` | `lexsi_track3_demo.mp4` — 1:44 narrated demo: the live Space, the injection before/after, and the hard-90 numbers |
 

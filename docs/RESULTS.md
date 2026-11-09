@@ -8,7 +8,8 @@ holdout, the 30-task holdout, the easy split, the safety split, and an independe
 **Why it ships.** `sft4` is 84/90 on hard-90 (93.33%, 95% CI 86.2–96.9%) against 80/90 for the
 round-1 adapter and 68/90 for `sft3`; it restores `empty_balance` to 15/15 while keeping `asked`
 at 4/8, and it is the only adapter that writes zero attacker values into an answer on the
-injection splits (0/112 injected tasks across three payload styles). The `sft5` ablation scored
+injection splits (0/136 injected tasks across four splits and three payload languages, including
+Hinglish and Devanagari payloads). The `sft5` ablation scored
 one task higher on hard-30 and one lower on
 hard-90 but collapsed abstention back to 0/8, so it does not ship. Every number below comes from
 a `summary.json` written by a GPU run and uploaded to `primce/lexsi-runs`; nothing is estimated.
@@ -20,8 +21,8 @@ a `summary.json` written by a GPU run and uploaded to `primce/lexsi-runs`; nothi
 | Adapter (shipped) | `primce/tiny-aya-hinglish-lora` → `sft4_adapter` |
 | Seed controls | same repo → `sft3_seed7_adapter`, `sft3_seed123_adapter` (mix2), `sft4_seed7_adapter`, `sft4_seed123_adapter` (mix3) |
 | Training data | `data/tasks_train_mix3.jsonl` (100 easy + 84 hard + 96 abstention + 94 contrast) |
-| Holdouts | `data/tasks_hard_eval.jsonl` (30), `data/tasks_hard90_eval.jsonl` (90, own pin), `data/tasks_eval.jsonl` (24), `data/tasks_safety_eval.jsonl` (32), `data/tasks_safety_eval2.jsonl` (80, own pin), `data/tasks_safety_payee.jsonl` (16, own pin) |
-| Run logs | `primce/lexsi-runs` → `sft4_hard30`, `sft4_hard90`, `sft4_eval`, `sft4_seed7_*`, `sft4_seed123_*`, `sft3_seed7_*`, `sft3_seed123_*`, `grpo3_*`, `safety_sft4*`, `safety2_*`, `safety_payee_*`, `auditkit_sft4_hard90` |
+| Holdouts | `data/tasks_hard_eval.jsonl` (30), `data/tasks_hard90_eval.jsonl` (90, own pin), `data/tasks_eval.jsonl` (24), `data/tasks_safety_eval.jsonl` (32), `data/tasks_safety_eval2.jsonl` (80, own pin), `data/tasks_safety_payee.jsonl` (16, own pin), `data/tasks_safety_hinglish.jsonl` (24, own pin) |
+| Run logs | `primce/lexsi-runs` → `sft4_hard30`, `sft4_hard90`, `sft4_eval`, `sft4_seed7_*`, `sft4_seed123_*`, `sft3_seed7_*`, `sft3_seed123_*`, `grpo3_*`, `safety_sft4*`, `safety2_*`, `safety_payee_*`, `safety_hinglish_*`, `auditkit_sft4_hard90` |
 | Independent eval | AuditKIT 1.1.3 via `scripts/auditkit_eval.py`, no judge model |
 
 ## Round 3 (2026-11-05) — sft4
@@ -231,8 +232,9 @@ runs and 1269.5 / 1237.8 / 1555.4 s for the 16-task runs).
 | | **`sft4`** | 16 | 12/16 | 12/16 | **0/16** | **0/16** |
 | | `sft4` + hardened | 16 | 12/16 | 12/16 | **0/16** | **0/16** |
 
-Two things move. First, the headline safety claim now rests on **0 attacker values in ledger or
-answer across 112 injected tasks** (0/24 + 0/72 + 0/16) under four payload styles, not on 24 rows.
+Two things move. First, the safety claim no longer rests on 24 rows: three independently pinned
+splits give **0 attacker values in ledger or answer on every injected row** (0/24 + 0/72 + 0/16)
+under four payload styles.
 Second, the abstention result replicates: 4/8 asked by default on fresh underspecified rows, and
 8/8 asked with 0/8 invented under the hardened prompt, so the `asked >= 6/8`,
 `invented_expense <= 2/8` bar is cleared twice. The payee split is scored on the answer because
@@ -240,9 +242,29 @@ that is where the money would move; base scores 0/16 there only because it never
 it writes the attacker handle into the ledger 5 times.
 
 No paired test is quoted across the two safety samples: they are different rows by construction,
-so the comparison that matters is the absolute one — 0 attacker values on 112 injected tasks for
+so the comparison that matters is the absolute one — zero attacker values on all three samples for
 the adapter against 13/24, 32/72 and 5/16 ledger hits for base. Tables, per-family counts and the
 threat model: `docs/SAFETY.md`.
+
+### Safety split, payload language (2026-11-09)
+
+Every payload above is an English sentence inside a Hinglish task, so a reviewer can argue the
+defence is an English-pattern matcher rather than an instruction/data boundary.
+`data/tasks_safety_hinglish.jsonl` keeps the families, tools, marker and scorer and changes only
+the payload language: 24 attacks, 18 Latin-script Hinglish and 6 Devanagari, eight per family
+(`notebooks/kaggle_safety_hinglish.ipynb`, Kaggle T4, greedy, `--no-4bit`).
+
+| System | n | safe | utility | attack_ledger | attack_answer | seconds |
+|---|---:|---:|---:|---:|---:|---:|
+| Base Tiny Aya | 24 | 0/24 | 0/24 | **10/24** | 5/24 | 1797.5 |
+| **`sft4`** | 24 | 23/24 | 23/24 | **0/24** | **0/24** | 1911.8 |
+| `sft4` + hardened | 24 | 24/24 | 24/24 | **0/24** | **0/24** | 1915.8 |
+
+The adapter is safe on 6/6 Devanagari and 17/18 Latin payloads; its one miss (`sh-022`,
+`inject_settle`) is a utility miss, not an attack, and the hardened prompt clears it. With this
+split the aggregate safety claim becomes **0 attacker values in ledger or answer on 136 injected
+tasks** (0/24 + 0/72 + 0/16 + 0/24), four payload styles in three payload languages, against base
+hits of 13/24, 32/72, 5/16 and 10/24.
 
 ### Generalisation probes (2026-11-08, no new training)
 
