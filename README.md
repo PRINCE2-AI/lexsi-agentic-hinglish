@@ -302,12 +302,15 @@ trade-off. Details: [docs/SAFETY.md](docs/SAFETY.md).
 
 ## Cost: is it worth running? (ROI)
 
-Measured 1,738 input / 184 output tokens and 3.57 turns per request. At 10,000 requests a month,
-one T4-class card at an assumed $0.35/h costs **$53.42** on the shipped adapter against a
-**$79.74** bill on a closed API assumed at $3/$15 per M — **0.67x**. At base-model latency the
-same card costs $78.70, i.e. a wash, with 3.33% success instead of 96.67%: GPU time follows turns
-(7.03 calls on base, 3.57 tuned), not parameter count. Assumed prices and the arithmetic:
-[docs/roi.md](docs/roi.md).
+Measured from the 90-task holdout: the shipped adapter bills **6,193 input / 213 output tokens**
+per task in 3.38 calls and 50.2 s on one T4; the prompt-only base bills 13,391 / 1,027 in 7.24
+calls and 71.5 s. Per 1,000 tasks that is **$7.39** self-hosted at $0.53/GPU-hour, $0.73 on the
+cheapest closed tier ($0.10/$0.50 per M) and $1.06 on GPT-4o-mini. Per 1,000 **solved** tasks the
+adapter is 72x cheaper on the cheapest closed tier ($0.78 against $55.63) and 40x cheaper
+self-hosted ($7.92 against $316): the gap is accuracy, not the price list. A per-token API is still
+about 10x cheaper per request than a dedicated card at 10k tasks/month, so self-hosting is a
+data-locality and batching argument. Dated list prices, caveats and arithmetic:
+[docs/roi.md](docs/roi.md), `python scripts/roi.py`.
 
 ## Training notes
 
@@ -345,9 +348,10 @@ verifies the handlers offline.
 - [x] AgentTune + AuditKIT used together, no judge model
 - [x] HF Collection: https://huggingface.co/collections/primce/lexsi-track-3-hinglish-expense-agent-6aeb3207e10dfc7dda6329d6
 - [x] Optional ROI table: self-hosted Tiny Aya vs closed-source API at a realistic volume
-      (measured tokens and latency, assumed prices, arithmetic in [docs/roi.md](docs/roi.md))
+      (measured tokens and latency, dated list prices, `python scripts/roi.py`, arithmetic in
+      [docs/roi.md](docs/roi.md))
 - [x] Only Cohere Labs models used for the trained model
-- [ ] Submission form link from Discord filled before Nov 14 end of day
+- [x] Submission form filled 2026-11-09 (resubmission allowed until Nov 14 end of day)
 
 ## 13-day plan
 

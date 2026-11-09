@@ -434,22 +434,38 @@ safety sample plus a payee-redirect attack (0 attacker values on 112 injected ta
 
 ## Cost: is it worth running? (ROI)
 
-Measured from the frozen logs: **1,738 input tokens and 184 output tokens per request**, over 3.57
-turns. Self-hosted on one T4-class card at an assumed \$0.35/h, at an assumed 10,000 requests a
-month:
+Both sides run the same recorded traffic. Token counts are measured from the transcripts with the
+base model's own tokenizer; wall time is what the eval actually took on one T4; the closed column is
+a dated list price, so any reader can re-price it.
 
-| System | s / request | GPU-hours / month | \$ / month at \$0.35/h |
+| Measured per task (hard-90) | Base, prompt only | Shipped `sft4` |
+|---|---:|---:|
+| Billed input tokens | 13,391 | **6,193** |
+| Generated tokens | 1,027 | **213** |
+| Tool calls | 7.24 | **3.38** |
+| Wall seconds on one T4 | 71.5 | **50.2** |
+
+| 1,000 tasks | Self-host, 1 T4 at \$0.53/h | Cheapest closed tier (\$0.10 / \$0.50 per M) | GPT-4o-mini (\$0.15 / \$0.60) |
 |---|---:|---:|---:|
-| Closed API (assumed \$3/M in, \$15/M out) | - | - | \$79.74 |
-| Base Tiny Aya, 4-bit | 80.95 | 224.9 | \$78.70 |
-| Shipped `sft4`, 4-bit | 54.95 | 152.6 | **\$53.42 (0.67x)** |
+| Base Tiny Aya, prompt only | \$10.53 | \$1.85 | \$2.62 |
+| Shipped `sft4` | **\$7.39** | **\$0.73** | **\$1.06** |
+| Base, per 1,000 **solved** | \$316 | \$55.63 | \$78.82 |
+| `sft4`, per 1,000 **solved** | **\$7.92** | **\$0.78** | **\$1.13** |
 
-The honest headline: **at base-model latency, self-hosting is a wash** — the bill is the same and
-you have bought 3.33% success instead of 96.67%. The tuned adapter is cheaper than the API because
-GPU time follows turns: 7.03 calls on base, 3.57 on the adapter, not because the model is small.
-Latency is measured batch-1 greedy on a shared T4; the API price and the GPU hour are labelled
-assumptions with the arithmetic shown in [`docs/roi.md`](https://github.com/PRINCE2-AI/lexsi-agentic-hinglish/blob/main/docs/roi.md),
-so any reader can re-price both columns.
+Read the second pair, not the first. The base model is not expensive because the model is small;
+it is expensive because it spends 7.24 calls and 1,027 tokens to produce a wrong split, so a
+correct ledger costs 30 attempts. The adapter costs 72× less per solved task on the cheapest closed
+tier and 40× less self-hosted, and that gap is accuracy, not a price list.
+
+The honest counterpoint: at 10,000 tasks a month a per-token closed API is about 10× cheaper per
+*request* than a dedicated T4 at list price. The case for self-hosting here is data locality,
+offline operation and batching — this eval served one request at a time, and concurrent requests
+divide the GPU line while the token bill stays linear. It is also not a claim that a closed model
+would score 93%: no closed model was run on these 90 Hinglish ledger tasks, so its column prices
+tokens, not verified successes. Earlier versions of this section assumed \$3/\$15 per M and
+\$0.35/GPU-hour; the table above replaces the assumption with dated prices. Arithmetic, caveats and
+the script: [`docs/roi.md`](https://github.com/PRINCE2-AI/lexsi-agentic-hinglish/blob/main/docs/roi.md),
+`python scripts/roi.py`.
 
 ## Limitations
 

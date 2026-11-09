@@ -272,6 +272,38 @@ def show_recorded(label: str):
     )
 
 
+_REPLAY_NEEDLES = {
+    "Prompt injection in a tool result": {True: "injection resisted", False: "injection succeeded"},
+    "Underspecified request": {True: "asks for missing names", False: "invents a split"},
+}
+
+
+def _recorded_label(scenario: str, mode: str) -> str | None:
+    needles = _REPLAY_NEEDLES.get(scenario)
+    if not needles:
+        return None
+    adapter_on = MODES.get(mode, (True, False))[0]
+    needle = needles[adapter_on]
+    for label in RECORDED:
+        if needle in label:
+            return label
+    return None
+
+
+def replay_scenario(scenario: str, mode: str):
+    """One click for a judge without GPU quota: fill the live panel from a frozen episode."""
+    label = _recorded_label(scenario, mode)
+    if label is None:
+        return (
+            "",
+            "No frozen episode behind the editable question. Press **Run agent** — the model "
+            "needs the GPU for that one. The two scenario dropdowns have instant replays.",
+            "{}",
+            "No frozen run for this combination.",
+        )
+    return show_recorded(label)
+
+
 if RECORDED:
     _seeded = show_recorded(next(iter(RECORDED)))
 
@@ -291,14 +323,42 @@ with gr.Blocks(
         "and answers in Hinglish. Amounts in INR; USD = 83 INR, EUR = 90 INR.\n\n"
         "Shipped adapter: **96.67%** (29/30) on unseen hard tasks and **93.33%** (84/90) on a "
         "90-task holdout, scored on the final ledger with no LLM judge. It also ignores "
-        "injected instructions in tool results: 0/24 ledger attacks and 0/24 attacker numbers "
-        "in answers, against the base model's 13/24 and 8/24.\n\n"
+        "injected instructions in tool results: **0 attacker values on 112 injected tasks** "
+        "across three pinned safety splits, against the base model's 13/24, 32/72 and 5/16.\n\n"
         "[Demo video (1:44)](https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4) · "
         "[Write-up](https://huggingface.co/spaces/primce/hinglish-track3-article) · "
         "[Code](https://github.com/PRINCE2-AI/lexsi-agentic-hinglish) · "
         "[Adapter](https://huggingface.co/primce/tiny-aya-hinglish-lora) · "
         "[Run logs](https://huggingface.co/datasets/primce/lexsi-runs)"
     )
+
+    gr.Markdown(
+        "## Start here — no GPU needed\n"
+        "Pick a frozen episode below: it replays an episode recorded on the shipped adapter or "
+        "the base model and re-scores it with the same code the live run uses, so it renders in "
+        "under a second and works even when the GPU quota is gone. The live model loads further "
+        "down and takes about **60 seconds** on its first request."
+    )
+
+    if RECORDED:
+        with gr.Row():
+            recorded = gr.Dropdown(
+                choices=list(RECORDED), value=next(iter(RECORDED)), label="Frozen episode"
+            )
+            recorded_button = gr.Button("Replay (instant)", variant="primary")
+        r_verdict = gr.Markdown(_seeded[3])
+        with gr.Row():
+            with gr.Column(scale=2):
+                r_answer = gr.Markdown(_seeded[0])
+            with gr.Column(scale=3):
+                r_trace = gr.Markdown(_seeded[1], elem_classes=["replay-trace"])
+                r_ledger = gr.Code(value=_seeded[2], language="json", elem_classes=["replay-ledger"])
+        recorded_button.click(
+            show_recorded, inputs=recorded, outputs=[r_answer, r_trace, r_ledger, r_verdict]
+        )
+        recorded.change(
+            show_recorded, inputs=recorded, outputs=[r_answer, r_trace, r_ledger, r_verdict]
+        )
 
     if all(label in RECORDED for label in HEAD_TO_HEAD):
         gr.Markdown(
@@ -323,7 +383,7 @@ with gr.Blocks(
         "**The first request loads a 4-bit model: expect about 60 seconds.** After that a run "
         "takes a few seconds. Free ZeroGPU gives a few GPU-minutes per visitor per day, so if "
         "you see \"ZeroGPU quota exceeded\", log in with a Hugging Face account for a fresh "
-        "quota, or replay a frozen run below — same scoring code, no GPU.\n\n"
+        "quota, or press the instant replay button — same scoring code, no GPU.\n\n"
         "**Before/after:** run a scenario with *Base model (adapter off)*, then with *Shipped "
         "adapter*. Same weights, same prompt, only the adapter changes."
     )
@@ -333,7 +393,9 @@ with gr.Blocks(
     with gr.Row():
         with gr.Column(scale=2):
             question = gr.Textbox(label="Sawal", lines=3, value=NORMAL_TASK["task"])
-            button = gr.Button("Run agent", variant="primary")
+            with gr.Row():
+                button = gr.Button("Run on the model (~60 s first time)", variant="primary")
+                replay_button = gr.Button("Replay frozen run for this scenario (instant)")
             verdict = gr.Markdown()
             answer = gr.Markdown()
         with gr.Column(scale=3):
@@ -343,32 +405,9 @@ with gr.Blocks(
     scenario.change(switch_scenario, inputs=scenario, outputs=question)
     button.click(run_agent, inputs=[question, scenario, mode], outputs=[answer, trace, ledger, verdict])
     question.submit(run_agent, inputs=[question, scenario, mode], outputs=[answer, trace, ledger, verdict])
-
-    if RECORDED:
-        gr.Markdown(
-            "### Replay any frozen run (no GPU)\n"
-            "Six episodes from the shipped evaluations, including the two above. The verdict is "
-            "recomputed by the same scoring code as the live run, so the trace, ledger and "
-            "verdict are the real ones, and this panel works when the GPU quota is gone."
-        )
-        with gr.Row():
-            recorded = gr.Dropdown(
-                choices=list(RECORDED), value=next(iter(RECORDED)), label="Recorded run"
-            )
-            recorded_button = gr.Button("Show recorded run", variant="primary")
-        r_verdict = gr.Markdown(_seeded[3])
-        with gr.Row():
-            with gr.Column(scale=2):
-                r_answer = gr.Markdown(_seeded[0])
-            with gr.Column(scale=3):
-                r_trace = gr.Markdown(_seeded[1], elem_classes=["replay-trace"])
-                r_ledger = gr.Code(value=_seeded[2], language="json", elem_classes=["replay-ledger"])
-        recorded_button.click(
-            show_recorded, inputs=recorded, outputs=[r_answer, r_trace, r_ledger, r_verdict]
-        )
-        recorded.change(
-            show_recorded, inputs=recorded, outputs=[r_answer, r_trace, r_ledger, r_verdict]
-        )
+    replay_button.click(
+        replay_scenario, inputs=[scenario, mode], outputs=[answer, trace, ledger, verdict]
+    )
 
 if __name__ == "__main__":
     demo.launch(server_name="0.0.0.0", server_port=int(os.getenv("PORT", "7860")))

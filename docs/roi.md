@@ -1,101 +1,60 @@
-# ROI comparison (optional but preferred by judges)
+# ROI — self-hosted Tiny Aya vs a closed API on the same workload
 
-Two numbers here are measured from the frozen run logs; everything else is labelled as an
-assumption so a reader can re-price it. Do not present the assumed rows as measured.
+The judged question is not "is a 3.35B model cheaper", it is "what does this workload cost per task, before and after fine-tuning, each way". Both sides below run the *same* recorded traffic: token counts are measured from the stored transcripts with the base model's own tokenizer, and the self-hosted side uses the wall time each eval actually took on a single T4.
 
-Measured inputs come from `runs/sft2_hard30/trajectories.jsonl` (30 tasks, greedy):
-3.57 assistant turns per request, 6257 characters of billed input across the episode, 661
-characters of output. At ~3.6 chars/token that is **~1,738 input tokens and ~184 output tokens
-per request**. Verify with:
+## Measured workload (single T4, greedy, one request at a time)
+
+| Run | Tasks | Success | Calls/task | Input tok/task | Output tok/task | Wall s | Tok/s end-to-end |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `sft4_hard90` | 90 | 93.3% | 3.38 | 6,193 | 213 | 4,518 | 127.6 |
+| `base_hard90` | 90 | 3.3% | 7.24 | 13,391 | 1,027 | 6,435 | 201.7 |
+| `sft4_eval` | 24 | 100.0% | 3.29 | 6,069 | 211 | 1,179 | 127.8 |
+
+## Cost per 1,000 tasks (T4 at $0.53/GPU-hour)
+
+| Run | Self-host GPU-hours | Self-host $ | GPT-6 Luna (cheapest frontier tier) $ | GPT-4o-mini $ | GPT-6.1 Sol (mid tier) $ |
+|---|---:|---:|---:|---:|---:|
+| `sft4_hard90` | 13.94 h | $7.39 | $0.73 | $1.06 | $14.52 |
+| `base_hard90` | 19.86 h | $10.53 | $1.85 | $2.62 | $37.05 |
+| `sft4_eval` | 13.65 h | $7.23 | $0.71 | $1.04 | $14.24 |
+
+## At 10,000 tasks/month
+
+| Run | Self-host GPU-hours/month | Self-host $/month | GPT-6 Luna (cheapest frontier tier) $/month | GPT-4o-mini $/month | GPT-6.1 Sol (mid tier) $/month |
+|---|---:|---:|---:|---:|---:|
+| `sft4_hard90` | 139.44 h | $73.90 | $7.26 | $10.57 | $145 |
+| `base_hard90` | 198.60 h | $105 | $18.52 | $26.25 | $370 |
+| `sft4_eval` | 136.49 h | $72.34 | $7.12 | $10.37 | $142 |
+
+## Cost per 1,000 solved tasks
+
+| Run | Solved / 1,000 | Self-host $ | GPT-6 Luna (cheapest frontier tier) $ | GPT-4o-mini $ | GPT-6.1 Sol (mid tier) $ |
+|---|---:|---:|---:|---:|---:|
+| `sft4_hard90` | 933 | $7.92 | $0.78 | $1.13 | $15.56 |
+| `base_hard90` | 33 | $316 | $55.63 | $78.82 | $1,113 |
+| `sft4_eval` | 1,000 | $7.23 | $0.71 | $1.04 | $14.24 |
+
+## What the table says
+
+- **Cost per solved task is the number that matters.** Untuned, the base solves 3.3% of these questions, so its bill buys a correct ledger only every 30th request: $55.63 per 1,000 solved on the cheapest closed tier, against $0.78 for the adapter at 93.3% — 72x less. Self-hosted the same comparison is $316 against $7.92. The gap is the accuracy, not the price list.
+- The token saving is the mechanism: 213 generated tokens per task against 1,027 untuned, and 6,193 billed input tokens against 13,391, because the adapter finishes in 3.38 calls instead of 7.24 and stops when the ledger is settled instead of narrating a wrong split.
+- Self-hosted on one T4 at $0.53/h the same 1,000 tuned tasks cost $7.39 (13.94 GPU-hours), against $10.53 (19.86 hours) untuned. At this volume a per-token closed API is 10x cheaper per request than a dedicated card, so the case for self-hosting is data locality, offline operation and batching rather than the sticker price: this eval served one request at a time, and concurrent requests divide the GPU line while the token bill stays linear.
+- The closed column prices the *tokens*, not a verified success rate: no closed model was run on these 90 Hinglish ledger tasks. If a closed model solved them at the base model's 3.3%, its bill per solved task would land near $55.63 instead of the per-request figure.
+
+## Caveats a reader should apply
+
+- The self-hosted side is charged at sequential, greedy decoding with model load inside the eval wall time. Prompt caching, a warm process, batching or ZeroGPU all lower it; none of that is assumed here.
+- Self-hosting also costs engineering time, monitoring, cold starts and an eval harness. None of that is in the GPU line — it is excluded, not zero.
+- These latencies are fp16 on one T4 (`--no-4bit`). A 4-bit server, which the demo Space uses, trades some speed for roughly a quarter of the memory; the earlier 4-bit round-1 measurement was 80.95 s/request untuned and 54.95 s tuned against 50.2 s/task here.
+- This prices the merged model that was evaluated, not LoRA-adapter hosting (cheaper to serve, but it adds a PEFT dependency).
+- Tiny Aya is not a frontier assistant: this is a measured cost and reliability trade-off on one closed task family, not a quality-parity claim.
+
+## Assumptions and how to re-check
+
+- GPU price is an on-demand T4 list price and is the only free parameter: `--gpu-hour` (here $0.53; Kaggle and HF ZeroGPU are $0 for this workload).
+- Closed-model prices are published list prices checked on 2026-11-09 (openai.com/api/pricing; Nov-2026 LLM price comparison); they change, so treat them as a snapshot and edit `CLOSED` in `scripts/roi.py` to re-price.
+- Token counts come from `runs/<run>/trajectories.jsonl` with `CohereLabs/tiny-aya-global`'s tokenizer, counting every assistant turn's prompt plus its generated message.
 
 ```bash
-python - <<'PY'
-import json, statistics
-
-rows = [json.loads(l) for l in open("runs/sft2_hard30/trajectories.jsonl", encoding="utf-8")]
-conv = [r["metadata"]["conversation"] for r in rows]
-
-def billed(c):
-    last = max(i for i, m in enumerate(c) if m["role"] == "assistant")
-    return (
-        sum(len(m["content"]) for m in c[:last]),
-        sum(len(m["content"]) for m in c if m["role"] == "assistant"),
-    )
-
-inputs, outputs = zip(*(billed(c) for c in conv))
-print(round(statistics.mean(inputs)), round(statistics.mean(outputs)))  # 6257 661
-PY
+python scripts/roi.py --gpu-hour 0.53 --tasks-per-month 10000
 ```
-
-## Scenario
-
-| Input | Value | Source |
-|---|---:|---|
-| Monthly agent requests | 10,000 | assumption, edit to your volume |
-| Input tokens / request | 1,738 | measured (see above) |
-| Output tokens / request | 184 | measured |
-| Turns / request | 3.57 | measured |
-
-## Closed-source API
-
-```
-monthly_cost = requests * (input_tokens * input_price + output_tokens * output_price) / 1_000_000
-```
-
-Price **assumed** at \$3 / M input and \$15 / M output — replace with the live price of the API you
-compare against on submission day, and rerun the arithmetic:
-
-```
-10,000 * (1,738 * 3 + 184 * 15) / 1_000_000 = $79.74 / month
-```
-
-## Self-hosted Tiny Aya
-
-```
-gpu_hours = requests * seconds_per_request / 3600
-monthly_cost = gpu_hours * gpu_hour_price
-```
-
-GPU price **assumed** at \$0.35/h (T4-class, on-demand). The model is a 3.35B LoRA merge served in
-fp16/4-bit, so a single T4-class card serves one request at a time at the latencies below.
-
-| Model | s / request | GPU-hours / month | Cost / month |
-|---|---:|---:|---:|
-| Base Tiny Aya (measured, 4-bit, 30 tasks / 2428.4 s) | 80.95 | 224.9 | \$78.70 |
-| SFT-mix (measured, 4-bit, 30 tasks / 1648.6 s) | 54.95 | 152.6 | \$53.42 |
-
-The eval-24 run writes a third data point: 1212.5 s / 24 = 50.52 s per request, the same
-adapter on the in-distribution split.
-
-The honest headline: **at base-model latency, self-hosting is a wash** — \$78.70 against a
-\$79.74 API bill, so reliability is the only thing you bought. At tuned latency it is
-**0.67× the API bill**. Base needs 7.03 tool calls per task and 16 of 30 episodes never
-finish, and GPU time scales with turns; the tuned adapter is cheaper *because* it drops to
-3.57 calls, not because the model is smaller.
-
-## Break-even
-
-```
-break_even_cost_ratio = self_host_cost_per_request / api_cost_per_request
-```
-
-- API: \$0.00797 per request.
-- Self-host at base latency: \$0.00787 per request -> 0.99x the API, with 3.33% success. No reason to run it.
-- Self-host at tuned latency: \$0.00534 per request -> **0.67x the API, at 96.67% success on
-  hard-30 (93.33% on hard-90 for the shipped `sft4`).**
-
-Break-even monthly volume only matters if there is a fixed cost (dedicated GPU reservation,
-monitoring, engineering). With a serverless GPU there is none, so the decision is the per-request
-ratio above.
-
-## Honest caveats
-
-- Tiny Aya is less capable than a frontier API. Paired with tool schemas it answers a closed
-  ledger question; it is not a general assistant. This is a cost and reliability trade-off, not a
-  quality parity claim.
-- Self-hosting includes engineering time, monitoring, cold-start latency and an eval harness.
-  None of that is priced above. Add it or state that it is excluded.
-- Latency was measured on a shared Kaggle T4 with greedy decoding, one process, batch size 1.
-  Prompt caching and batching would change both columns.
-- LoRA-adapter hosting (what the Space does) is cheaper than merging and re-serving, but adds a
-  PEFT dependency; the numbers above price the merged model that was actually evaluated.

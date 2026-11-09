@@ -17,7 +17,7 @@ One line: **3.33% → 96.67% task success on a frozen 30-task hard split, and 3.
 | Live demo (tool trace visible) | https://huggingface.co/spaces/primce/hinglish-expense-agent |
 | Demo video (1:44, narrated) | https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4 |
 | Write-up | https://huggingface.co/spaces/primce/hinglish-track3-article |
-| ROI (optional deliverable) | [docs/roi.md](https://github.com/PRINCE2-AI/lexsi-agentic-hinglish/blob/main/docs/roi.md) — measured tokens and latency, $53.42 vs $79.74 per 10,000 requests (0.67x) |
+| ROI (optional deliverable) | [docs/roi.md](https://github.com/PRINCE2-AI/lexsi-agentic-hinglish/blob/main/docs/roi.md) — measured tokens and latency on hard-90, dated list prices: $0.78 vs $55.63 per 1,000 *solved* tasks on the cheapest closed tier (72x), $7.92 vs $316 self-hosted; `python scripts/roi.py` reproduces the tables |
 | HF Collection | https://huggingface.co/collections/primce/lexsi-track-3-hinglish-expense-agent-6aeb3207e10dfc7dda6329d6 |
 
 ## Problem statements this entry claims
@@ -40,6 +40,7 @@ backs it; the rest are listed as not claimed, on purpose.
 | **AgentTune used** | `scripts/train_grpo.py` builds the trainer through `agenttune.create_agentic_trainer` and runs 40 GRPO steps on top of the SFT warm start (`scripts/hf_job_stage2.sh`, HF Job `6aeb328dc78863f9c6328d08`). |
 | **AuditKIT used** | `scripts/auditkit_eval.py` rebuilds every recorded episode as an `auditkit.agent_eval.AgentCase` + `episode_from_openai_messages`, runs `AgentEvalRunner` in `mode="recorded"` with `FinalStateAssertion` and `CustomPredicate`, and scores `tool_call_f1`, `tool_call_f1_name`, `tool_call_validity`, `redundant_tool_calls`, `agent_loop_detection`. No judge model is used. Replayed on 1.1.3 and on the current 1.1.6: identical verdicts on all four runs (29/30, 86/90, 28/30, 26/30). |
 | **Before/after metrics, more than one** | Success, exact-call accuracy, tool-call F1/precision/recall, redundant calls, loop detection, ledger-attack rate, abstention — tables below. |
+| **ROI vs a closed model (optional, preferred)** | Measured token traffic and wall time, priced against dated closed-model list prices at 10,000 tasks/month: `docs/roi.md`. |
 | **HF Collection** | linked above. |
 | **Write-up** | this file; rendered version in the article Space. |
 

@@ -1,0 +1,65 @@
+# Judge checklist — Track 3 (Agentic Fine-tuning)
+
+The organisers do not publish a point scale: the Rules page lists what a submission must contain,
+and the FAQ says judges "score each team numerically on a fixed scale". So this file maps every
+published requirement and every Track 3 problem statement this entry claims to the artifact that
+satisfies it, with the measured number. Nothing here is new evidence; each row points at a file or
+a run log in the repo.
+
+## Rule by rule (hackathon.lexsi.ai/rules, §5 "Submissions")
+
+| Requirement (as written) | Where it is satisfied | Evidence |
+|---|---|---|
+| Projects must be developed during the hackathon | Whole repo | First commit 2026-11-01; no pretrained adapter, no reused trajectories |
+| Chain repos from the track (≥2, preferred ≥3; Track 3 exempt) | AgentTune + AuditKIT | LoRA SFT and the agentic GRPO trainer come from AgentTune; every headline number is re-scored by AuditKIT (`docs/RESULTS.md#auditkit`) |
+| Dense open-weights Cohere model | `CohereLabs/tiny-aya-global` (3.35B) | Adapter targets it: `primce/tiny-aya-hinglish-lora`, subfolder `sft4_adapter` |
+| All artifacts on Hugging Face: models, adapters, logs, datasets | Model + dataset on the Hub | `primce/tiny-aya-hinglish-lora`, `primce/lexsi-runs` (every `summary.json`, `trajectories.jsonl`, `results.jsonl`), two Collections |
+| Deployed publicly by the deadline | Demo Space + code repo | `primce/hinglish-expense-agent` (live, ZeroGPU), `PRINCE2-AI/lexsi-agentic-hinglish` |
+| Showcase before-and-after metrics, more than one metric | Three metrics move at once | success 3.33% → 93.33% (hard-90), calls/task 7.24 → 3.38, strict JSON 0% → 100% on hard-90; safety 0/112 attacker values vs base 13/24 + 32/72 + 5/16 |
+| Write-up: metrics chosen and why, data/task/model rationale, why the model is better | `submission/README.md` + article Space | Also `docs/MODEL_CARD.md`, `docs/DATASET_CARD.md`, `docs/SAFETY.md` |
+| A HF Article | Static article Space (Hub Articles need PRO) | `primce/hinglish-track3-article` renders `docs/hf_article.md`; the FAQ allows a README fallback |
+| A HF Space (if relevant) | Demo Space | Live model + six frozen episodes, scored by the repo's own scorer |
+| [Optional but preferred] ROI vs a closed-source model | **`docs/roi.md`** | Self-host GPU-hours and $/task from measured wall time and token counts; closed-model list prices on the same traffic |
+
+## Problem statements claimed in the submission form
+
+**Reliable tool calling.** Tool choice, argument names, argument values and JSON syntax are
+measured separately on 90 unseen tasks: `tac` 0.967, `arr` 1.000, `strict` 1.000, `ter` 0.000,
+`parse_failures` 0.000. The nine remaining misses are answer-shape errors, not tool errors
+(`docs/RESULTS.md#round-3-2026-11-05--sft4`).
+
+**Efficient trajectories.** 3.38 calls/task on hard-90 against 7.24 for the prompt-only base, with
+`overcall` 0.000, `rad` 0.000 and `lcf` 0.000 — the adapter does not cut steps by skipping work; on
+eval-24 it matches the oracle's own minimum of 3.29 calls/task.
+
+**Data and database agents.** The task is a stateful ledger, success is the final ledger compared
+to a deterministic oracle, and the schema-shift probe renames every tool and parameter and still
+scores 25/30 against 29/30 canonical (`docs/RESULTS.md#generalisation-probes-2026-11-08-no-new-training`).
+
+## Safety claim, stated the way the numbers support it
+
+0 attacker values reached the ledger or the answer on **112 injected tasks** across three pinned
+splits and four payload styles (24 + 72 + 16). Base model: 13/24, 32/72 and 5/16 ledger hits.
+The adapter is the default; the hardened prompt buys 2 more hard-90 tasks but puts 2 attacker
+numbers back into prose, so it is shipped as an option, not as the default (`docs/SAFETY.md`).
+
+## Two-minute verification
+
+```bash
+git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
+python scripts/verify_all.py     # 25/25: pin matches, oracle 30/30, all tests
+```
+
+No GPU, no token, no model download. Every published number is in a `summary.json` under
+`primce/lexsi-runs`; `docs/SUBMIT.md` lists the paste-ready link block.
+
+## What this entry does not claim
+
+- eval-24 is generator-matched, so 24/24 there is a sanity result, not the headline.
+- The renamed-schema probe is 25/30 vs 29/30, exact McNemar p = 0.125 — a real drop that is not
+  significant at n=30. It is reported as a drop.
+- Devanagari-30 (25/30) uses re-ided rows, so it is a nominal comparison only.
+- GRPO was run twice and moved nothing (0 fixed, 0 broken on hard-90, p = 1.0). The RL result is
+  published as a null, not as a win.
+- Safety payloads are English-leaning inside Hinglish wrappers; a hand-written Hinglish-payload
+  split is listed as the next probe and is not measured.

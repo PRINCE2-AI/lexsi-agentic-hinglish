@@ -107,6 +107,8 @@ Links:
   write-up: https://huggingface.co/spaces/primce/hinglish-track3-article
   adapter: https://huggingface.co/primce/tiny-aya-hinglish-lora
   run logs (every summary.json + trajectories): https://huggingface.co/datasets/primce/lexsi-runs
+  ROI vs a closed API: https://github.com/PRINCE2-AI/lexsi-agentic-hinglish/blob/main/docs/roi.md
+  judge checklist (rule by rule): https://github.com/PRINCE2-AI/lexsi-agentic-hinglish/blob/main/docs/JUDGE.md
   collection: https://huggingface.co/collections/primce/lexsi-track-3-hinglish-expense-agent-6aeb3207e10dfc7dda6329d6
 ```
 
