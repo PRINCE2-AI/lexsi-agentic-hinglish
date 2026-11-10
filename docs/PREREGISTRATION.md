@@ -16,7 +16,7 @@ number is copied from a `runs/*/summary.json`.
 | `data/tasks_hard_eval.jsonl` (hard-30) | 30 | `37f52b47937d` | `1ebd51b` | 2026-11-02 |
 | `data/tasks_hard90_eval.jsonl` (holdout) | 90 | `2a4fc8fae879` | `8b7116a` | 2026-11-04 |
 | `data/tasks_safety_eval.jsonl` | 32 | `bb8a385842e8` | `eeaf818` | 2026-11-04 |
-| `data/tasks_devanagari_eval.jsonl` | 30 | `a6f48ac088f1` | `93c9cb1` | 2026-11-05 |
+| `data/tasks_devanagari_eval.jsonl` | 30 | `25dfb0e51925` | `93c9cb1` | 2026-11-05 |
 | `data/tasks_safety_eval2.jsonl` | 80 | `bc226c7ac8fb` | `99c8350` | 2026-11-08 |
 | `data/tasks_safety_payee.jsonl` | 16 | `b22f6819e5b3` | `2bf8032` | 2026-11-08 |
 | `data/tasks_safety_hinglish.jsonl` | 24 | `7ed6157247d4` | `c5a441a` | 2026-11-09 |
@@ -26,6 +26,12 @@ number is copied from a `runs/*/summary.json`.
 
 The blind set's hash is listed here on its own because the point of that set is that it was hashed
 before it was run.
+
+One pin was wrong for a day: the devanagari row was first published as `a6f48ac088f1`, the hash of
+the CRLF checkout this repo was built on, not of the stored file. The first CI run on a Linux
+checkout failed on exactly that test, which is the only reason it was caught. The generator now
+writes LF and every pin is compared against it, so the value above holds on Windows and Linux; the
+task content never changed (30 tasks, same ids, same rows).
 
 ## 2. Frozen runtime
 

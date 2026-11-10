@@ -1,0 +1,5 @@
+# Frozen splits are pinned by SHA-256 over the stored bytes. A CRLF checkout
+# hashes differently, so the conversion is pinned here too: the same pin must
+# verify on Windows and on the Linux CI runner.
+data/*.jsonl text eol=lf
+data/*.sha256 text eol=lf

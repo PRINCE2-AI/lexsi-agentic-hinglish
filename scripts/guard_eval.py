@@ -19,6 +19,7 @@ script can claim from saved trajectories.
 from __future__ import annotations
 
 import argparse
+import gzip
 import json
 import re
 import sys
@@ -134,6 +135,32 @@ def sample_table(path: Path, detector) -> dict:
     return {"n": len(rows), "correct": correct, "misses": misses}
 
 
+def load_traffic() -> list[dict]:
+    """Episodes of saved tool results, from the frozen corpus or from `runs/` if it is absent.
+
+    `runs/` is not tracked, so the corpus in `data/guard_traffic.jsonl.gz` is what makes the
+    clean-traffic column reproducible on a fresh clone and in CI.
+    """
+    corpus = ROOT / "data" / "guard_traffic.jsonl.gz"
+    if corpus.exists():
+        with gzip.open(corpus, "rt", encoding="utf-8") as handle:
+            return [json.loads(line) for line in handle if line.strip()]
+    rows = []
+    for run in BENIGN_RUNS + DIRTY_RUNS:
+        path = ROOT / "runs" / run / "trajectories.jsonl"
+        if not path.exists():
+            continue
+        for episode in load_jsonl(path):
+            steps = [
+                {"name": step.get("name"), "result": step.get("result")}
+                for step in episode.get("steps") or []
+                if isinstance(step.get("result"), dict)
+            ]
+            if steps:
+                rows.append({"run": run, "clean": run in BENIGN_RUNS, "steps": steps})
+    return rows
+
+
 def channel_table() -> dict:
     """Structural baseline: does the payload arrive in a field the tool can actually return?
 
@@ -151,36 +178,30 @@ def channel_table() -> dict:
             injected += 1
             in_note += injection.get("field", "note") == "note"
     results = unexpected = 0
-    for run in BENIGN_RUNS:
-        path = ROOT / "runs" / run / "trajectories.jsonl"
-        if not path.exists():
+    for episode in load_traffic():
+        if not episode["clean"]:
             continue
-        for episode in load_jsonl(path):
-            for step in episode.get("steps") or []:
-                result = step.get("result")
-                if not isinstance(result, dict):
-                    continue
-                results += 1
-                allowed = ALLOWED_KEYS.get(str(step.get("name")), UNKNOWN_TOOL_KEYS)
-                unexpected += bool(set(result) - allowed)
+        for step in episode["steps"]:
+            result = step.get("result")
+            if not isinstance(result, dict):
+                continue
+            results += 1
+            allowed = ALLOWED_KEYS.get(str(step.get("name")), UNKNOWN_TOOL_KEYS)
+            unexpected += bool(set(result) - allowed)
     return {"injected": injected, "delivered_in_note": in_note,
             "results": results, "unexpected_key_results": unexpected}
 
 
 def benign_table(detector, runs=BENIGN_RUNS) -> dict:
+    traffic = load_traffic()
     episodes = flagged_episodes = results = flagged_results = 0
     per_run = []
     for run in runs:
-        path = ROOT / "runs" / run / "trajectories.jsonl"
-        if not path.exists():
-            continue
         ep = fl = 0
-        for episode in load_jsonl(path):
+        for episode in (row for row in traffic if row["run"] == run):
             ep += 1
             hit = False
-            for step in episode.get("steps") or []:
-                if step.get("result") is None:
-                    continue
+            for step in episode["steps"]:
                 results += 1
                 if detector(step["result"])["flagged"]:
                     flagged_results += 1

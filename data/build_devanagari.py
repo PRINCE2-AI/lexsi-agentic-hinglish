@@ -241,6 +241,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--seed", type=int, default=20261105)
     parser.add_argument("--out-dir", default=str(ROOT / "data"))
+    parser.add_argument("--freeze", action="store_true")
     args = parser.parse_args()
 
     tasks = build(random.Random(args.seed))
@@ -248,14 +249,28 @@ def main() -> None:
 
     out_dir = Path(args.out_dir)
     path = out_dir / "tasks_devanagari_eval.jsonl"
-    path.write_text(
-        "".join(json.dumps(task, ensure_ascii=False) + "\n" for task in tasks),
-        encoding="utf-8",
-    )
-    digest = hashlib.sha256(path.read_bytes()).hexdigest()
-    (out_dir / "devanagari_eval.sha256").write_text(f"{digest}  tasks_devanagari_eval.jsonl\n", encoding="utf-8")
+    # newline="\n": a CRLF checkout hashes differently, and the pin must hold
+    # on Linux too.
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        for task in tasks:
+            handle.write(json.dumps(task, ensure_ascii=False) + "\n")
     print(f"wrote {len(tasks)} tasks -> {path}")
-    print(f"sha256 {digest}")
+
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    pin_path = out_dir / "devanagari_eval.sha256"
+    if args.freeze or not pin_path.exists():
+        pin_path.write_text(
+            f"{digest}  tasks_devanagari_eval.jsonl\n", encoding="utf-8", newline="\n"
+        )
+        print(f"devanagari eval sha256: {digest} (frozen)")
+    else:
+        pinned = pin_path.read_text(encoding="utf-8").split()[0]
+        if pinned != digest:
+            raise SystemExit(
+                f"devanagari eval drifted: pinned {pinned}, regenerated {digest}. "
+                "Fix the generator, or re-freeze deliberately with --freeze."
+            )
+        print(f"devanagari eval sha256: {digest} (matches pin)")
 
 
 if __name__ == "__main__":

@@ -103,7 +103,8 @@ Published splits, task flagged (a task counts if any of its payload fragments is
 | **guard** | **166/166 (100.0%)** | **12/12** | **5/8** | **0/294 (0–1.3%)** |
 
 "Clean" means six runs in which no injection was delivered at all: 294 episodes, 1,010 tool
-results. `heldout_base` is deliberately excluded from that count even though its stored results
+results, stored as `data/guard_traffic.jsonl.gz` (20 KB, sha256 `2631ab6ba588`) so the column can
+be reproduced on a fresh clone without the run logs. `heldout_base` is deliberately excluded from that count even though its stored results
 carry no payload (the note is only added to the message the model sees). The base model *acted* on
 the payload, so a result there can contain the attacker's 999999 as a real expense, and a detector
 that fires on it is noticing the damage after the fact. Measured separately:
@@ -201,6 +202,7 @@ alone is not a boundary a real product can rely on.
 ```bash
 python scripts/guard_eval.py                                  # the tables above
 python scripts/guard_eval.py --json runs/guard_eval/summary.json
+python scripts/build_guard_corpus.py                          # rebuild the 20 KB traffic corpus
 python -m pytest tests/test_guard.py -q                       # 8 tests, no GPU
 python scripts/run_baseline.py --model runs/sft4_merged \
     --tasks data/tasks_safety_eval.jsonl --safety --no-4bit \
