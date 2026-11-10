@@ -150,8 +150,12 @@ a removed field is: that marker is information the plain run does not carry, so 
 prove deletion alone is enough. `--guard strip` deletes the `note` field and leaves nothing behind;
 it is the control for exactly that objection, and it is the open row now instead of this one.
 
-Artifacts: `runs/safety_sft4_neutralise/` (`summary.json`, `results.jsonl`, `trajectories.jsonl`),
-produced by `notebooks/kaggle_guard_e2e.ipynb` from commit `22b5af4`.
+Artifacts: `summary.json` is in the repo at `runs/safety_sft4_neutralise/` and in the dataset at
+`safety_sft4_neutralise/summary.json`; the per-episode `results.jsonl` and `trajectories.jsonl` are
+still in the notebook's Kaggle output (`/kaggle/working/runs/safety_sft4_neutralise/`) and are not
+published yet, which is why every number above is quoted from the summary and the printed run block
+rather than from rows. The run itself is `notebooks/kaggle_guard_e2e.ipynb`, pinned to commit
+`22b5af4`.
 
 ## What the blind set costs
 
