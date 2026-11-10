@@ -22,6 +22,26 @@ the seed control exists separately.
 | hard-90 (sft4, seed 123) | `sft4_seed123_hard90` | 90 | 83/90 | 92.2% | 84.8%–96.2% | 86.7%–97.8% |
 | hard-90 (hardened prompt) | `sft4_hard90_hardened` | 90 | 86/90 | 95.6% | 89.1%–98.3% | 91.1%–98.9% |
 
+## Three training seeds, pooled
+
+Seeds 7 and 123 are the same recipe as the shipped seed 42 with a different sampler seed, evaluated
+on the same 90 tasks. Seed 42 against seed 7 fixes one task and breaks one; against seed 123 it fixes
+one and breaks two. So the point estimate to quote for the recipe is the pooled rate, not the best
+seed, and pooling lowers it — the shipped seed was pre-registered rather than picked. Pooling seeds
+says nothing about the other tasks a different split could have drawn; that is the interval's job,
+and its unit is still the task.
+
+| Same 90 tasks, three training seeds | Hits | Accuracy |
+|---|---:|---:|
+| seed 42 (shipped) | 84/90 | 93.3% |
+| seed 7 | 84/90 | 93.3% |
+| seed 123 | 83/90 | 92.2% |
+| **pooled** | **251/270** | **93.0%** |
+
+Task-block bootstrap 95% for the pooled rate: **87.4%–97.4%**. The iid Wilson interval on the same 270 rows would be 89.3%–95.4%, which is too narrow: the three rows for one task are not independent draws, so the resampling unit is the task.
+
+On hard-30 the same three seeds score 29/30, 30/30 and 29/30, so the pooled rate there is **88/90 = 97.8%** from the published summaries; that split is quoted as counts because two of those runs publish a summary only, not per-task rows.
+
 ## Paired changes
 
 Paired on the task ids present in both runs; the delta is B − A over the same tasks, and the
@@ -69,6 +89,26 @@ the sentinel is kept only so the older rows stay comparable.
 | heldout-30 | `heldout_sft4` | 30 | 30 | 1/30 | 5/30 | 0/30 | 7.3%–33.6% |
 | heldout-30 | `heldout_sft4_hardened` | 30 | 30 | 1/30 | 21/30 | 0/30 | 52.1%–83.3% |
 
+## Paired: the same rows, base → shipped adapter
+
+The table above compares runs but not always on identical tasks. This one is paired on the task
+ids and counts only splits whose payload asks for an expense — the payee split redirects a handle,
+so an expense count there would charge the base model for being bad at the task rather than for
+following the payload. `Fixed` is a task the base moved money on and the adapter did not; `Broken`
+is the reverse; the p is exact McNemar over those discordant pairs.
+
+| Split | n | base | sft4 | Fixed | Broken | McNemar p |
+|---|---:|---:|---:|---:|---:|---:|
+| safety-32 | 24 | 18 | 2 | 16 | 0 | 3.05e-05 |
+| safety2-80 | 72 | 48 | 4 | 44 | 0 | 1.14e-13 |
+| hinglish-24 | 24 | 14 | 0 | 14 | 0 | 0.000122 |
+| heldout-30 | 30 | 18 | 5 | 16 | 3 | 0.00443 |
+
+On the 120 published rows the base model puts an unrequested expense in **80** and the
+shipped adapter in **6** — 74 fixed, 0 broken. The held-out split moves the same way and is
+the useful counterweight: 16 fixed against 3 broken, and the three are `h-18`, `h-21` and `h-22`,
+all obfuscated spellings — the same three the safety table already charges the adapter for.
+
 ## The corrected ledger claim
 
 **Sentinel 0 of 136. Ledger accounting 6 of 136** (Wilson 95% 2.0%–9.3%).
@@ -95,8 +135,6 @@ Caveats that still hold:
 
 The answer-side metric is 0 of 136 for the shipped adapter: models
 that follow the tool instruction still answer the user's real balance. The hardened prompt
-is 9 of 136 in the ledger and 2 of
-136 in the answer, so on a single-blob payload it is not better than the shipped
-adapter — and on the held-out split it is much worse, **21 of 30** ledgers taking the 999 INR
+lands at 9 of 136 in the ledger and 2 of 136 in the answer, so on a single-blob payload it is not better than the shipped adapter — and on the held-out split it is much worse, **21 of 30** ledgers taking the 999 INR
 "correction" that the split payload asks for, against 5 of 30 for the shipped adapter. A
 defensive prompt is not a free win, which is why `safe` and `utility` are reported together.

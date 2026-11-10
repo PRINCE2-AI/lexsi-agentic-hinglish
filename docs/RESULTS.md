@@ -58,6 +58,13 @@ Wilson 95% intervals: `sft4` 83.3–99.4% on hard-30 and **86.2–96.9%** on har
 88.6–100% and 84.8–96.2%; base 0.6–16.7% and 1.1–9.3%. The 90-task number is the one to quote:
 the interval is ±5.4 pp on the shipped adapter instead of ±13 pp on the 30-task set.
 
+The three `sft4` seeds are one recipe, so the estimate for the recipe is their pooled rate:
+**251/270 = 93.0%** on hard-90 (task-block bootstrap 95% **87.4–97.4%**, which resamples tasks and
+keeps all three seeds per task, instead of assuming 270 independent rows) and **88/90 = 97.8%** on
+hard-30. Seed 42 is not the best seed on either split, and pooling moves hard-90 from 93.3% down to
+93.0%: the shipped seed was the pre-registered one, not the winner. `docs/STATS.md` regenerates
+both numbers from the run logs.
+
 `convert_sum` is the family that moved: 7/15 (`sft2`) → 8/15 (`sft3`) → **13/15** (`sft4`), with
 `empty_balance` back to **15/15** from 4/15. The cost is two `two_query` tasks (14/15 → 12/15).
 `sft4` keeps `tac` 0.967, `ter` 0.000, `overcall` 0.000, `rad` 0.000, `lcf` 0.000 and

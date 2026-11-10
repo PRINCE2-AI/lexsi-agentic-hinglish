@@ -40,6 +40,12 @@ Amounts are INR; the fixed offline rates are USD = 83 INR and EUR = 90 INR.
 
 ## What to try (90 seconds)
 
+**Paste your own tool result — no GPU, no login.** The **Try the guard yourself** panel runs the
+same `hinglish_agent/guard.py` on the CPU: pick a mode (`flag`, `strip`, `neutralise`, `allowlist`),
+say which tool returned the JSON, and see the verdict, the reasons and exactly what the model would
+read. Seven examples are loaded, including three payloads the guard **misses** (the blind set) so the
+hit rate can be checked rather than taken on trust. A run takes a few hundred microseconds.
+
 **Mode → Base model (adapter off)** vs **Shipped adapter (sft4)** runs the same loaded 4-bit
 weights; the only difference is `disable_adapter()` at inference time. On the default question the
 base model logs 7 duplicated expenses, a 5400 INR balance and no `finish` in 8 steps; the shipped

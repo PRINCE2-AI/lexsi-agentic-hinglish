@@ -55,6 +55,10 @@ seed adapters are kept for the ablation and variance controls.
   p = 7.5e-09** on hard-30 and **81 fixed, 0 broken, p < 1e-20** on hard-90. Against the
   round-2 adapter, **18 fixed, 2 broken, p = 0.0004**; against the round-1 adapter, 7 fixed,
   3 broken, p = 0.34 (directional, not significant).
+- Seed control: the same recipe on seeds 7 and 123 scores 84/90 and 83/90, so the **pooled
+  three-seed estimate is 251/270 = 93.0% on hard-90** (task-block bootstrap 95% 87.4–97.4%) and
+  **88/90 = 97.8% on hard-30**. The shipped seed 42 is not a lucky seed; `docs/STATS.md` recomputes
+  both from the run logs.
 - Tool calls per task: **3.57** on hard-30, exactly the oracle's count (base: 7.03). On hard-90:
   3.38 against an oracle 3.41 and a base 7.24 — 87 of 90 tasks take exactly the oracle number of
   calls, 3 take one fewer, none take more.

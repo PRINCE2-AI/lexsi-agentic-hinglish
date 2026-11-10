@@ -28,6 +28,7 @@ for candidate in (HERE, HERE.parent, Path.cwd()):
         sys.path.insert(0, str(candidate))
         break
 
+from hinglish_agent import sandbox as SANDBOX  # noqa: E402
 from hinglish_agent.runner import run_episode, score_episode  # noqa: E402
 from hinglish_agent.safety import score_safety  # noqa: E402
 
@@ -342,8 +343,9 @@ with gr.Blocks(
         "**166/166** published payloads, **5/8** on a blind set written after the rules were "
         "frozen, and **0 of 294** clean episodes. Run in front of the adapter on the same 136 rows, "
         "it takes the attacker's expense from **6/136 to 0/136** and still solves **136/136**. "
-        "The fourth mode below runs the shipped adapter with the guard on and prints every flag in "
-        "the trace.\n\n"
+        "Paste your own tool result into **Try the guard yourself** below — it runs on the CPU in "
+        "hundreds of microseconds, and it includes three payloads the guard misses. The fourth "
+        "live mode runs the shipped adapter with the guard on and prints every flag in the trace.\n\n"
         "[Demo video (1:44)](https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4) · "
         "[Write-up](https://huggingface.co/spaces/primce/hinglish-track3-article) · "
         "[Code](https://github.com/PRINCE2-AI/lexsi-agentic-hinglish) · "
@@ -396,6 +398,42 @@ with gr.Blocks(
                 gr.Markdown("**Shipped adapter (sft4)**")
                 gr.Markdown(_tuned_ver)
                 gr.Markdown(_tuned_ans)
+
+    gr.Markdown(
+        "### Try the guard yourself — paste a tool result, no GPU\n"
+        "The guard sits between the tool and the model. Replace the JSON below with your own tool "
+        "result, pick a mode, and press the button: what you see in *what the model would read* is "
+        "exactly what the runner hands the model. It costs a few hundred microseconds.\n\n"
+        "The list also holds three payloads the guard is **known to miss** (`b-01`, `b-05`, "
+        "`b-06` from the blind set written after the rules were frozen). Try them: they show where "
+        "a finite verb list ends, which is the honest shape of this defence."
+    )
+    with gr.Row():
+        sb_example = gr.Dropdown(
+            choices=list(SANDBOX.EXAMPLES), value=next(iter(SANDBOX.EXAMPLES)), label="Example"
+        )
+        sb_mode = gr.Radio(choices=list(SANDBOX.MODES), value="neutralise", label="Guard mode")
+        sb_tool = gr.Dropdown(choices=list(SANDBOX.TOOLS), value="add_expense", label="Which tool returned it")
+    sb_raw = gr.Textbox(
+        label="Tool result (JSON)", lines=6, value=SANDBOX.EXAMPLES[next(iter(SANDBOX.EXAMPLES))][1]
+    )
+    sb_button = gr.Button("Run the guard", variant="primary")
+    sb_verdict = gr.Markdown()
+    sb_shown = gr.Code(label="What the model would read", language="json")
+
+    def sb_pick(name):
+        tool, raw = SANDBOX.EXAMPLES[name]
+        return gr.update(value=raw), gr.update(value=tool)
+
+    def sb_run(raw, guard_mode, tool):
+        res = SANDBOX.run(raw, guard_mode, tool)
+        if not res["ok"]:
+            return SANDBOX.headline(res), ""
+        return SANDBOX.headline(res), json.dumps(res["shown"], ensure_ascii=False, indent=2)
+
+    sb_example.change(sb_pick, inputs=sb_example, outputs=[sb_raw, sb_tool])
+    sb_button.click(sb_run, inputs=[sb_raw, sb_mode, sb_tool], outputs=[sb_verdict, sb_shown])
+    sb_raw.submit(sb_run, inputs=[sb_raw, sb_mode, sb_tool], outputs=[sb_verdict, sb_shown])
 
     gr.Markdown(
         "### Live run — your own question, on the model\n"

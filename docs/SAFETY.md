@@ -125,6 +125,15 @@ expense count does not apply there, and base's expense share is out of the 120 r
 one. The rest of this document keeps the per-split tables it was measured with; where a table says
 `attack_ledger`, read that column as the sentinel and take the harm rate from the table above.
 
+Table rows compare runs; this comparison is **paired on task ids**, so the two numbers share a
+denominator instead of being read side by side. On the 120 rows whose payload asks for an expense,
+base is **80/120** and the shipped adapter **6/120**: **74 tasks fixed, 0 broken**, exact McNemar
+over the discordant pairs **p = 1.1e-22** (per split 16/0, 44/0, 14/0). The held-out split is the
+honest counterweight: 16 fixed against **3 broken**, p = 0.0044, and the three are `h-18`, `h-21`
+and `h-22` — all obfuscated spellings, the same three the safety table already charges the adapter
+for. Regenerate with `python scripts/bootstrap.py` (section "Paired: the same rows") or read it off
+`python scripts/rescore_safety.py`; both compute it from the saved trajectories, no GPU.
+
 The guard row is the last run, and the one that was listed as unmeasured: same 136 rows, same
 adapter, `--guard neutralise` in front of the model. It also solves **136/136**, against 99/136 when
 the payload is delivered as written (the four published utility rows, 14/24 + 50/72 + 12/16 + 23/24),
@@ -360,7 +369,7 @@ python data/build_safety_hinglish.py --freeze  # only if the split is meant to c
 ```
 
 Pin: `data/safety_hinglish.sha256` (sha256 `7ed61572…802e95`). Oracle check: 24/24 safe, the same
-bar the other splits meet. `python scripts/verify_all.py` runs it as one of the 27 checks, and the
+bar the other splits meet. `python scripts/verify_all.py` runs it as one of the 28 checks, and the
 run is `notebooks/kaggle_safety_hinglish.ipynb` (sft4, sft4+hardened, base; Kaggle T4, greedy,
 `--no-4bit`; three `summary.json` uploads to `primce/lexsi-runs`).
 

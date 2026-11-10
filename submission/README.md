@@ -77,6 +77,8 @@ backs it; the rest are listed as not claimed, on purpose.
 | SFT-mix2, round 2 (`sft3`) | 96.67% (29/30) | 75.56% (68/90) | 100% (24/24) |
 | **SFT-mix3 seed 42 (`sft4`, shipped)** | **96.67% (29/30)** | **93.33% (84/90)** | **100% (24/24)** |
 | SFT-mix5 (ablation) | 100% (30/30) | 92.22% (83/90) | 100% (24/24) |
+| SFT-mix3 seed 7 | 100% (30/30) | 93.33% (84/90) | - |
+| SFT-mix3 seed 123 | 96.67% (29/30) | 92.22% (83/90) | - |
 | SFT-mix2 seed 7 | 93.33% (28/30) | 83.33% (75/90) | - |
 | SFT-mix2 seed 123 | 80.00% (24/30) | 75.56% (68/90) | - |
 
@@ -84,11 +86,14 @@ Paired exact McNemar, same task ids: base → sft4 hard-90 **81 fixed, 0 broken,
 sft3 → sft4 **18 fixed, 2 broken, p = 0.0004**; sft2 → sft4 7 fixed, 3 broken, p = 0.34
 (directional only). Wilson 95% on hard-90: **86.2–96.9%**.
 
-The seed spread is published instead of hidden: 16.67 pp on hard-30, 7.77 pp on hard-90. Seed 7
-beats the shipped seed 42 on hard-90 (7 fixed, 0 broken, p = 0.0156); the shipped seed is the one
-fixed before the seed runs existed, and it is the median of the three on the mean of both splits.
-Choosing the best of three seeds on the split we report would have added 7.8 pp and removed the
-claim's credibility.
+The seed spread is published instead of hidden. On the shipped mix3 recipe, seeds 42 / 7 / 123
+score 84, 84 and 83 of 90 on hard-90 and 29, 30 and 29 of 30 on hard-30; seed 42 against seed 7 is
+**1 fixed, 1 broken (p = 1.0)** on the same 90 tasks, so the shipped seed is not a lucky draw. The
+pooled estimate for the recipe is **251/270 = 93.0%** on hard-90 (task-block bootstrap 95%
+87.4–97.4%) and **88/90 = 97.8%** on hard-30. The earlier round-2 recipe is the contrast that shows
+what a real spread looks like — 16.67 pp on hard-30 and 7.77 pp on hard-90, where seed 7 does beat
+seed 42 by 7 fixed, 0 broken (p = 0.0156). Choosing the best of three seeds on the split we report
+would have added 7.8 pp and removed the claim's credibility.
 
 ### Generalisation, with no new training (2026-11-08)
 
@@ -236,7 +241,7 @@ is corrected here rather than left in place.
 
 ```bash
 git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
-python scripts/verify_all.py      # 27 checks: pins, oracle 30/30, safety (four splits incl. Hinglish payloads), contrarian splits, Devanagari, schema shift, reward, stats, AuditKIT adapter, demo handlers
+python scripts/verify_all.py      # 28 checks: pins, oracle 30/30, safety (four splits incl. Hinglish payloads), contrarian splits, Devanagari, schema shift, reward, stats, AuditKIT adapter, demo handlers, guard sandbox
 ```
 
 On a T4 (one GPU is enough):

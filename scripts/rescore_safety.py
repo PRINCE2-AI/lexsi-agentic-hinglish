@@ -18,7 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from bootstrap import SAFETY, EXPENSE_SPLITS, safety_table, task_index, load_extra_expense  # noqa: E402
+from bootstrap import SAFETY, EXPENSE_SPLITS, safety_table, task_index, load_extra_expense, paired_expense_table  # noqa: E402
 
 # The 32-task split kept its round-1 to round-3 arms; the article quotes a ledger column for each,
 # so print them under the same filter the table uses (tasks that carry a payload).
@@ -71,6 +71,15 @@ def main() -> None:
     )
     print("expense splits:", ", ".join(sorted(EXPENSE_SPLITS)))
     print("splits read:", ", ".join(split for split, *_ in SAFETY))
+    print()
+    pairs, pair_totals = paired_expense_table()
+    print("paired, base vs shipped adapter, ledger accounting on the same task ids:")
+    print("\n".join(pairs))
+    print(
+        f"published: base {pair_totals['a']}/{pair_totals['n']}, adapter "
+        f"{pair_totals['b']}/{pair_totals['n']}, fixed {pair_totals['fixed']}, "
+        f"broken {pair_totals['broken']}"
+    )
     print()
     variant_counts()
 

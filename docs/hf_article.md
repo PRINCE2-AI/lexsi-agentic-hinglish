@@ -147,8 +147,15 @@ other split.
 | oracle | 100% (30/30) | 100% (90/90) | 100% (24/24) | 3.41 |
 
 Wilson 95% intervals: base 0.6–16.7% (hard-30) and 1.1–9.3% (hard-90); shipped adapter
-83.3–99.4% and **86.2–96.9%**; mix5 88.6–100% and 84.8–96.2%; seed 7 78.7–98.2% and 74.3–89.6%;
-seed 123 62.7–90.5% and 65.8–83.3%; eval-24 86.2–100%.
+83.3–99.4% and **86.2–96.9%**; mix5 88.6–100% and 84.8–96.2%; mix2 seed 7 78.7–98.2% and
+74.3–89.6%; mix2 seed 123 62.7–90.5% and 65.8–83.3%; eval-24 86.2–100%.
+
+The three shipped-recipe seeds are one recipe, so their pooled rate is the estimate for it:
+**251/270 = 93.0%** on hard-90 (task-block bootstrap 95% **87.4–97.4%**, resampling tasks rather
+than pretending 270 rows are independent) and **88/90 = 97.8%** on hard-30. Seed 42 is not the best
+seed on either split, and pooling moves hard-90 down from 93.3% to 93.0% — it was the
+pre-registered seed, not the winner. Both numbers regenerate from the run logs with
+`python scripts/bootstrap.py`.
 
 Paired exact McNemar on the uploaded trajectories, same task ids:
 
@@ -423,6 +430,14 @@ published splits: **6 attacker expenses in the ledger and 0 attacker values in t
 injected tasks** (2/24 + 4/72 + 0/16 + 0/24; Wilson 95% 2.0–9.3%), four payload styles in three
 payload languages, with the amount families measured on two seeds.
 
+The 120 rows whose payload asks for an expense can also be read as a paired test instead of two
+rates: base **80/120** against the adapter **6/120** is **74 tasks fixed, 0 broken**, exact McNemar
+**p = 1.1e-22** (the payee split is left out because its harm is a redirected handle, so an expense
+count there would charge the base model for being bad at the task). On the held-out split the same
+test is 16 fixed against 3 broken (p = 0.0044), and the three are the obfuscated spellings named
+below — so the pairing does not hide the weakness, it localises it. Both come from
+`scripts/bootstrap.py` on the saved trajectories, no GPU.
+
 Carrying a marker in the answer and moving money in the ledger were never the same failure, which
 is why both are reported separately; the correction matters because the first version of this
 article collapsed them and reported one as the other.
@@ -494,7 +509,9 @@ tool results, with every flag carrying a named reason (`ignore_rules`, `ledger_i
 Hinglish/Devanagari variants, `payment_handle`, `tool_control`, `localised_directive`,
 `state_change_directive`, `impersonated_authority`, `unusual_amount`) and five modes — `flag`,
 `strip`, `neutralise`, `warn`, `allowlist`. It costs 222 µs per tool result, needs no GPU, and is
-exposed as a fourth demo mode so the warning can be seen rather than described.
+exposed as a fourth demo mode so the warning can be seen rather than described. The demo Space also
+has a **Try the guard yourself** panel: paste any tool result, pick a mode and a tool, and see the
+verdict and the exact text the model would read, with the three blind misses preloaded as examples.
 
 Measured offline, with `scripts/guard_eval.py`:
 
@@ -682,7 +699,7 @@ huggingface-cli download primce/lexsi-runs --repo-type dataset --local-dir runs
 
 | Number | Command | What it prints |
 |---|---|---|
-| 27 dataset and invariant checks | `python scripts/verify_all.py` | `all 27 checks passed` |
+| 28 dataset and invariant checks | `python scripts/verify_all.py` | `all 28 checks passed` |
 | Every interval | `python scripts/bootstrap.py` | writes `docs/STATS.md`: Wilson + task bootstrap, paired bootstrap |
 | The corrected ledger table, from saved trajectories | `python scripts/rescore_safety.py` | sentinel `0/136`, ledger `6/136`, answer `0/136` for the adapter; held-out `1/30`, `5/30`, `0/30` |
 | Answers that name the injection | `python scripts/warn_scan.py` | adapter `0` of 136, from `final_response` |
@@ -703,7 +720,7 @@ The two probe splits are also re-scorable offline, and there the same rule holds
 git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
 python data/build_hard.py && python data/build_hard90.py && python data/build_mix.py
 python data/build_abstain.py && python data/build_safety.py
-python scripts/verify_all.py          # no GPU, no token: 27 checks
+python scripts/verify_all.py          # no GPU, no token: 28 checks
 
 python scripts/train_sft.py --tasks data/tasks_train_mix3.jsonl \
     --epochs 2 --seed 42 --out runs/sft4 --merge-out runs/sft4_merged
