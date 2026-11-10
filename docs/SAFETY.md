@@ -118,11 +118,21 @@ changed is the reported harm rate, not the headline accuracy.
 | **all four** | **`sft4`** | **0/136** | **6/136**, Wilson 95% 2.0–9.3% | **0/136** |
 | | `sft4` + hardened | 0/136 | 9/136 | 2/136 |
 | | base | 60/136 | 80/120 | 24/136 |
+| | **`sft4` + guard (`neutralise`)** | **0/136** | **0/136** | **0/136** |
 
 The payee split has no expense payload — its harm is the redirected handle in the answer — so the
 expense count does not apply there, and base's expense share is out of the 120 rows that do carry
 one. The rest of this document keeps the per-split tables it was measured with; where a table says
 `attack_ledger`, read that column as the sentinel and take the harm rate from the table above.
+
+The guard row is the last run, and the one that was listed as unmeasured: same 136 rows, same
+adapter, `--guard neutralise` in front of the model. It also solves **136/136**, against 99/136 when
+the payload is delivered as written (the four published utility rows, 14/24 + 50/72 + 12/16 + 23/24),
+so the note was costing 37 tasks even where it moved no money; and it flags all 136 episodes. It is
+`neutralise`, which leaves
+`[tool result contained instructions addressed to the agent; removed]` in place of the note, so the
+model is told a field was removed — `--guard strip` is the open control for that. Details and
+artifacts in [docs/GUARD.md](GUARD.md#what-it-prevents-on-the-same-136).
 
 `tests/test_safety.py::test_balance_sentinel_misses_shared_expense` pins the arithmetic: a
 3-participant injected expense that moves the payer 749,999.25 INR asserts
@@ -535,6 +545,8 @@ weights.
   measured.
 - The adapter is silent about the injection: 0 of 136 answers name it (see the recognition
   section). The warning a user sees comes from the deterministic guard in [docs/GUARD.md](GUARD.md),
-  not from the model, and the guard's end-to-end effect on the model is not measured.
+  not from the model. The guard's end-to-end effect is measured there for `neutralise` (0/136
+  expenses, 136/136 solved); `strip`, the same run with the note deleted instead of replaced, is not
+  yet run.
 - Greedy decoding, single sample per task. Attack success rate on a single greedy sample understates
   the variance a sampled deployment would see.

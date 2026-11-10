@@ -189,6 +189,12 @@ useful: **a small residual ledger-attack rate at 2.4× fewer parameters, with a 
 fits on a free T4**, and no warning behaviour to trade against it (we are at 0 of 136 there — see
 `docs/SAFETY.md`).
 
+The residual is also measured with a defence in front of it. `hinglish_agent/guard.py` is a
+deterministic check on tool results, outside the model; run in `neutralise` mode over the same 136
+injected rows on one T4 it takes the leftover expenses from **6/136 to 0/136**, leaves the answers at
+0/136, and still solves **136/136** (against 99/136 with the payload delivered). What it is not:
+a model property, or a claim that deletion alone is enough — `--guard strip` is the open control.
+
 ## Usage
 
 ```python

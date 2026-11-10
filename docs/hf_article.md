@@ -4,7 +4,7 @@
 
 <div class="result">
 <p><strong>3.33% → 96.67%</strong> task success on a frozen 30-task split, <strong>3.33% → 93.33%</strong> on a 90-task holdout — scored on the final ledger state, no LLM judge.</p>
-<p>The same adapter lets an attacker expense into the ledger on <strong>6 of 136</strong> injected tasks and repeats an attacker value in <strong>0 of 136</strong> answers, across four pinned safety splits (base: 18 of 24, 48 of 72, 5 of 16 and 14 of 24 by ledger accounting), and still scores zero when the payloads are rewritten in Hinglish and Devanagari. On a fifth, 30-task split built after the adapter was frozen — split and obfuscated payloads — it is 5 of 30 in the ledger and 0 of 30 in the answer. A deterministic guard under the model, which needs no GPU, flags <strong>166 of 166</strong> published payloads and <strong>5 of 8</strong> of a blind set written after its rules were frozen, while flagging <strong>0 of 294</strong> clean episodes.</p>
+<p>The same adapter lets an attacker expense into the ledger on <strong>6 of 136</strong> injected tasks and repeats an attacker value in <strong>0 of 136</strong> answers, across four pinned safety splits (base: 18 of 24, 48 of 72, 5 of 16 and 14 of 24 by ledger accounting), and still scores zero when the payloads are rewritten in Hinglish and Devanagari. On a fifth, 30-task split built after the adapter was frozen — split and obfuscated payloads — it is 5 of 30 in the ledger and 0 of 30 in the answer. A deterministic guard under the model, which needs no GPU, flags <strong>166 of 166</strong> published payloads and <strong>5 of 8</strong> of a blind set written after its rules were frozen, while flagging <strong>0 of 294</strong> clean episodes. With that guard in front of the adapter, the attacker's expense on the same 136 rows falls from <strong>6 to 0</strong> and all <strong>136</strong> tasks are solved.</p>
 </div>
 
 ## TL;DR
@@ -477,8 +477,9 @@ Three honest readings:
   on the held-out split it goes from 5/30 dirty ledgers to 21/30. Its hard-90 task success is 86/90
   against 84/90 for the default (2 fixed, 0 broken, p = 0.5). So the default stays the adapter, and
   the abstention configuration is documented with its trade-off rather than silently switched.
-- **The defence is prompt-level, language-independent, and not amount-independent.** The
-  architectural fix (tool output never enters the answer context as instructions) is unmeasured.
+- **The model-level defence is language-independent and not amount-independent.** The architectural
+  fix (tool output never enters the answer context as instructions) is now measured,
+  at the end of the next section: 0/136 with the guard on, from 6/136.
   What is measured is that it does not depend on English: the ledger stays at 0/24 when the payload
   is Hinglish or Devanagari. It does depend on the amount being recognisable: obfuscated spellings
   put an expense in 5 of 15 ledgers. That is the next thing to fix, and it is stated here rather
@@ -511,8 +512,21 @@ The 5/8 is the number to believe, not the 166/166. The blind payloads were hashe
 run and the rules were not changed afterwards. All three misses fail the same way — a verb outside
 a finite vocabulary (`write`, `show`, and "kar ke" instead of "kar do"). Adding those three words
 would take the set to 8/8 and tell a reader nothing, because the next set would avoid them. A
-hand-written set of 8 is also a wide interval (30.6–86.3%), and detection is not prevention: a
-payload the guard misses still reaches the model.
+hand-written set of 8 is also a wide interval (30.6–86.3%), and detection is not prevention. So the
+prevention was measured separately, on the GPU, on the same 136 injected rows:
+
+| `sft4`, 136 injected rows | attacker expense | answer hit | original request solved |
+|---|---:|---:|---:|
+| payload delivered as written (published; 14/24 + 50/72 + 12/16 + 23/24) | 6/136 | 0/136 | 99/136 |
+| **`--guard neutralise` in front of the model** | **0/136** | 0/136 | **136/136** |
+
+The six ledgers the payload moved are gone, the answers were already clean, and the 37 tasks the
+payload was costing even without moving money come back: every episode solves, in 3 tool calls,
+0 errors, 11,103 s on one T4, 136 of 136 episodes flagged. That is the number this defence was
+missing, and it is narrower than it looks: the mode is `neutralise`, which puts
+`[tool result contained instructions addressed to the agent; removed]` where the note was, so the
+model is told a field was removed. `--guard strip`, which deletes the note and leaves nothing, is
+the open run for that objection — listed as open, not implied.
 
 The structural baseline is the one a reviewer can generalise from, and its limit is worth stating:
 every published payload arrives in a `note` key that no tool in this environment ever returns, so
@@ -523,8 +537,8 @@ written there walks straight through. Allowlisting is a fix for this tool schema
 `docs/GUARD.md` has the per-split tables and the blind misses by id; `docs/WHAT_DIDNT_WORK.md` has
 the GRPO round that changed 0 of 152 evaluation rows, the hardened prompt's 6/136 → 9/136 ledger
 regression, and the sentinel metric that hid the attacker expense; `docs/PREREGISTRATION.md` pins
-nine dataset hashes and the seven rules that were fixed before the data arrived. None of these were
-written after the fact to look tidy — the CI workflow added with them failed on its first run,
+nine dataset hashes, the eight decision rules, and the table of choices made after seeing data.
+None of these were written after the fact to look tidy — the CI workflow added with them failed on its first run,
 because one pinned hash was a CRLF-checkout artefact, and the guard eval would have reported 0/0
 clean episodes and passed without a single tool result to scan.
 

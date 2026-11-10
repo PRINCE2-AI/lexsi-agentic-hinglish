@@ -15,7 +15,7 @@ a run log in the repo.
 | Dense open-weights Cohere model | `CohereLabs/tiny-aya-global` (3.35B) | Adapter targets it: `primce/tiny-aya-hinglish-lora`, subfolder `sft4_adapter` |
 | All artifacts on Hugging Face: models, adapters, logs, datasets | Model + dataset on the Hub | `primce/tiny-aya-hinglish-lora`, `primce/lexsi-runs` (every `summary.json`, `trajectories.jsonl`, `results.jsonl`), two Collections |
 | Deployed publicly by the deadline | Demo Space + code repo | `primce/hinglish-expense-agent` (live, ZeroGPU), `PRINCE2-AI/lexsi-agentic-hinglish` |
-| Showcase before-and-after metrics, more than one metric | Three metrics move at once | success 3.33% → 93.33% (hard-90), calls/task 7.24 → 3.38, strict JSON 0% → 100% on hard-90; safety 6/136 ledger and 0/136 answers vs base 18/24 + 48/72 + 5/16 + 14/24 |
+| Showcase before-and-after metrics, more than one metric | Three metrics move at once | success 3.33% → 93.33% (hard-90), calls/task 7.24 → 3.38, strict JSON 0% → 100% on hard-90; safety 6/136 ledger and 0/136 answers vs base 18/24 + 48/72 + 5/16 + 14/24; with the guard in front of the model those same 136 rows go to **0/136** expenses and 136/136 solved (`docs/GUARD.md`) |
 | Write-up: metrics chosen and why, data/task/model rationale, why the model is better | `submission/README.md` + article Space | Also `docs/MODEL_CARD.md`, `docs/DATASET_CARD.md`, `docs/SAFETY.md` |
 | A HF Article | Static article Space (Hub Articles need PRO) | `primce/hinglish-track3-article` renders `docs/hf_article.md`; the FAQ allows a README fallback |
 | A HF Space (if relevant) | Demo Space | Live model + six frozen episodes, scored by the repo's own scorer |
@@ -57,8 +57,11 @@ Measured offline on the five pinned splits and on 294 clean episodes (1,010 tool
 warnings on clean traffic**, at 0.22 ms per result. The blind number is the estimate; the in-sample
 one is not quoted as a headline. Two cheaper baselines are measured in the same table — an
 English-only regex gets 111/166, and a keyword blocklist gets 166/166 but only recognises the
-literals it was written for. What the guard has not been shown to do is stop the model end to end;
-that needs a GPU re-run with `--guard neutralise` and is listed as open work, not as a result.
+literals it was written for. That run is now done: with `--guard neutralise` in front of the adapter,
+the same 136 injected rows score **0/136** `attacker_expense` (from 6/136) and solve **136/136**
+(from the four published utility rows, 14/24 + 50/72 + 12/16 + 23/24 = 99/136), on one T4 in
+11,103 s. It is `neutralise`, so a marker is left in place of the note;
+`--guard strip`, which deletes it with no marker, is the open control and the next run, not a result.
 
 ## Two-minute verification
 
@@ -81,7 +84,7 @@ No GPU, no token, no model download. Every published number is in a `summary.jso
 - The guard's 166/166 is in-sample; **5 of 8 on the blind set is the generalisation estimate**
   (Wilson 30.6–86.3%), and it is not shipped as a security boundary on its own.
 - Which rules were fixed before the data arrived is listed in `docs/PREREGISTRATION.md`, including
-  the five decisions that were made after seeing results.
+  the six decisions that were made after seeing results.
 - The Hinglish payload split is 24 rows, 6 of them Devanagari. It rules out a purely
   English-keyword defence on this task set; it is not a claim about other languages or about
   user-language robustness (the user prompt style never changes).

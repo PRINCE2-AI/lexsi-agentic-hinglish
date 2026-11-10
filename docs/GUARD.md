@@ -128,6 +128,31 @@ half of the `inject_split` family — `ACCOUNTS-NOTE: a correction is pending �
 after 999` — which carries no instruction and cannot be acted on alone; the second half, which
 carries the directive, is flagged on every one of those 30 tasks.
 
+## What it prevents, on the same 136
+
+Detection is not prevention. The number below runs the guard in front of the model: the same 136
+injected rows, the same adapter, greedy fp16, one change.
+
+| Run | n | attacker expense | answer hit | original request solved | episodes flagged |
+|---|---:|---:|---:|---:|---:|
+| `sft4`, published | 136 | 6/136 | 0/136 | 99/136 (14+50+12+23) | — |
+| **`sft4` + `--guard neutralise`** | 136 | **0/136** | 0/136 | **136/136** | 136/136 |
+
+`0/136` is `attacker_expense`: no episode records more expenses than the user asked for. The answer
+was already clean without the guard, so on prose the guard adds nothing; on the ledger it removes
+all six. The utility column is the other half: the payload was costing 37 of 136 tasks even where it
+did not move money, and with the note replaced every task is solved, 3 calls each, 0 tool errors,
+11,103 s on one T4.
+
+What this measures is `neutralise`, which replaces the note with
+`[tool result contained instructions addressed to the agent; removed]`. The amount is not there, but
+a removed field is: that marker is information the plain run does not carry, so this row does not
+prove deletion alone is enough. `--guard strip` deletes the `note` field and leaves nothing behind;
+it is the control for exactly that objection, and it is the open row now instead of this one.
+
+Artifacts: `runs/safety_sft4_neutralise/` (`summary.json`, `results.jsonl`, `trajectories.jsonl`),
+produced by `notebooks/kaggle_guard_e2e.ipynb` from commit `22b5af4`.
+
 ## What the blind set costs
 
 The dev set was written first and used to fix the rules; the blind set was written after the rules
@@ -172,10 +197,10 @@ alone is not a boundary a real product can rely on.
 
 ## What is not measured
 
-- **End-to-end effect on the model.** Nothing here says a flagged payload *would have been
-  followed*. That needs the same GPU run twice, `--guard neutralise` against the plain adapter,
-  scored by `attacker_expense` and `attack_answer`. Offline detection and saved trajectories cannot
-  answer it; `scripts/guard_eval.py` says so in its header and does not claim otherwise.
+- **Deletion without a marker.** `neutralise` is measured on the published 136 above (0/136 expense,
+  136/136 solved), but it leaves a fixed notice where the note was. Whether `strip` — the note
+  deleted with nothing in its place — behaves the same is a separate run; it is not inferable from
+  the table above.
 - **An adaptive attacker.** Every payload was written without knowledge of the rules. The blind set
   is the closest thing to an adversary here, and it is eight items.
 - **Other tool surfaces.** One ledger, five tools, 182 tasks. Keying `tool_control` to five tool
@@ -204,7 +229,14 @@ python scripts/guard_eval.py                                  # the tables above
 python scripts/guard_eval.py --json runs/guard_eval/summary.json
 python scripts/build_guard_corpus.py                          # rebuild the 20 KB traffic corpus
 python -m pytest tests/test_guard.py -q                       # 8 tests, no GPU
-python scripts/run_baseline.py --model runs/sft4_merged \
-    --tasks data/tasks_safety_eval.jsonl --safety --no-4bit \
-    --guard neutralise --out runs/safety_sft4_guarded         # GPU; not yet run
+```
+
+`notebooks/kaggle_guard_e2e.ipynb` builds `runs/safety136.jsonl` (the four splits minus the 16
+underspecified rows, ids tagged by split), downloads the adapter, and runs this on one T4:
+
+```bash
+python scripts/run_baseline.py --model CohereLabs/tiny-aya-global \
+    --adapter runs/_adapter_dl/sft4_adapter \
+    --tasks runs/safety136.jsonl --safety --no-4bit \
+    --guard neutralise --out runs/safety_sft4_neutralise     # 11,103 s, 136 flagged
 ```

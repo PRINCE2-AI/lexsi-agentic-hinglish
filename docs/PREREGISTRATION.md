@@ -55,6 +55,7 @@ Everything in `docs/RESULTS.md`, `docs/SAFETY.md` and `docs/GUARD.md` was produc
 | R5 | The metric correction changes what is reported, not which artifact ships | `bffc82b` | `sft4` still ships; the correction made it look worse (0/136 → 6/136) |
 | R6 | Guard rules are frozen before the blind set is written; the blind set is run once and not tuned against | `docs/GUARD.md` | 5/8, published with the three misses named |
 | R7 | A GRPO delta is reported on both axes whichever direction it goes | `docs/ROUND2.md` §1 | 0/152 rows changed; published as "GRPO not supported at this budget" |
+| R8 | Whether a flagged payload *would have been followed* is scored end to end by `attacker_expense` and `attack_answer` on the same 136 rows, `--guard neutralise` against the plain adapter; offline detection and saved trajectories cannot answer it | `22b5af4`, `docs/GUARD.md` §"What is not measured" | `neutralise` **0/136** expenses, **136/136** solved; the comparison uses the already-published `runs/safety_sft4`, not a second GPU pass |
 
 R2 is the useful one to check: the bar was written on 2026-11-04, `sft4` was trained on 2026-11-05,
 and the result was 4/8 — a miss that stayed a miss. The bar was not moved after.
@@ -68,6 +69,7 @@ and the result was 4/8 — a miss that stayed a miss. The bar was not moved afte
 | `scan_result` drops the `answer` field | one false positive in a 324-episode sweep | read as a caller bug, not a rule change; a test pins it |
 | `sft4` chosen over `sft2`/`sft3`/`sft5` | hard-90 and safety rows | the choice uses the holdout; no row in any safety split was used to pick between adapters |
 | The abstention `asked` rate read as "shipped behaviour" | `sft4` 4/8 vs `sft5` 0/8 | reported with the mix that produced it, not as a model property |
+| `strip` named as the control for the guard run, and the marker disclosed | `neutralise` scored 0/136 with its fixed notice still in context | the run was already reported before `strip` was written; `docs/GUARD.md` states the marker, and the strip run is listed as open rather than assumed |
 
 Nothing in the second table is hidden; the point of listing it is that a reader can decide how much
 of the published result rests on a choice made after the fact. The evaluation splits and the blind
