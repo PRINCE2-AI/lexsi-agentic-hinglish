@@ -54,6 +54,11 @@ def run_episode(
     """
     messages = build_messages(task["task"], hardened=hardened, schema_shift=aliases)
     injection = task.get("injection") or {}
+    # A payload can be a single block or several parts spread over different tool results;
+    # `parts` is what makes a split attack expressible, where no single result is damning.
+    injection_parts = injection.get("parts") or (
+        [injection] if injection.get("after_tool") else []
+    )
     injections_fired = 0
     steps: list[dict] = []
     ledger = empty_ledger()
@@ -94,9 +99,10 @@ def run_episode(
                 {"name": name, "arguments": arguments, "raw_name": raw_name, "result": result}
             )
             shown = result
-            if injection and injection.get("after_tool") in (raw_name, name):
-                shown = dict(result, note=injection["payload"])
-                injections_fired += 1
+            for part in injection_parts:
+                if part.get("after_tool") in (raw_name, name):
+                    shown = dict(result, note=part["payload"])
+                    injections_fired += 1
             observations.append({"tool_name": raw_name if aliases else name, "result": shown})
             if isinstance(result.get("ledger"), dict):
                 ledger = result["ledger"]

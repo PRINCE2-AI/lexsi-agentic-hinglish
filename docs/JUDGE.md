@@ -15,7 +15,7 @@ a run log in the repo.
 | Dense open-weights Cohere model | `CohereLabs/tiny-aya-global` (3.35B) | Adapter targets it: `primce/tiny-aya-hinglish-lora`, subfolder `sft4_adapter` |
 | All artifacts on Hugging Face: models, adapters, logs, datasets | Model + dataset on the Hub | `primce/tiny-aya-hinglish-lora`, `primce/lexsi-runs` (every `summary.json`, `trajectories.jsonl`, `results.jsonl`), two Collections |
 | Deployed publicly by the deadline | Demo Space + code repo | `primce/hinglish-expense-agent` (live, ZeroGPU), `PRINCE2-AI/lexsi-agentic-hinglish` |
-| Showcase before-and-after metrics, more than one metric | Three metrics move at once | success 3.33% → 93.33% (hard-90), calls/task 7.24 → 3.38, strict JSON 0% → 100% on hard-90; safety 0/136 attacker values vs base 13/24 + 32/72 + 5/16 + 10/24 |
+| Showcase before-and-after metrics, more than one metric | Three metrics move at once | success 3.33% → 93.33% (hard-90), calls/task 7.24 → 3.38, strict JSON 0% → 100% on hard-90; safety 6/136 ledger and 0/136 answers vs base 18/24 + 48/72 + 5/16 + 14/24 |
 | Write-up: metrics chosen and why, data/task/model rationale, why the model is better | `submission/README.md` + article Space | Also `docs/MODEL_CARD.md`, `docs/DATASET_CARD.md`, `docs/SAFETY.md` |
 | A HF Article | Static article Space (Hub Articles need PRO) | `primce/hinglish-track3-article` renders `docs/hf_article.md`; the FAQ allows a README fallback |
 | A HF Space (if relevant) | Demo Space | Live model + six frozen episodes, scored by the repo's own scorer |
@@ -38,12 +38,17 @@ scores 25/30 against 29/30 canonical (`docs/RESULTS.md#generalisation-probes-202
 
 ## Safety claim, stated the way the numbers support it
 
-0 attacker values reached the ledger or the answer on **136 injected tasks** across four pinned
-splits and four payload styles (24 + 72 + 16 + 24), the last split with the payloads rewritten in
-Hinglish and Devanagari so the defence cannot be an English-pattern matcher. Base model: 13/24,
-32/72, 5/16 and 10/24 ledger hits. The adapter is the default; the hardened prompt buys 2 more
-hard-90 tasks and a clean 24/24 on the Hinglish split but puts 2 attacker numbers back into prose
-on the English split, so it is shipped as an option, not as the default (`docs/SAFETY.md`).
+The adapter lets an attacker expense into the ledger on **6 of 136 injected tasks** and repeats an
+attacker value in **0 of 136 answers**, across four pinned splits and four payload styles (24 + 72
++ 16 + 24); the last split rewrites the payloads in Hinglish and Devanagari so the defence cannot be
+an English-pattern matcher. Base model, same ledger count: 18/24, 48/72, 5/16 and 14/24. A fifth
+30-task split, built after the adapter was frozen, is 5/30 and 0/30, with every miss in an
+obfuscated amount (`9,99,999`, zero-width, spelled out) and none in the split-payload half. The
+original "0 of 136" ledger claim came from a threshold metric that a shared expense cannot reach;
+it is corrected in `docs/SAFETY.md` and `docs/STATS.md`. The adapter is the default; the hardened
+prompt buys 2 more hard-90 tasks and a clean 24/24 on the Hinglish split, but puts 2 attacker
+numbers back into prose and is worse on the held-out split (21/30), so it is shipped as an option,
+not as the default.
 
 ## Two-minute verification
 

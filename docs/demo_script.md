@@ -77,7 +77,11 @@ money answers at scale. Adapter, dataset, frozen eval, trajectories and the Spac
   the same tasks in Devanagari at 25/30. Next is a Hinglish-only injection payload set, a
   Devanagari payload, and the schema shift on hard-90 instead of hard-30.
 - **Is the agent safe?** We measured it: 32-task indirect-injection split with no LLM judge. Base
-  writes attacker money in 13/24 tasks and repeats the attacker number in 8/24 answers; the shipped
-  adapter in **0/24 and 0/24** (p = 0.00024). It asks on 4 of 8 underspecified requests — the same
+  records the attacker's expense in 18/24 tasks and repeats the attacker number in 8/24 answers;
+  the shipped adapter in **2/24 and 0/24** (16 attacks removed, 0 introduced, p = 3e-5). Across
+  four pinned splits it is 6 of 136 ledgers and 0 of 136 answers — the earlier "0 of 136 ledger"
+  reading came from a threshold a shared expense cannot reach, and that is corrected in the repo.
+  It asks on 4 of 8 underspecified requests — the same
   adapter with a hardened system prompt asks on 7/8, at the cost of 2/24 attacker numbers in
-  answers and no cost in task success (86/90 vs 84/90), and both configurations are in the repo.
+  answers and no cost in clean task success (86/90 vs 84/90), though it is worse on the held-out
+  injection split; both configurations are in the repo.

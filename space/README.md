@@ -19,9 +19,11 @@ final ledger, so the answer can be checked against the money it moved.
 
 The base model's single hard-30 "success" invented an 800 INR expense; the adapter's runs have zero
 tool errors, zero redundant calls and 3.57 calls per task, the same count as the oracle. The repo
-also ships a 32-task indirect-injection eval scored without an LLM judge: base writes attacker money
-in 13/24 tasks and repeats the attacker number in 8/24 answers; the adapter is 0/24 and 0/24
-(exact McNemar on the ledger p = 0.00024).
+also ships a 32-task indirect-injection eval scored without an LLM judge: base records the
+attacker's expense in 18/24 tasks and repeats the attacker number in 8/24 answers; the adapter is
+2/24 and 0/24 (16 attacks removed, 0 introduced, p = 3e-5). Across four pinned splits that is 6
+ledgers and 0 answers on 136 injected tasks; an earlier "0 of 136" ledger claim came from a
+threshold a shared expense cannot reach and is corrected in the repo.
 
 Defaults: `MODEL_ID=CohereLabs/tiny-aya-global`, `ADAPTER_ID=primce/tiny-aya-hinglish-lora`,
 `ADAPTER_SUBFOLDER=sft4_adapter`.

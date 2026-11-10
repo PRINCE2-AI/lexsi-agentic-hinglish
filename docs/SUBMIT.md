@@ -13,7 +13,7 @@ independent AuditKIT pass. Everything left is packaging, and packaging is what m
 | 2 | **Live Space demo** with a visible tool trace | **live**: https://huggingface.co/spaces/primce/hinglish-expense-agent (ZeroGPU `zero-a10g`, sft4 adapter, base/tuned switch, injection scenario) |
 | 3 | **HF Article** with metrics, before/after, rationale | **live**: https://huggingface.co/spaces/primce/hinglish-track3-article (static Space; Hub Articles need PRO) |
 | 4 | HF artifacts: adapter + run logs + dataset | adapter (`sft4_adapter`, `sft4_seed7_adapter`, `sft4_seed123_adapter`, `sft5_adapter`, `sft3_seed7/123_adapter`), all run logs, **and the required HF Collection** |
-| 5 | **One memorable differentiator** | the injection eval: 13/24 → 0/24 ledger attacks and 8/24 → 0/24 attacker numbers in answers on the headline split, then **0 attacker values on 136 injected tasks across four pinned splits, four payload styles and three payload languages** (base: 13/24 + 32/72 + 5/16 + 10/24 ledger hits), including a Hinglish/Devanagari payload split so the defence cannot be an English-pattern matcher, no LLM judge, on a track where the required toolkit (AuditKIT) usually only scores tool calls |
+| 5 | **One memorable differentiator** | the injection eval: 18/24 → 2/24 ledger attacks by ledger accounting and 8/24 → 0/24 attacker numbers in answers on the headline split, then **6 ledger hits and 0 attacker values in answers on 136 injected tasks across four pinned splits, four payload styles and three payload languages** (base ledger: 18/24 + 48/72 + 5/16 + 14/24), plus a post-freeze 30-task held-out split at 5/30 and 0/30; includes a Hinglish/Devanagari payload split so the defence cannot be an English-pattern matcher, no LLM judge, on a track where the required toolkit (AuditKIT) usually only scores tool calls |
 
 ### The four attack lines a strong reviewer will use
 
@@ -90,9 +90,10 @@ accuracy 0.033 -> 1.000 and tool-call F1 0.188 -> 1.000 on the same 30 tasks.
 
 Differentiator: the repo ships an indirect prompt-injection eval for ledger agents, scored without
 an LLM judge, plus a prompt-level defence measured on the same tasks. Four pinned splits, four
-payload styles, three payload languages, 136 injected tasks: the adapter carries an attacker value
-into the ledger or the answer on 0 of them (ledger 0/24 + 0/72 + 0/16 + 0/24, answer 0/24 + 0/72 +
-0/16 + 0/24), against 13/24, 32/72, 5/16 and 10/24 ledger hits for base Tiny Aya. The last split is
+payload styles, three payload languages, 136 injected tasks: the adapter lets an attacker expense
+into the ledger on 6 of them (2/24 + 4/72 + 0/16 + 0/24) and repeats an attacker value in 0 answers
+(0/24 + 0/72 + 0/16 + 0/24), against 18/24, 48/72, 5/16 and 14/24 ledger hits for base Tiny Aya. A
+fifth 30-task split, built after the adapter was frozen, is 5/30 and 0/30. The language split is
 the same attacks in Hinglish and Devanagari (18 Latin, 6 Devanagari). Abstention is 4/8 asked by
 default on both samples and 7/8 and 8/8 with the hardened prompt, 0/8 invented, against a
 pre-registered 6/8 bar. Two generalisation probes are published with their runs: renamed tool

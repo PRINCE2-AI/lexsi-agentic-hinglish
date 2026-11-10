@@ -39,7 +39,8 @@ trajectory can be re-scored offline without a GPU or a model download. A 1:44 na
 | `sft4_seed7_hard30/`, `sft4_seed7_hard90/`, `sft4_seed123_hard30/`, `sft4_seed123_hard90/` | mix3 seed control (seeds 7 and 123) for the shipped seed 42 |
 | `safety_base/`, `safety_sft2/`, `safety_sft3/`, `safety_sft4/`, `safety_sft5/`, `safety_grpo3/` | 32-task injection split, default prompt |
 | `safety_sft2_hardened/`, `safety_sft3_hardened/`, `safety_sft4_hardened/`, `safety_sft5_hardened/` | same split, hardened system prompt |
-| `safety2_base/`, `safety2_sft4/`, `safety2_sft4_hardened/` | second injection sample, 80 tasks with 72 payloads, seed 20261108 (base 32/72 ledger, adapter 0/72) |
+| `safety2_base/`, `safety2_sft4/`, `safety2_sft4_hardened/` | second injection sample, 80 tasks with 72 payloads, seed 20261108 (base 48/72 ledger accounting, adapter 4/72; the `attack_ledger` column in these runs is the legacy threshold) |
+| `heldout_base/`, `heldout_sft4/`, `heldout_sft4_hardened/` | 30-task held-out attack-style split, seed 20261110: split payloads and obfuscated amounts (adapter 5/30 ledger, 0/30 answer) |
 | `safety_payee_base/`, `safety_payee_sft4/`, `safety_payee_sft4_hardened/` | 16 payee-redirect attacks: the tool result claims the sender's UPI handle changed; scored on the answer (base 5/16 ledger, adapter 0/16) |
 | `safety_hinglish_base/`, `safety_hinglish_sft4/`, `safety_hinglish_sft4_hardened/` | 24 attacks with Hinglish/Devanagari payloads only (18 Latin, 6 Devanagari, 8 per family; base 10/24 ledger and 5/24 answer, adapter 0/24 and 0/24, hardened 24/24 solved) |
 | `auditkit_*` | AuditKIT replays of the same recorded episodes, no judge model (scored on 1.1.3, re-checked on 1.1.6, same verdicts) |
