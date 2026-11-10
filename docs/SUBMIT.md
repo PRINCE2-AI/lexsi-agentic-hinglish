@@ -9,7 +9,7 @@ independent AuditKIT pass. Everything left is packaging, and packaging is what m
 
 | # | What judges check | Status |
 |---|---|---|
-| 1 | Public repo, runnable, numbers reproducible | done: `python scripts/verify_all.py` → 26/26, no GPU or token; one-click Colab `notebooks/colab_reproduce.ipynb` |
+| 1 | Public repo, runnable, numbers reproducible | done: `python scripts/verify_all.py` → 27/27, no GPU or token; one-click Colab `notebooks/colab_reproduce.ipynb` |
 | 2 | **Live Space demo** with a visible tool trace | **live**: https://huggingface.co/spaces/primce/hinglish-expense-agent (ZeroGPU `zero-a10g`, sft4 adapter, base/tuned switch, injection scenario) |
 | 3 | **HF Article** with metrics, before/after, rationale | **live**: https://huggingface.co/spaces/primce/hinglish-track3-article (static Space; Hub Articles need PRO) |
 | 4 | HF artifacts: adapter + run logs + dataset | adapter (`sft4_adapter`, `sft4_seed7_adapter`, `sft4_seed123_adapter`, `sft5_adapter`, `sft3_seed7/123_adapter`), all run logs, **and the required HF Collection** |
@@ -23,6 +23,7 @@ independent AuditKIT pass. Everything left is packaging, and packaging is what m
 | "30 tasks, 1 seed" | "90-task holdout at 15 per family (93.33%), paired against base at p < 1e-20, and against round 2 at 18 fixed / 2 broken, p = 0.0004. Five seed controls across two recipes. Mix3, the shipped recipe, has three seeds — 96.67 / 100 / 96.67 on hard-30 and 92.22 / 93.33 / 93.33 on hard-90 — an 1.11 pp spread on hard-90, no seed pair significant (p = 1.0), and five tasks all three seeds miss. Mix2's 7.77 pp spread is published too, and it is the contrast that shows what the contrast rows bought." |
 | "It learned the tool names, not the task" | "Rename every tool and parameter — the canonical name is then rejected as unknown — and it keeps **25/30** (4 broken, 0 fixed, exact McNemar p = 0.125). The untuned base under the same rename is **0/30** with 0.60 loop collapse and 7.0 calls per task. The same 30 tasks written in Devanagari: **25/30**. The two probes break different families (`two_query` under the rename, `paraphrase` in Devanagari), and both are reported as n = 30 diagnostics, not headline numbers." |
 | "Abstention is still 1/8" | "It is 4/8 on the adapter and 7/8 with the hardened prompt (0/8 invented) on the 8 pre-registered rows, against a 6/8 bar — and on eight fresh rows it is 4/8 and 8/8 (0/8 invented) again. `attack_ledger` is 0/24 and `attack_answer` is 0/24 on the headline split, and 0/72 and 0/72 on the second sample. The hardened prompt is not an accuracy tax either: 86/90 against 84/90 on clean hard-90 (2 fixed, 0 broken, p = 0.5)." |
+| "Your model never tells the user it ignored an injection" | "Correct — 0 of 136 answers name it, measured offline. That is why the warning comes from a deterministic guard under the model (`hinglish_agent/guard.py`), not from the weights: 166/166 published payloads flagged, 5/8 on a blind set written after the rules froze, 0 false warnings on 294 clean episodes / 1,010 tool results, 0.22 ms per result. The 166/166 is in-sample and is not quoted alone; the blind set and the three misses are in `docs/GUARD.md`, and the end-to-end effect needs a GPU re-run, which is listed as open work." |
 | "Your article is a Space, not an HF blog" | "Hub Articles need PRO or a Team org on this account; the static Space renders the same markdown from the same file." |
 
 Say all four out loud before a judge does. The fourth is unwinnable without a subscription, and
@@ -102,7 +103,7 @@ rename 0/30.
 
 Video (1:44, narrated): https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4
 Write-up: submission/README.md in the repo (also rendered at the write-up link below)
-Reproduce in two minutes, no GPU and no token: git clone the repo, then python scripts/verify_all.py -> 26/26
+Reproduce in two minutes, no GPU and no token: git clone the repo, then python scripts/verify_all.py -> 27/27
 
 Links:
   code: https://github.com/PRINCE2-AI/lexsi-agentic-hinglish

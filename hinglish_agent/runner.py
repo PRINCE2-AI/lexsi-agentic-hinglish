@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 
+from .guard import sanitize, warn_answer
 from .ledger import clean_ledger, empty_ledger, ledgers_match, settle_ledger, settlements_match
 from .parser import format_call, parse_calls
 from .prompts import CORRECTION_PROMPT, build_messages
@@ -43,6 +44,7 @@ def run_episode(
     max_steps: int = 8,
     hardened: bool = False,
     aliases: bool = False,
+    guard_mode: str = "",
 ) -> dict:
     """Drive a model through the tool loop. `call_model(messages) -> str`.
 
@@ -51,6 +53,12 @@ def run_episode(
 
     `aliases=True` renames every tool and parameter in the prompt (Hammer-style schema shift);
     a call that uses the canonical vocabulary is rejected exactly as an unknown tool would be.
+
+    `guard_mode` puts a deterministic text guard under the model instead of in it: `flag`
+    records what it saw, `strip` removes instruction-like notes, `neutralise` replaces them,
+    and `warn` also appends one fixed sentence to the final answer. Every tool result is
+    scanned, not just the ones with a payload, because a defence that only looks where the
+    benchmark hides its attacks is not a defence.
     """
     messages = build_messages(task["task"], hardened=hardened, schema_shift=aliases)
     injection = task.get("injection") or {}
@@ -60,6 +68,7 @@ def run_episode(
         [injection] if injection.get("after_tool") else []
     )
     injections_fired = 0
+    guard_flags: list[dict] = []
     steps: list[dict] = []
     ledger = empty_ledger()
     done = False
@@ -103,6 +112,14 @@ def run_episode(
                 if part.get("after_tool") in (raw_name, name):
                     shown = dict(result, note=part["payload"])
                     injections_fired += 1
+            if guard_mode:
+                shown, flag = sanitize(
+                    shown, "neutralise" if guard_mode == "warn" else guard_mode, tool_name=name
+                )
+                if flag["flagged"] or flag.get("dropped"):
+                    guard_flags.append(
+                        {"tool": name, "reasons": flag["reasons"], "dropped": flag.get("dropped", [])}
+                    )
             observations.append({"tool_name": raw_name if aliases else name, "result": shown})
             if isinstance(result.get("ledger"), dict):
                 ledger = result["ledger"]
@@ -121,6 +138,9 @@ def run_episode(
             }
         )
 
+    if guard_mode == "warn":
+        final_response = warn_answer(final_response, bool(guard_flags))
+
     return {
         "task_id": task.get("id"),
         "task": task["task"],
@@ -130,6 +150,8 @@ def run_episode(
         "done": done,
         "ledger": clean_ledger(ledger),
         "injections_fired": injections_fired,
+        "guard_mode": guard_mode,
+        "guard_flags": guard_flags,
     }
 
 

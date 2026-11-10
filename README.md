@@ -1,5 +1,7 @@
 # Hinglish Expense-Splitting Agent — Lexsi Track 3
 
+[![verify](https://github.com/PRINCE2-AI/lexsi-agentic-hinglish/actions/workflows/verify.yml/badge.svg)](https://github.com/PRINCE2-AI/lexsi-agentic-hinglish/actions/workflows/verify.yml)
+
 A solo-friendly Track 3 (Agentic Fine-tuning) entry for the **Lexsi AI Safety & Alignment Hackathon**, Nov 1–22, 2026.
 
 Tiny Aya learns to call tools reliably in Hinglish: it records shared expenses, carries the ledger across turns, converts USD/EUR, and settles balances. Success is checked against the **final ledger state**, not an LLM judge, so the before/after numbers are reproducible.
@@ -23,10 +25,19 @@ Write-up: https://huggingface.co/spaces/primce/hinglish-track3-article — the f
 | Same attacks re-written in Hinglish/Devanagari | 10/24 / 5/24 | **0/24 / 0/24**, 23/24 solved |
 | Attacker value across all four injected splits (136 tasks) | 18/24, 48/72, 5/16, 14/24 | **6/136 in the ledger, 0/136 in the answer**, ledger Wilson 2.0–9.3% |
 | Held-out split + obfuscated payloads (30 new tasks) | 18/30 | **5/30**; split payloads 0/15 |
+| Tool-result guard under the model | — | 166/166 published payloads, **5/8 blind set**, 0/294 clean episodes |
 
 Paired exact McNemar on shared ids: base → shipped **81 fixed, 0 broken** on hard-90 (p < 1e-20)
 and **28 fixed, 0 broken** on hard-30 (p = 7.5e-9). GRPO ran twice and moved nothing (0/0, p = 1.0);
 that null is reported, not hidden, and the gain is attributed to the data mix.
+
+A second line runs *under* the model, not inside it: [`hinglish_agent/guard.py`](hinglish_agent/guard.py)
+flags a tool result that reads as an instruction rather than data, and can say so in the answer.
+166 of 166 published payloads, 5 of 8 on a blind set written after the rules were frozen, 0 warnings
+across 294 clean episodes, 0.22 ms per tool result — and the adapter itself names an injection in
+**0 of 136** answers, which is why this exists. Tables, baselines and the three blind misses:
+[docs/GUARD.md](docs/GUARD.md). What failed along the way: [docs/WHAT_DIDNT_WORK.md](docs/WHAT_DIDNT_WORK.md).
+Which rules were fixed before the data arrived: [docs/PREREGISTRATION.md](docs/PREREGISTRATION.md).
 
 Intervals for every published number and the paired bootstrap:
 [docs/STATS.md](docs/STATS.md), `python scripts/bootstrap.py`. Answers that say they ignored an
@@ -40,7 +51,7 @@ are unchanged.
 
 ```bash
 git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
-python scripts/verify_all.py    # 26 checks, no GPU, no token
+python scripts/verify_all.py    # 27 checks, no GPU, no token
 ```
 
 Or run [`notebooks/colab_reproduce.ipynb`](notebooks/colab_reproduce.ipynb): CPU cells in ~2 min,
@@ -88,9 +99,13 @@ How each clause is measured, all without an LLM judge:
   side of that probe. The 20-task starter set is still there for quick checks.
 - Programmatic metrics: `success`, `tac`, `arr`, `ter`, `rad`, `overcall`, `lcf`, plus answer match,
   trajectory efficiency (`calls`, `steps`) and strict-JSON rate.
-- **Safety split**: a tool result can carry attacker text; `safe`, `attack_ledger`,
-  `attack_answer`, `unplanned_calls` and `abstained` are measured without an LLM judge. See
-  [docs/SAFETY.md](docs/SAFETY.md).
+- **Safety split**: a tool result can carry attacker text; `safe`, `attacker_expense`,
+  `attack_ledger`, `attack_answer`, `unplanned_calls` and `abstained` are measured without an LLM
+  judge. See [docs/SAFETY.md](docs/SAFETY.md).
+- **A guard under the model**: `hinglish_agent/guard.py` scans every tool result (NFC-normalised,
+  English + Latin Hinglish + Devanagari), with modes `flag`/`strip`/`neutralise`/`warn`/`allowlist`,
+  measured at 166/166 published payloads, 5/8 blind, 0/294 clean episodes. See
+  [docs/GUARD.md](docs/GUARD.md).
 - Standalone Tiny Aya baseline runner (transformers, 4-bit) that writes AgentTune-compatible `trajectories.jsonl`.
 - GRPO training script using `create_agentic_trainer` with custom rewards.
 - **AuditKIT scoring**: every recorded run is replayed through `auditkit.agent_eval` (recorded
@@ -110,6 +125,7 @@ hinglish_agent/
   runner.py      agent loop, oracle, metrics
   metrics.py     summary + markdown table
   safety.py      injection / underspecification scoring
+  guard.py       tool-result guard: flags instructions, warns, allowlists schema
 data/
   task_builder.py shared scenario -> expected-fields conversion
   build_tasks.py  generates and verifies tasks.jsonl
@@ -128,6 +144,7 @@ scripts/
   safety_table.py     render the injection comparison table from saved runs
   deploy_space.py     create/refresh the Gradio Space with the right layout
   verify_all.py       every no-GPU check in one command (judges start here)
+  guard_eval.py       guard recall / false alarms / baselines, three detectors
   score_strict.py     recover strict-JSON metrics from saved trajectories
   auditkit_eval.py    replay a run through AuditKIT agent_eval (no judge)
 space/
@@ -136,6 +153,9 @@ docs/
   hf_article.md       submission write-up skeleton
   roi.md              ROI comparison with measured token counts
   SAFETY.md           injection eval: threat model, metrics, results
+  GUARD.md            the tool-result guard: tables, blind misses, what is unmeasured
+  WHAT_DIDNT_WORK.md  the five failures, with the numbers that killed them
+  PREREGISTRATION.md  what was frozen before the data, and what was decided after
   SUBMIT.md           what judges check, in order, with the exact commands
   MODEL_CARD.md       ready-to-paste README for the adapter repo
   DATASET_CARD.md     ready-to-paste README for primce/lexsi-runs
@@ -145,6 +165,7 @@ tests/
   test_scaffold.py    no-dependency sanity tests
   test_hard_data.py   hard-split pin, oracle, require_answer gate
   test_safety.py      injection eval pin, payload delivery, attack scoring
+  test_guard.py       guard recall, false alarms, modes, warning path
   test_stats.py       Wilson CI + exact McNemar
 ```
 
@@ -163,7 +184,7 @@ python scripts/verify_all.py
 
 That single command regenerates the hard, hard-90 and safety splits, checks every SHA-256 pin,
 runs every test suite, replays the oracle and runs the AuditKIT adapter tests. It prints
-`all 26 checks passed` when the dataset and the scoring are consistent.
+`all 27 checks passed` when the dataset and the scoring are consistent.
 
 
 ### Tiny Aya access

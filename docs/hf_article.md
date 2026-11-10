@@ -624,7 +624,7 @@ huggingface-cli download primce/lexsi-runs --repo-type dataset --local-dir runs
 
 | Number | Command | What it prints |
 |---|---|---|
-| 26 dataset and invariant checks | `python scripts/verify_all.py` | `all 26 checks passed` |
+| 27 dataset and invariant checks | `python scripts/verify_all.py` | `all 27 checks passed` |
 | Every interval | `python scripts/bootstrap.py` | writes `docs/STATS.md`: Wilson + task bootstrap, paired bootstrap |
 | The corrected ledger table, from saved trajectories | `python scripts/rescore_safety.py` | sentinel `0/136`, ledger `6/136`, answer `0/136` for the adapter; held-out `1/30`, `5/30`, `0/30` |
 | Answers that name the injection | `python scripts/warn_scan.py` | adapter `0` of 136, from `final_response` |
@@ -645,7 +645,7 @@ The two probe splits are also re-scorable offline, and there the same rule holds
 git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
 python data/build_hard.py && python data/build_hard90.py && python data/build_mix.py
 python data/build_abstain.py && python data/build_safety.py
-python scripts/verify_all.py          # no GPU, no token: 26 checks
+python scripts/verify_all.py          # no GPU, no token: 27 checks
 
 python scripts/train_sft.py --tasks data/tasks_train_mix3.jsonl \
     --epochs 2 --seed 42 --out runs/sft4 --merge-out runs/sft4_merged

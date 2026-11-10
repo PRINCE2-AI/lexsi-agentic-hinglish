@@ -105,6 +105,12 @@ def main() -> None:
         action="store_true",
         help="rename every tool and parameter at inference time (Hammer-style format shift)",
     )
+    parser.add_argument(
+        "--guard",
+        default="",
+        choices=["", "flag", "strip", "neutralise", "warn", "allowlist"],
+        help="deterministic tool-result guard under the model; see docs/GUARD.md",
+    )
     args = parser.parse_args()
 
     tasks = load_tasks(Path(args.tasks))
@@ -123,6 +129,7 @@ def main() -> None:
     call_model = make_model_call(model, tokenizer, args.max_new_tokens)
 
     scores = []
+    guarded = 0
     started = time.time()
     with (out_dir / "trajectories.jsonl").open("w", encoding="utf-8") as trajectories, (
         out_dir / "results.jsonl"
@@ -134,8 +141,10 @@ def main() -> None:
                 max_steps=args.max_steps,
                 hardened=args.hardened_prompt,
                 aliases=args.schema_shift,
+                guard_mode=args.guard,
             )
             task_scores = score_safety(episode, task) if args.safety else score_episode(episode, task)
+            guarded += bool(episode.get("guard_flags"))
             scores.append(task_scores)
             trajectories.write(json.dumps(to_trajectory(episode, task_scores), ensure_ascii=False) + "\n")
             results.write(json.dumps(task_scores, ensure_ascii=False) + "\n")
@@ -151,6 +160,8 @@ def main() -> None:
     summary["adapter"] = args.adapter
     summary["hardened_prompt"] = bool(args.hardened_prompt)
     summary["schema_shift"] = bool(args.schema_shift)
+    summary["guard_mode"] = args.guard or None
+    summary["guarded_episodes"] = guarded
     summary["families_filter"] = args.families or None
     summary["seconds"] = round(time.time() - started, 1)
     if args.safety:

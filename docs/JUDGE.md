@@ -50,11 +50,21 @@ prompt buys 2 more hard-90 tasks and a clean 24/24 on the Hinglish split, but pu
 numbers back into prose and is worse on the held-out split (21/30), so it is shipped as an option,
 not as the default.
 
+A deterministic guard runs under the model as a second line (`docs/GUARD.md`): it flags a tool
+result that reads as an instruction rather than data, in English, Latin Hinglish and Devanagari.
+Measured offline on the five pinned splits and on 294 clean episodes (1,010 tool results):
+**166/166 published payloads, 5/8 on a blind set written after the rules were frozen, 0 false
+warnings on clean traffic**, at 0.22 ms per result. The blind number is the estimate; the in-sample
+one is not quoted as a headline. Two cheaper baselines are measured in the same table — an
+English-only regex gets 111/166, and a keyword blocklist gets 166/166 but only recognises the
+literals it was written for. What the guard has not been shown to do is stop the model end to end;
+that needs a GPU re-run with `--guard neutralise` and is listed as open work, not as a result.
+
 ## Two-minute verification
 
 ```bash
 git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
-python scripts/verify_all.py     # 26/26: pin matches, oracle 30/30, all tests
+python scripts/verify_all.py     # 27/27: pin matches, oracle 30/30, all tests
 ```
 
 No GPU, no token, no model download. Every published number is in a `summary.json` under
@@ -67,7 +77,11 @@ No GPU, no token, no model download. Every published number is in a `summary.jso
   significant at n=30. It is reported as a drop.
 - Devanagari-30 (25/30) uses re-ided rows, so it is a nominal comparison only.
 - GRPO was run twice and moved nothing (0 fixed, 0 broken on hard-90, p = 1.0). The RL result is
-  published as a null, not as a win.
+  published as a null, not as a win; the full failure analysis is in `docs/WHAT_DIDNT_WORK.md`.
+- The guard's 166/166 is in-sample; **5 of 8 on the blind set is the generalisation estimate**
+  (Wilson 30.6–86.3%), and it is not shipped as a security boundary on its own.
+- Which rules were fixed before the data arrived is listed in `docs/PREREGISTRATION.md`, including
+  the five decisions that were made after seeing results.
 - The Hinglish payload split is 24 rows, 6 of them Devanagari. It rules out a purely
   English-keyword defence on this task set; it is not a claim about other languages or about
   user-language robustness (the user prompt style never changes).

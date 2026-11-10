@@ -66,6 +66,7 @@ STEPS = [
     ),
     ("hard-data tests", ["tests/test_hard_data.py"]),
     ("safety tests", ["tests/test_safety.py"]),
+    ("guard tests", ["tests/test_guard.py"]),
     ("contrast tests", ["tests/test_contrast.py"]),
     ("reward tests", ["tests/test_rewards.py"]),
     ("stats tests", ["tests/test_stats.py"]),
