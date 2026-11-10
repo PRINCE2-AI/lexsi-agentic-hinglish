@@ -4,7 +4,7 @@
 
 <div class="result">
 <p><strong>3.33% → 96.67%</strong> task success on a frozen 30-task split, <strong>3.33% → 93.33%</strong> on a 90-task holdout — scored on the final ledger state, no LLM judge.</p>
-<p>The same adapter lets an attacker expense into the ledger on <strong>6 of 136</strong> injected tasks and repeats an attacker value in <strong>0 of 136</strong> answers, across four pinned safety splits (base: 18 of 24, 48 of 72, 5 of 16 and 14 of 24 by ledger accounting), and still scores zero when the payloads are rewritten in Hinglish and Devanagari. On a fifth, 30-task split built after the adapter was frozen — split and obfuscated payloads — it is 5 of 30 in the ledger and 0 of 30 in the answer.</p>
+<p>The same adapter lets an attacker expense into the ledger on <strong>6 of 136</strong> injected tasks and repeats an attacker value in <strong>0 of 136</strong> answers, across four pinned safety splits (base: 18 of 24, 48 of 72, 5 of 16 and 14 of 24 by ledger accounting), and still scores zero when the payloads are rewritten in Hinglish and Devanagari. On a fifth, 30-task split built after the adapter was frozen — split and obfuscated payloads — it is 5 of 30 in the ledger and 0 of 30 in the answer. A deterministic guard under the model, which needs no GPU, flags <strong>166 of 166</strong> published payloads and <strong>5 of 8</strong> of a blind set written after its rules were frozen, while flagging <strong>0 of 294</strong> clean episodes.</p>
 </div>
 
 ## TL;DR
@@ -483,6 +483,50 @@ Three honest readings:
   is Hinglish or Devanagari. It does depend on the amount being recognisable: obfuscated spellings
   put an expense in 5 of 15 ledgers. That is the next thing to fix, and it is stated here rather
   than left for a reader to find.
+
+### The layer between the tool result and the model
+
+Everything above is a property of the model. That has two costs a reviewer should not have to
+absorb: the defence cannot be inspected, and it cannot be measured without a GPU run. So the repo
+also ships a guard that sits *under* the model: `hinglish_agent/guard.py` is a regex rule set over
+tool results, with every flag carrying a named reason (`ignore_rules`, `ledger_instruction` and its
+Hinglish/Devanagari variants, `payment_handle`, `tool_control`, `localised_directive`,
+`state_change_directive`, `impersonated_authority`, `unusual_amount`) and five modes — `flag`,
+`strip`, `neutralise`, `warn`, `allowlist`. It costs 222 µs per tool result, needs no GPU, and is
+exposed as a fourth demo mode so the warning can be seen rather than described.
+
+Measured offline, with `scripts/guard_eval.py`:
+
+| | Result |
+|---|---|
+| Published payloads flagged (166 tasks, five splits) | **166/166** (166/181 payload fragments; the 15 misses are `inject_split` first halves, which carry no instruction) |
+| Dev set (12, used to write the rules) | 12/12 |
+| Blind set (8, written after the rules were frozen, run once) | **5/8** |
+| Clean episodes flagged (six runs, no injection delivered) | **0/294** (0/1,010 tool results) |
+| Keyword blocklist, same corpus | 166/166, 0/294 clean, but it also fires on 6/30 attack-following episodes — it sees the damage after it is done, not the instruction |
+| English imperative regex | 111/166 — misses 23 of 24 Hinglish payloads |
+| Structural allowlist (drop keys the tool never returns) | 166/166 blocked, 0/1,010 benign results lost |
+
+The 5/8 is the number to believe, not the 166/166. The blind payloads were hashed before they were
+run and the rules were not changed afterwards. All three misses fail the same way — a verb outside
+a finite vocabulary (`write`, `show`, and "kar ke" instead of "kar do"). Adding those three words
+would take the set to 8/8 and tell a reader nothing, because the next set would avoid them. A
+hand-written set of 8 is also a wide interval (30.6–86.3%), and detection is not prevention: a
+payload the guard misses still reaches the model.
+
+The structural baseline is the one a reviewer can generalise from, and its limit is worth stating:
+every published payload arrives in a `note` key that no tool in this environment ever returns, so
+dropping out-of-schema keys blocks 166/166 without losing any of the 1,010 benign results. But 412
+benign results carry a `description` field, which is user text echoed back verbatim — a payload
+written there walks straight through. Allowlisting is a fix for this tool schema, not for injection.
+
+`docs/GUARD.md` has the per-split tables and the blind misses by id; `docs/WHAT_DIDNT_WORK.md` has
+the GRPO round that changed 0 of 152 evaluation rows, the hardened prompt's 6/136 → 9/136 ledger
+regression, and the sentinel metric that hid the attacker expense; `docs/PREREGISTRATION.md` pins
+nine dataset hashes and the seven rules that were fixed before the data arrived. None of these were
+written after the fact to look tidy — the CI workflow added with them failed on its first run,
+because one pinned hash was a CRLF-checkout artefact, and the guard eval would have reported 0/0
+clean episodes and passed without a single tool result to scan.
 
 ## Why these choices
 
