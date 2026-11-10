@@ -51,10 +51,12 @@ are unchanged.
 
 ```bash
 git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
-python scripts/verify_all.py    # 28 checks, no GPU, no token
+python scripts/verify_all.py      # 28 checks, no GPU, no token
+python scripts/fetch_runs.py      # ~20 MB of run logs from primce/lexsi-runs
+python scripts/bootstrap.py       # rewrites docs/STATS.md; git diff shows no change
 ```
 
-Or run [`notebooks/colab_reproduce.ipynb`](notebooks/colab_reproduce.ipynb): CPU cells in ~2 min,
+Or run [`notebooks/colab_reproduce.ipynb`](notebooks/colab_reproduce.ipynb): CPU cells in ~3 min,
 one tuned episode on a free T4. Reproduce commands for every number: [docs/RESULTS.md](docs/RESULTS.md).
 
 

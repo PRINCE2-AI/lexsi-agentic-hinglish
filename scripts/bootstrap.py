@@ -82,7 +82,11 @@ def load_rows(run: str) -> dict[str, dict]:
 
     traj = base / "trajectories.jsonl"
     if not traj.exists():
-        raise SystemExit(f"missing both results.jsonl and trajectories.jsonl under {base}")
+        raise SystemExit(
+            f"missing both results.jsonl and trajectories.jsonl under {base}\n"
+            "runs/ is gitignored, so a fresh clone has no run logs. "
+            "Run `python scripts/fetch_runs.py` first."
+        )
     out: dict[str, dict] = {}
     for line in traj.open(encoding="utf-8"):
         if not line.strip():

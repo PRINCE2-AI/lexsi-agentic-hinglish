@@ -103,7 +103,8 @@ rename 0/30.
 
 Video (1:44, narrated): https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4
 Write-up: submission/README.md in the repo (also rendered at the write-up link below)
-Reproduce in two minutes, no GPU and no token: git clone the repo, then python scripts/verify_all.py -> 28/28
+Reproduce in two minutes, no GPU and no token: git clone the repo, then python scripts/verify_all.py -> 28/28;
+python scripts/fetch_runs.py and python scripts/bootstrap.py then recompute every interval, paired test and the pooled seed rate, and leave docs/STATS.md byte-identical
 
 Links:
   code: https://github.com/PRINCE2-AI/lexsi-agentic-hinglish

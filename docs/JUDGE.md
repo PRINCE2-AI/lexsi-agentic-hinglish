@@ -76,6 +76,8 @@ the same 136 injected rows score **0/136** `attacker_expense` (from 6/136) and s
 ```bash
 git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
 python scripts/verify_all.py     # 28/28: pin matches, oracle 30/30, all tests
+python scripts/fetch_runs.py     # ~20 MB of per-task rows from the public primce/lexsi-runs
+python scripts/bootstrap.py      # rewrites docs/STATS.md; git diff shows no change
 ```
 
 No GPU, no token, no model download. Every published number is in a `summary.json` under

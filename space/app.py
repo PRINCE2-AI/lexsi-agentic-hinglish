@@ -358,7 +358,7 @@ with gr.Blocks(
         "Pick a frozen episode below: it replays an episode recorded on the shipped adapter or "
         "the base model and re-scores it with the same code the live run uses, so it renders in "
         "under a second and works even when the GPU quota is gone. The live model loads further "
-        "down and takes about **60 seconds** on its first request."
+        "down and can take **one to three minutes** on its first request if the Space has been idle."
     )
 
     if RECORDED:
@@ -437,8 +437,8 @@ with gr.Blocks(
 
     gr.Markdown(
         "### Live run — your own question, on the model\n"
-        "**The first request loads a 4-bit model: expect about 60 seconds.** After that a run "
-        "takes a few seconds. Free ZeroGPU gives a few GPU-minutes per visitor per day, so if "
+        "**The first request loads a 4-bit model on a cold Space: one to three minutes.** "
+        "After that a run takes a few seconds. Free ZeroGPU gives a few GPU-minutes per visitor per day, so if "
         "you see \"ZeroGPU quota exceeded\", log in with a Hugging Face account for a fresh "
         "quota, or press the instant replay button — same scoring code, no GPU.\n\n"
         "**Before/after:** run a scenario with *Base model (adapter off)*, then with *Shipped "

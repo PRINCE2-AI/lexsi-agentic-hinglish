@@ -721,6 +721,8 @@ git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agent
 python data/build_hard.py && python data/build_hard90.py && python data/build_mix.py
 python data/build_abstain.py && python data/build_safety.py
 python scripts/verify_all.py          # no GPU, no token: 28 checks
+python scripts/fetch_runs.py          # run logs from primce/lexsi-runs, ~20 MB, public
+python scripts/bootstrap.py           # rewrites docs/STATS.md; git diff stays empty
 
 python scripts/train_sft.py --tasks data/tasks_train_mix3.jsonl \
     --epochs 2 --seed 42 --out runs/sft4 --merge-out runs/sft4_merged
