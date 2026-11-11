@@ -393,9 +393,12 @@ data-locality and batching argument. Dated list prices, caveats and arithmetic:
 ## Demo deployment
 
 Live: https://huggingface.co/spaces/primce/hinglish-expense-agent — built from `space/` by
-`python scripts/deploy_space.py --repo primce/hinglish-expense-agent`. The Space runs on ZeroGPU
-(`zero-a10g`); the GPU is used only by the live panel, so the frozen replays and the guard panel
-work with no quota. It defaults to the shipped `sft4_adapter`.
+`python scripts/deploy_space.py --repo primce/hinglish-expense-agent`. After a deploy,
+`python scripts/qa_space.py` walks the same click path against the live Space — six frozen replays,
+the guard panel, scenario switching — in about 15 seconds and with no GPU; `--gpu` adds the two runs
+that need the model. The Space runs on ZeroGPU (`zero-a10g`); the GPU is used only by the live
+panel, so the frozen replays and the guard panel work with no quota. It defaults to the shipped
+`sft4_adapter`.
 
 The demo has a **mode switch** (shipped adapter / base model / shipped + hardened prompt) that
 toggles `disable_adapter()` on one loaded model, and a **scenario switch** that loads the frozen

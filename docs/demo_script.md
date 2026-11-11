@@ -43,6 +43,9 @@ and `docs/STATS.md`. Do not improvise new ones.
 - [ ] Open the article once and scroll to the numbers table:
       https://huggingface.co/spaces/primce/hinglish-track3-article
 - [ ] Print the number card above, or put it on a second screen.
+- [ ] From the repo root, `python scripts/qa_space.py` — 16 checks in about 15 seconds: the six
+      frozen replays, the guard on an English payload and on blind b-05, scenario switching. No
+      GPU, no quota. `--gpu` adds the two live runs and *does* spend quota, so leave it off today.
 - [ ] **Do not run the model on Nov 21.** The daily quota resets 24 h after first use, so a
       warm-up the evening before would leave the demo with nothing. Open the page, not the GPU.
 
