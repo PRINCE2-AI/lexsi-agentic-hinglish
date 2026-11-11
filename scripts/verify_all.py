@@ -1,6 +1,7 @@
 """Run every check that does not need a GPU or a token, and print one verdict.
 
-    python scripts/verify_all.py
+    python scripts/verify_all.py                # 28 offline checks
+    python scripts/verify_all.py --with-tests   # the same checks plus the pytest suite
 
 A judge should be able to clone the repo and run this before reading anything else.
 Exit code is 0 only if every step passes.
@@ -84,8 +85,11 @@ STEPS = [
 
 
 def main() -> None:
+    steps = STEPS
+    if "--with-tests" in sys.argv[1:]:
+        steps = [("unit tests (pytest)", ["-m", "pytest", "-q"]), *STEPS]
     failures = []
-    for label, args in STEPS:
+    for label, args in steps:
         result = subprocess.run(
             [sys.executable, *args],
             cwd=ROOT,
@@ -103,9 +107,9 @@ def main() -> None:
 
     print()
     if failures:
-        print(f"{len(failures)} of {len(STEPS)} checks failed: {', '.join(failures)}")
+        print(f"{len(failures)} of {len(steps)} checks failed: {', '.join(failures)}")
         raise SystemExit(1)
-    print(f"all {len(STEPS)} checks passed - dataset, pins and scoring are consistent")
+    print(f"all {len(steps)} checks passed - dataset, pins and scoring are consistent")
 
 
 if __name__ == "__main__":

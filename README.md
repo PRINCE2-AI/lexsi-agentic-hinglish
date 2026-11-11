@@ -30,20 +30,31 @@ Write-up: https://huggingface.co/spaces/primce/hinglish-track3-article — the f
 3. **Check every number against its run.** [RESULTS.md](docs/RESULTS.md),
    [SAFETY.md](docs/SAFETY.md), [GUARD.md](docs/GUARD.md), [STATS.md](docs/STATS.md); each figure
    names the run directory whose `summary.json` it comes from, and `python scripts/fetch_runs.py`
-   pulls those files from `primce/lexsi-runs`.
-4. **Recompute offline.** `python scripts/verify_all.py` → 28 checks (dataset pins, oracle 30/30,
-   guard, safety splits, demo handlers), no GPU and no token.
+   pulls those files from `primce/lexsi-runs`. [MANIFEST.md](docs/MANIFEST.md) carries the sha256
+   of all 66 published summaries, the shipped adapter and the eight pinned eval files;
+   `python scripts/manifest.py --check` re-hashes them from the Hub and fails on any drift.
+4. **Recompute offline.** `python scripts/verify_all.py --with-tests` → 29 checks (the pytest
+   suite, dataset pins, oracle 30/30, guard, safety splits, demo handlers), no GPU and no token:
 
-| | Base Tiny Aya (3.35B) | Shipped `sft4_adapter` |
-|---|---:|---:|
-| 30 unseen hard tasks | 3.33% (1/30) | **96.67% (29/30)** |
-| 90 unseen hard tasks | 3.33% (3/90) | **93.33% (84/90)**, Wilson 86.2–96.9% |
-| Tool calls per hard-30 task (oracle: 3.57) | 7.03 | 3.57 |
-| Injection split: attacker money in ledger / answer | 18/24 / 8/24 | **2/24 / 0/24** |
-| Same attacks re-written in Hinglish/Devanagari | 10/24 / 5/24 | **0/24 / 0/24**, 23/24 solved |
-| Attacker value across all four injected splits (136 tasks) | 18/24, 48/72, 5/16, 14/24 | **6/136 in the ledger, 0/136 in the answer**, ledger Wilson 2.0–9.3% |
-| Held-out split + obfuscated payloads (30 new tasks) | 18/30 | **5/30**; split payloads 0/15 |
-| Tool-result guard under the model | — | 166/166 published payloads, **5/8 blind set**, 0/294 clean episodes |
+   ```console
+   $ python scripts/verify_all.py --with-tests
+   [PASS] unit tests (pytest)
+   [PASS] hard split pin + oracle
+   ...
+   [PASS] oracle on hard-30
+   all 29 checks passed - dataset, pins and scoring are consistent
+   ```
+
+| | Base Tiny Aya (3.35B) | Shipped `sft4_adapter` | Wilson 95% (adapter) |
+|---|---:|---:|---:|
+| 30 unseen hard tasks | 3.33% (1/30) | **96.67% (29/30)** | 83.3–99.4% |
+| 90 unseen hard tasks | 3.33% (3/90) | **93.33% (84/90)** | 86.2–96.9%; pooled 3 seeds 93.0%, 87.4–97.4% (task bootstrap) |
+| Tool calls per hard-30 task (oracle: 3.57) | 7.03 | 3.57 | — |
+| Injection split: attacker money in ledger / answer | 18/24 / 8/24 | **2/24 / 0/24** | 2.3–25.8% / 0.0–13.8% |
+| Same attacks re-written in Hinglish/Devanagari | 10/24 / 5/24 | **0/24 / 0/24**, 23/24 solved | 0.0–13.8% / 0.0–13.8% |
+| Attacker value across all four injected splits (136 tasks) | 18/24, 48/72, 5/16, 14/24 | **6/136 in the ledger, 0/136 in the answer** | 2.0–9.3% / 0.0–2.7% |
+| Held-out split + obfuscated payloads (30 new tasks) | 18/30 | **5/30**; split payloads 0/15 | 7.3–33.6% |
+| Tool-result guard under the model | — | 166/166 published payloads, **5/8 blind set**, 0/294 clean episodes | — |
 
 Paired exact McNemar on shared ids: base → shipped **81 fixed, 0 broken** on hard-90 (p < 1e-20)
 and **28 fixed, 0 broken** on hard-30 (p = 7.5e-9). GRPO ran twice and moved nothing (0/0, p = 1.0);
