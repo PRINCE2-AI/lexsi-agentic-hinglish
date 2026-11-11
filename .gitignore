@@ -8,6 +8,7 @@ venv/
 # Runs and artifacts
 runs/
 article/
+gallery/
 *.log
 .env
 
