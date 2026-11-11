@@ -399,12 +399,12 @@ verifies the handlers offline.
 - [x] At least two metrics, before and after (success, exact tool calls, F1, precision, recall,
       redundant calls, loop detection, ledger-attack rate, abstention)
 - [x] AgentTune + AuditKIT used together, no judge model
-- [x] HF Collection: https://huggingface.co/collections/primce/lexsi-track-3-hinglish-expense-agent-6aeb3207e10dfc7dda6329d6
+- [x] HF collections: [models](https://huggingface.co/collections/primce/lexsi-track-3-models-hinglish-expense-agent-6af3f4e4b0388e242c7d574a) (every adapter) and [datasets](https://huggingface.co/collections/primce/lexsi-track-3-datasets-hinglish-expense-agent-6af1584f9048846d4db4970b) (run logs), plus the [combined entry collection](https://huggingface.co/collections/primce/lexsi-track-3-hinglish-expense-agent-6aeb3207e10dfc7dda6329d6)
 - [x] Optional ROI table: self-hosted Tiny Aya vs closed-source API at a realistic volume
       (measured tokens and latency, dated list prices, `python scripts/roi.py`, arithmetic in
       [docs/roi.md](docs/roi.md))
 - [x] Only Cohere Labs models used for the trained model
-- [x] Submission form filled 2026-11-09 (resubmission allowed until Nov 14 end of day)
+- [x] Submission form filled 2026-11-09, resubmitted 2026-11-11 with the guard strip result and the two collections
 
 ## 13-day plan
 
