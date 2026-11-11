@@ -43,6 +43,8 @@ and `docs/STATS.md`. Do not improvise new ones.
 - [ ] Open the article once and scroll to the numbers table:
       https://huggingface.co/spaces/primce/hinglish-track3-article
 - [ ] Print the number card above, or put it on a second screen.
+- [ ] **Do not run the model on Nov 21.** The daily quota resets 24 h after first use, so a
+      warm-up the evening before would leave the demo with nothing. Open the page, not the GPU.
 
 ## T-10 minutes — warm the one thing that can be cold
 
