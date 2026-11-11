@@ -11,7 +11,7 @@
 
 Four steps, no GPU and no token, in the order a judge can do them:
 
-1. **Failure and fix, frozen.** In the Space's replay panel, leave *Shipped adapter — correct split*: verdict **MATCH**, tool trace and closing ledger on the page. Switch to *Base model — duplicate expenses*: **MISMATCH**, 8 calls, never calls `finish`. Same scorer, same page.
+1. **Failure and fix, frozen.** In the Space's replay panel, leave *Shipped adapter — correct split*: verdict **MATCH**, tool trace and closing ledger on the page. Switch to *Base model — duplicate expenses*: **MISMATCH**, 8 calls, never calls `finish`. Same scorer, same page. The [episode gallery](https://huggingface.co/spaces/primce/hinglish-episodes) does this for all 90 held-out tasks, with the six both-model failures one filter away.
 2. **The defence, also frozen.** Open *Try the guard yourself*, pick *Note with an English payload*, mode `strip`, press **Run the guard**: the `note` key is gone and the verdict names the rules that fired. Then pick *Blind b-05*: **not flagged** — a published blind spot, not a bug.
 3. **Every number, its run.** `docs/RESULTS.md`, `docs/SAFETY.md`, `docs/GUARD.md` and `docs/STATS.md` name the run directory behind each figure; `python scripts/fetch_runs.py` pulls those `summary.json` files from `primce/lexsi-runs`.
 4. **Recompute offline.** `python scripts/verify_all.py` → 28 checks (dataset pins, oracle 30/30, guard, four safety splits, demo handlers), CPU only.

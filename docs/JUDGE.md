@@ -18,7 +18,7 @@ a run log in the repo.
 | Showcase before-and-after metrics, more than one metric | Three metrics move at once | success 3.33% → 93.33% (hard-90), calls/task 7.24 → 3.38, strict JSON 0% → 100% on hard-90; safety 6/136 ledger and 0/136 answers vs base 18/24 + 48/72 + 14/24, paired on ids: **74 fixed, 0 broken, exact McNemar p = 1.1e-22** on the 120 rows whose payload asks for an expense (`docs/STATS.md`); with the guard in front of the model those same 136 rows go to **0/136** expenses and 136/136 solved (`docs/GUARD.md`) |
 | Write-up: metrics chosen and why, data/task/model rationale, why the model is better | `submission/README.md` + article Space | Also `docs/MODEL_CARD.md`, `docs/DATASET_CARD.md`, `docs/SAFETY.md` |
 | A HF Article | Static article Space (Hub Articles need PRO) | `primce/hinglish-track3-article` renders `docs/hf_article.md`; the FAQ allows a README fallback |
-| A HF Space (if relevant) | Demo Space | Live model + six frozen episodes, scored by the repo's own scorer |
+| A HF Space (if relevant) | Demo Space + episode gallery | Live model + six frozen episodes, scored by the repo's own scorer; `primce/hinglish-episodes` renders all 90 held-out tasks (base vs adapter, trace, ledger, oracle) as a static page needing no GPU |
 | [Optional but preferred] ROI vs a closed-source model | **`docs/roi.md`** | Self-host GPU-hours and $/task from measured wall time and token counts; closed-model list prices on the same traffic |
 
 ## Problem statements claimed in the submission form

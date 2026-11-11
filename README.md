@@ -12,6 +12,8 @@ Live demo: https://huggingface.co/spaces/primce/hinglish-expense-agent (ZeroGPU,
 
 Demo video (1:44, narrated): https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4 — the same prompt on the base model and the shipped adapter, the injection scenario in both modes, and the probe results.
 
+All 90 held-out episodes, browsable: https://huggingface.co/spaces/primce/hinglish-episodes — base model and shipped adapter side by side on every task, with the tool trace, the closing ledger against the oracle, and filters for the nine answer-shape misses and the six tasks both models fail (static page, no GPU).
+
 Write-up: https://huggingface.co/spaces/primce/hinglish-track3-article — the full article (numbers, method, safety split, limitations). Hub Articles need PRO, so it is hosted as a free static Space rendered from `docs/hf_article.md`. The submission write-up itself is [`submission/README.md`](submission/README.md).
 
 ## Judge's 60-second view
@@ -19,7 +21,8 @@ Write-up: https://huggingface.co/spaces/primce/hinglish-track3-article — the f
 1. **See the failure and the fix, no GPU.** Open the Space, leave the **Frozen episode** on
    *Shipped adapter — correct split*: verdict **MATCH**, tool trace, final ledger. Switch to
    *Base model — duplicate expenses*: **MISMATCH**, 8 calls, never calls `finish`. Same scorer,
-   same page.
+   same page. The [episode gallery](https://huggingface.co/spaces/primce/hinglish-episodes) shows
+   all 90 held-out tasks the same way, including the six both models fail.
 2. **See the defence, no GPU.** In **Try the guard yourself**, pick *Note with an English payload*,
    mode `strip`, press **Run the guard**: the `note` key is gone and the verdict names the rules.
    Then pick *Blind b-05*: **not flagged** — a published blind spot, not a bug. The GPU panel has a
