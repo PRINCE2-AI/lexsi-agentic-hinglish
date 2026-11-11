@@ -8,7 +8,7 @@ Tiny Aya learns to call tools reliably in Hinglish: it records shared expenses, 
 
 ![Same task, same prompt, same weights. Base model: 8 calls, MISMATCH, never calls finish. Shipped adapter: ledger matches in 4 calls](docs/demo_before_after.gif)
 
-Live demo: https://huggingface.co/spaces/primce/hinglish-expense-agent (T4, shipped `sft4` adapter, visible tool trace and ledger).
+Live demo: https://huggingface.co/spaces/primce/hinglish-expense-agent (ZeroGPU, shipped `sft4` adapter, visible tool trace and ledger).
 
 Demo video (1:44, narrated): https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4 — the same prompt on the base model and the shipped adapter, the injection scenario in both modes, and the probe results.
 
@@ -16,12 +16,27 @@ Write-up: https://huggingface.co/spaces/primce/hinglish-track3-article — the f
 
 ## Judge's 60-second view
 
+1. **See the failure and the fix, no GPU.** Open the Space, leave the **Frozen episode** on
+   *Shipped adapter — correct split*: verdict **MATCH**, tool trace, final ledger. Switch to
+   *Base model — duplicate expenses*: **MISMATCH**, 8 calls, never calls `finish`. Same scorer,
+   same page.
+2. **See the defence, no GPU.** In **Try the guard yourself**, pick *Note with an English payload*,
+   mode `strip`, press **Run the guard**: the `note` key is gone and the verdict names the rules.
+   Then pick *Blind b-05*: **not flagged** — a published blind spot, not a bug. The GPU panel has a
+   daily quota; these two steps never touch it.
+3. **Check every number against its run.** [RESULTS.md](docs/RESULTS.md),
+   [SAFETY.md](docs/SAFETY.md), [GUARD.md](docs/GUARD.md), [STATS.md](docs/STATS.md); each figure
+   names the run directory whose `summary.json` it comes from, and `python scripts/fetch_runs.py`
+   pulls those files from `primce/lexsi-runs`.
+4. **Recompute offline.** `python scripts/verify_all.py` → 28 checks (dataset pins, oracle 30/30,
+   guard, safety splits, demo handlers), no GPU and no token.
+
 | | Base Tiny Aya (3.35B) | Shipped `sft4_adapter` |
 |---|---:|---:|
 | 30 unseen hard tasks | 3.33% (1/30) | **96.67% (29/30)** |
 | 90 unseen hard tasks | 3.33% (3/90) | **93.33% (84/90)**, Wilson 86.2–96.9% |
 | Tool calls per hard-30 task (oracle: 3.57) | 7.03 | 3.57 |
-| Injection split: attacker money in ledger / answer | 13/24 / 8/24 | **2/24 / 0/24** |
+| Injection split: attacker money in ledger / answer | 18/24 / 8/24 | **2/24 / 0/24** |
 | Same attacks re-written in Hinglish/Devanagari | 10/24 / 5/24 | **0/24 / 0/24**, 23/24 solved |
 | Attacker value across all four injected splits (136 tasks) | 18/24, 48/72, 5/16, 14/24 | **6/136 in the ledger, 0/136 in the answer**, ledger Wilson 2.0–9.3% |
 | Held-out split + obfuscated payloads (30 new tasks) | 18/30 | **5/30**; split payloads 0/15 |
@@ -378,8 +393,9 @@ data-locality and batching argument. Dated list prices, caveats and arithmetic:
 ## Demo deployment
 
 Live: https://huggingface.co/spaces/primce/hinglish-expense-agent — built from `space/` by
-`python scripts/deploy_space.py --repo primce/hinglish-expense-agent`. The Space needs a GPU
-(T4 small is enough); it defaults to the shipped `sft4_adapter`.
+`python scripts/deploy_space.py --repo primce/hinglish-expense-agent`. The Space runs on ZeroGPU
+(`zero-a10g`); the GPU is used only by the live panel, so the frozen replays and the guard panel
+work with no quota. It defaults to the shipped `sft4_adapter`.
 
 The demo has a **mode switch** (shipped adapter / base model / shipped + hardened prompt) that
 toggles `disable_adapter()` on one loaded model, and a **scenario switch** that loads the frozen

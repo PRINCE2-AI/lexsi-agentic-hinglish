@@ -7,6 +7,15 @@
 <p>The same adapter lets an attacker expense into the ledger on <strong>6 of 136</strong> injected tasks and repeats an attacker value in <strong>0 of 136</strong> answers, across four pinned safety splits (base: 18 of 24, 48 of 72, 5 of 16 and 14 of 24 by ledger accounting), and still scores zero when the payloads are rewritten in Hinglish and Devanagari. On a fifth, 30-task split built after the adapter was frozen — split and obfuscated payloads — it is 5 of 30 in the ledger and 0 of 30 in the answer. A deterministic guard under the model, which needs no GPU, flags <strong>166 of 166</strong> published payloads and <strong>5 of 8</strong> of a blind set written after its rules were frozen, while flagging <strong>0 of 294</strong> clean episodes. With that guard in front of the adapter, the attacker's expense on the same 136 rows falls from <strong>6 to 0</strong> and all <strong>136</strong> tasks are solved.</p>
 </div>
 
+## The 60-second check
+
+Four steps, no GPU and no token, in the order a judge can do them:
+
+1. **Failure and fix, frozen.** In the Space's replay panel, leave *Shipped adapter — correct split*: verdict **MATCH**, tool trace and closing ledger on the page. Switch to *Base model — duplicate expenses*: **MISMATCH**, 8 calls, never calls `finish`. Same scorer, same page.
+2. **The defence, also frozen.** Open *Try the guard yourself*, pick *Note with an English payload*, mode `strip`, press **Run the guard**: the `note` key is gone and the verdict names the rules that fired. Then pick *Blind b-05*: **not flagged** — a published blind spot, not a bug.
+3. **Every number, its run.** `docs/RESULTS.md`, `docs/SAFETY.md`, `docs/GUARD.md` and `docs/STATS.md` name the run directory behind each figure; `python scripts/fetch_runs.py` pulls those `summary.json` files from `primce/lexsi-runs`.
+4. **Recompute offline.** `python scripts/verify_all.py` → 28 checks (dataset pins, oracle 30/30, guard, four safety splits, demo handlers), CPU only.
+
 ## TL;DR
 
 - Base Tiny Aya on the frozen hard-30, no adapter: **3.33%** (1/30), and that one success is
