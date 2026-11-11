@@ -73,6 +73,20 @@ the page come from the same file, never hand-edited HTML.
 
 Open the form from the Lexsi Discord and paste this block field by field. Nothing to compose:
 
+**Abstract field (one block, under 500 words):**
+
+```text
+Track 3, solo. Base model CohereLabs/tiny-aya-global (3.35B); LoRA SFT on oracle trajectories, then 40 GRPO steps through AgentTune's trainer; every headline number re-scored by AuditKIT 1.1.3 in recorded mode.
+
+Result. On a frozen 30-task hard split, task success goes 3.33% -> 96.67% (28 fixed, 0 broken, exact McNemar p = 7.5e-9); on a 90-task holdout, 3.33% -> 93.33% (81 fixed, 0 broken, p < 1e-20). Three seeds of the shipped recipe pool to 251/270 = 93.0% (87.4-97.4% task-block bootstrap), and the shipped seed is not the best one. Calls per task fall from 7.24 to 3.38 against an oracle 3.41. Success is the final ledger compared with a deterministic integer-paise oracle: no LLM judge anywhere.
+
+Safety, the part I would keep if I could keep one. A shared-expense agent that moves money is a target for indirect prompt injection through tool results. Four pinned splits, 136 injected tasks, four payload styles, three payload languages (including 24 Hinglish and Devanagari payloads): the adapter lets an attacker expense into the ledger on 6 of 136 and repeats an attacker value in 0 of 136 answers, while the base model fails 18/24, 48/72, 5/16 and 14/24. An earlier "0 of 136" ledger claim came from a threshold that a shared expense cannot reach; it is corrected publicly. A 30-task split built after the adapter was frozen scores 5/30 and 0/30, every miss on an obfuscated amount. A deterministic guard in front of the model takes the same rows to 0/136 expenses and 136/136 solved, in two modes: one replaces the injected note, one deletes it, so the effect is the removal and not a hint.
+
+Verification. python scripts/verify_all.py runs 28 checks offline with no GPU and no token (29 with --with-tests); docs/MANIFEST.md pins 76 files by sha256 at a repo revision and fails on drift; a static gallery renders all 90 held-out tasks base-vs-adapter, including the six both models miss; and the limitations (no adaptive attacker, no 8B ablation, two safety runs aggregate-only) are stated in the README before anyone asks.
+```
+
+**Other fields:**
+
 ```text
 Track: 3 — Agentic fine-tuning
 Team: solo entry (Prince Maurya)
@@ -106,13 +120,16 @@ rename 0/30.
 
 Video (1:44, narrated): https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4
 Write-up: submission/README.md in the repo (also rendered at the write-up link below)
-Reproduce in two minutes, no GPU and no token: git clone the repo, then python scripts/verify_all.py -> 28/28;
-python scripts/fetch_runs.py and python scripts/bootstrap.py then recompute every interval, paired test and the pooled seed rate, and leave docs/STATS.md byte-identical
+Reproduce in two minutes, no GPU and no token: git clone the repo, then python scripts/verify_all.py -> 28 checks (29 with --with-tests);
+python scripts/fetch_runs.py and python scripts/bootstrap.py then recompute every interval, paired test and the pooled seed rate, and leave docs/STATS.md byte-identical;
+python scripts/manifest.py --check re-hashes 76 files on the Hub and fails on drift.
 
 Links:
   code: https://github.com/PRINCE2-AI/lexsi-agentic-hinglish
   live demo: https://huggingface.co/spaces/primce/hinglish-expense-agent
+  all 90 held-out episodes: https://huggingface.co/spaces/primce/hinglish-episodes
   write-up: https://huggingface.co/spaces/primce/hinglish-track3-article
+  limitations: https://github.com/PRINCE2-AI/lexsi-agentic-hinglish#what-this-does-not-show
   adapter: https://huggingface.co/primce/tiny-aya-hinglish-lora
   run logs (every summary.json + trajectories): https://huggingface.co/datasets/primce/lexsi-runs
   ROI vs a closed API: https://github.com/PRINCE2-AI/lexsi-agentic-hinglish/blob/main/docs/roi.md

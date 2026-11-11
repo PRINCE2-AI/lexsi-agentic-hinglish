@@ -19,6 +19,8 @@ held-out split built after the adapter was frozen (5/30 ledger, 0/30 answer).**
 | Live demo (tool trace visible) | https://huggingface.co/spaces/primce/hinglish-expense-agent |
 | Demo video (1:44, narrated) | https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4 |
 | Write-up | https://huggingface.co/spaces/primce/hinglish-track3-article |
+| All 90 held-out episodes, browsable | https://huggingface.co/spaces/primce/hinglish-episodes — base vs shipped adapter on every task, with trace and closing ledger against the oracle; static page, no GPU |
+| Provenance | [docs/MANIFEST.md](https://github.com/PRINCE2-AI/lexsi-agentic-hinglish/blob/main/docs/MANIFEST.md) — sha256 of 76 files (66 run summaries, the adapter, 8 pinned eval files) at a pinned repo revision; `python scripts/manifest.py --check` fails on drift |
 | ROI (optional deliverable) | [docs/roi.md](https://github.com/PRINCE2-AI/lexsi-agentic-hinglish/blob/main/docs/roi.md) — measured tokens and latency on hard-90, dated list prices: $0.78 vs $55.63 per 1,000 *solved* tasks on the cheapest closed tier (72x), $7.92 vs $316 self-hosted; `python scripts/roi.py` reproduces the tables |
 | HF Collection | https://huggingface.co/collections/primce/lexsi-track-3-hinglish-expense-agent-6aeb3207e10dfc7dda6329d6 |
 
@@ -249,6 +251,8 @@ the no-payload baseline: the payload lives in the `note` key on every one of the
 ```bash
 git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
 python scripts/verify_all.py      # 28 checks: pins, oracle 30/30, safety (four splits incl. Hinglish payloads), contrarian splits, Devanagari, schema shift, reward, stats, AuditKIT adapter, demo handlers, guard sandbox
+python scripts/verify_all.py --with-tests   # 29 checks: the same, plus the pytest suite
+python scripts/manifest.py --check          # re-hashes 76 files on the Hub; fails on drift
 ```
 
 On a T4 (one GPU is enough):
