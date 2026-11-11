@@ -395,7 +395,7 @@ Kaggle 2×T4, one GPU at a time, ~30 GPU-h/week.
 | Nov 11 | HF model / dataset / Space / Collection | 0 |
 | Nov 12 | article + recording | 0 |
 | Nov 13 | submit early | 0 |
-| Nov 14 | buffer only | 0 |
+| Nov 14–15 | buffer only | 0 |
 
 Total ≈ 23 GPU-h, inside 30. If a session dies, A3 restarts from the last
 checkpoint or from SFT (SFT is intact and cheap). Never run two notebooks on the

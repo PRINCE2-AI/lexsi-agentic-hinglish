@@ -1,7 +1,7 @@
 # Plan Book — Lexsi Track 3, solo run
 
 **Owner:** Prince Maurya (@PRINCE2-AI)
-**Deadline:** submit **Nov 14, 2026, end of day**. Demo Day Nov 22 if shortlisted.
+**Deadline:** submit **Nov 15, 2026, 11:59 PM AoE** (extended from Nov 14 on Nov 11). Demo Day Nov 22 if shortlisted.
 **Track:** 3 — Agentic Fine-tuning. Model: `CohereLabs/tiny-aya-global` (3.35B, gated).
 **Status on Nov 2:** scaffold complete, oracle 20/20, **baseline measured at 25% success (5/20)**, GRPO smoke passed on Kaggle but is compute-bound (381 s/step) and reward-dead on the base model.
 
@@ -36,7 +36,7 @@ Oracle reference: 100%, 3.5 calls, 3.5 steps. The baseline solves some tasks onl
 | Training | GRPO script fixed for T4 (fp16 + grad checkpointing), smoke test not yet confirmed on Kaggle |
 | Winning wedge | **oracle-trajectory SFT warm-start, then GRPO** + strict-JSON metric |
 | Must-have artifacts | adapter, dataset, trajectories, GPU Space, HF Collection, article |
-| Hard freeze | Nov 10 results frozen; Nov 13 submit; Nov 14 buffer only |
+| Hard freeze | Nov 10 results frozen; Nov 13 first submit; Nov 15, 11:59 PM AoE deadline |
 
 **Why SFT first:** the closest public Track 3 attempt (ToolBoundary) trained 12 examples for 30 GRPO steps and got **0/24 strict JSON before and after**. GRPO on a 3.35B model that cannot emit the format at all has almost no reward signal to climb. SFT on oracle traces installs the format and the ledger-copy behaviour; GRPO then optimizes success and efficiency. Report both stages separately so the contribution is visible.
 
@@ -487,9 +487,9 @@ assert "model_init_kwargs" in Path("scripts/train_grpo.py").read_text()
 
 - [ ] Fill the submission form from Discord.
 - [ ] Verify every link is public in an incognito window.
-- [ ] Submit. Do not wait for Nov 14.
+- [ ] Submit. Nov 13 is the target; Nov 15, 11:59 PM AoE is the wall.
 
-### Nov 14 — buffer only
+### Nov 14–15 — buffer only
 
 - [ ] Fix broken links or a Space crash. No new experiments.
 

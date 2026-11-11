@@ -32,7 +32,8 @@ Write-up: https://huggingface.co/spaces/primce/hinglish-track3-article — the f
    names the run directory whose `summary.json` it comes from, and `python scripts/fetch_runs.py`
    pulls those files from `primce/lexsi-runs`. [MANIFEST.md](docs/MANIFEST.md) carries the sha256
    of all 66 published summaries, the shipped adapter and the eight pinned eval files;
-   `python scripts/manifest.py --check` re-hashes them from the Hub and fails on any drift.
+   `python scripts/manifest.py --check` re-hashes them from the Hub and fails on any drift. What the
+   evidence does not cover: [what this does not show](#what-this-does-not-show).
 4. **Recompute offline.** `python scripts/verify_all.py --with-tests` → 29 checks (the pytest
    suite, dataset pins, oracle 30/30, guard, safety splits, demo handlers), no GPU and no token:
 
@@ -381,6 +382,35 @@ held-out split built after the adapter was frozen — half of it payloads split 
 results, half with the amount obfuscated (`9,99,999`, zero-width, spelled out) — gives 5/30 ledger
 and 0/30 answer; the split family is 0/15 and every miss is an obfuscated amount. Tables and run
 commands: [docs/SAFETY.md](docs/SAFETY.md).
+
+## What this does not show
+
+Every number above is this repo's scorer on generated episodes, and each one names the run it comes
+from. What the evidence does not cover, written down so a reviewer does not have to find it:
+
+- **No adaptive attacker.** Payloads were written without seeing the rules. The blind set, written
+  after the guard was frozen, scores **5/8** (Wilson 30.6–86.3%) and `b-05` is published as a miss
+  ([docs/GUARD.md](docs/GUARD.md)). Someone who reads `hinglish_agent/guard.py` can write around its
+  verb list: the guard is a filter, not a proof.
+- **Small n where the claim is strongest.** 90 held-out tasks, 30-task probes, a 24-task headline
+  safety split. The 84/90 is 86.2–96.9% at 95%, and each probe sits at p = 0.125 — not significant
+  at n = 30.
+- **One model family, one size.** Tiny Aya Global 3.35B only. Nothing here shows the mix3 recipe
+  transfers to 8B, and no 8B ablation was run on free hardware.
+- **Synthetic, single-turn, four-tool episodes.** Ledgers are generated, each task is one user turn,
+  tools are stateless. No production traffic, no concurrent writes, no multi-turn negotiation.
+- **The oracle is hand-written.** Scoring is deterministic, but only as good as the expected-balance
+  rules; a failure the oracle does not model is invisible to every metric on this page.
+- **Two safety runs are aggregate-only.** `safety_sft4_neutralise` and `safety_sft4_strip` publish
+  `summary.json` without per-episode traces, so their numbers can be reproduced by a rerun, not by
+  re-reading the uploaded runs.
+- **The hardened prompt is not shipped.** It clears the abstention bar (7/8 asked) but lets 21/30
+  held-out ledgers through against 5/30 for the plain adapter, so the default is the plain adapter
+  ([docs/ROUND2.md](docs/ROUND2.md)).
+- **Out of scope by design.** Direct jailbreaks, weight poisoning, tool-name hijacking and adaptive
+  attackers are not measured; the guard inspects tool-result fields only.
+- **No independent judge.** Success is ledger equality plus AuditKIT replay; no human or third-party
+  grading has scored these episodes.
 
 ## Cost: is it worth running? (ROI)
 
