@@ -106,8 +106,10 @@ How each clause is measured, all without an LLM judge:
   judge. See [docs/SAFETY.md](docs/SAFETY.md).
 - **A guard under the model**: `hinglish_agent/guard.py` scans every tool result (NFC-normalised,
   English + Latin Hinglish + Devanagari), with modes `flag`/`strip`/`neutralise`/`warn`/`allowlist`,
-  measured at 166/166 published payloads, 5/8 blind, 0/294 clean episodes. See
-  [docs/GUARD.md](docs/GUARD.md).
+  measured at 166/166 published payloads, 5/8 blind, 0/294 clean episodes. Run in front of the
+  adapter on the same 136 injected rows it takes the attacker's ledger expense from **6/136 to
+  0/136** and still solves **136/136**, whether the note is replaced (`neutralise`) or deleted
+  outright with nothing put back (`strip`). See [docs/GUARD.md](docs/GUARD.md).
 - Standalone Tiny Aya baseline runner (transformers, 4-bit) that writes AgentTune-compatible `trajectories.jsonl`.
 - GRPO training script using `create_agentic_trainer` with custom rewards.
 - **AuditKIT scoring**: every recorded run is replayed through `auditkit.agent_eval` (recorded

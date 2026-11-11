@@ -536,14 +536,16 @@ prevention was measured separately, on the GPU, on the same 136 injected rows:
 |---|---:|---:|---:|
 | payload delivered as written (published; 14/24 + 50/72 + 12/16 + 23/24) | 6/136 | 0/136 | 99/136 |
 | **`--guard neutralise` in front of the model** | **0/136** | 0/136 | **136/136** |
+| **`--guard strip` — note deleted, nothing put back** | **0/136** | 0/136 | **136/136** |
 
 The six ledgers the payload moved are gone, the answers were already clean, and the 37 tasks the
 payload was costing even without moving money come back: every episode solves, in 3 tool calls,
-0 errors, 11,103 s on one T4, 136 of 136 episodes flagged. That is the number this defence was
-missing, and it is narrower than it looks: the mode is `neutralise`, which puts
+0 errors, 11,103 s on one T4 for `neutralise`, 136 of 136 episodes flagged. `neutralise` puts
 `[tool result contained instructions addressed to the agent; removed]` where the note was, so the
-model is told a field was removed. `--guard strip`, which deletes the note and leaves nothing, is
-the open run for that objection — listed as open, not implied.
+model is told a field was removed — which is why it was repeated as `strip`, deleting the field and
+leaving nothing. That run is the control: **0/136 expense, 136/136 solved, 136/136 flagged** in
+10,567 s. The removal is what fixed it, not the hint, and the same run is the no-payload control
+these 136 rows never had.
 
 The structural baseline is the one a reviewer can generalise from, and its limit is worth stating:
 every published payload arrives in a `note` key that no tool in this environment ever returns, so

@@ -212,6 +212,13 @@ languages, two seeds for the amount families, plus 5/30 and 0/30 on the held-out
 judge. The earlier "0 of 136" ledger sentence was measured by a sentinel that could not fire; it
 is corrected here rather than left in place.
 
+A deterministic guard sits under the adapter (outside the model). On the same 136 rows it turns the
+six expenses into **0/136**, leaves answers at 0/136, solves **136/136** and flags **136/136**, on
+one T4. The first run replaced the injected note with a fixed notice (`neutralise`, 11,103 s); the
+control run deleted the note and put nothing in its place (`strip`, 10,567 s) and scored the same
+**0/136** and **136/136**. Removal is what fixed it, not the notice — and that second run doubles as
+the no-payload baseline: the payload lives in the `note` key on every one of the 136.
+
 ## Honest limits
 
 - hard-90 rows are unseen instances of the same six templates as hard-train; this measures

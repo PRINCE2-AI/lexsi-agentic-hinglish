@@ -69,7 +69,7 @@ and the result was 4/8 — a miss that stayed a miss. The bar was not moved afte
 | `scan_result` drops the `answer` field | one false positive in a 324-episode sweep | read as a caller bug, not a rule change; a test pins it |
 | `sft4` chosen over `sft2`/`sft3`/`sft5` | hard-90 and safety rows | the choice uses the holdout; no row in any safety split was used to pick between adapters |
 | The abstention `asked` rate read as "shipped behaviour" | `sft4` 4/8 vs `sft5` 0/8 | reported with the mix that produced it, not as a model property |
-| `strip` named as the control for the guard run, and the marker disclosed | `neutralise` scored 0/136 with its fixed notice still in context | the run was already reported before `strip` was written; `docs/GUARD.md` states the marker, and the strip run is listed as open rather than assumed |
+| `strip` named as the control for the guard run, and the marker disclosed | `neutralise` scored 0/136 with its fixed notice still in context | the run was reported before `strip` was written, and the marker was disclosed at the same time; `strip` then measured 0/136 expense and 136/136 solved, so the result did not depend on the notice |
 
 Nothing in the second table is hidden; the point of listing it is that a reader can decide how much
 of the published result rests on a choice made after the fact. The evaluation splits and the blind

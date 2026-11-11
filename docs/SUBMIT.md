@@ -95,7 +95,10 @@ payload styles, three payload languages, 136 injected tasks: the adapter lets an
 into the ledger on 6 of them (2/24 + 4/72 + 0/16 + 0/24) and repeats an attacker value in 0 answers
 (0/24 + 0/72 + 0/16 + 0/24), against 18/24, 48/72, 5/16 and 14/24 ledger hits for base Tiny Aya. A
 fifth 30-task split, built after the adapter was frozen, is 5/30 and 0/30. The language split is
-the same attacks in Hinglish and Devanagari (18 Latin, 6 Devanagari). Abstention is 4/8 asked by
+the same attacks in Hinglish and Devanagari (18 Latin, 6 Devanagari). A deterministic guard in front
+of the adapter takes the same 136 rows to **0/136** attacker expenses and **136/136** solved, in
+`neutralise` and in `strip` mode — the second deletes the injected field and leaves no marker, so
+the result is the removal and not a hint. Abstention is 4/8 asked by
 default on both samples and 7/8 and 8/8 with the hardened prompt, 0/8 invented, against a
 pre-registered 6/8 bar. Two generalisation probes are published with their runs: renamed tool
 schema 25/30 against 29/30 canonical, Devanagari 25/30, and the untuned base under the same

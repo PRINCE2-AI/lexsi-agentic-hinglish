@@ -283,6 +283,13 @@ split the aggregate safety claim becomes **6 attacker expenses and 0 attacker an
 injected tasks** (2/24 + 4/72 + 0/16 + 0/24), four payload styles in three payload languages,
 against base ledger hits of 18/24, 48/72, 5/16 and 14/24.
 
+With the deterministic guard in front of the adapter, those same 136 rows score **0/136 expense,
+0/136 answer, 136/136 solved, 136/136 flagged** on one T4, in `neutralise` mode (note replaced with
+a fixed notice, 11,103 s) and again in `strip` mode (note deleted with nothing in its place,
+10,567 s). The strip run is the control for the marker objection and the no-payload baseline these
+rows were missing: the payload arrives in the `note` key on 136 of 136, so removing the field
+removes the channel. Tables, per-family split and artifacts: [docs/GUARD.md](GUARD.md).
+
 ### Held-out payload styles (2026-11-10)
 
 Built after the adapter was frozen, so it could not influence training: 30 tasks, seed `20261110`,

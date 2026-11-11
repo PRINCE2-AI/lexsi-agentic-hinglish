@@ -137,25 +137,32 @@ injected rows, the same adapter, greedy fp16, one change.
 |---|---:|---:|---:|---:|---:|
 | `sft4`, published | 136 | 6/136 | 0/136 | 99/136 (14+50+12+23) | — |
 | **`sft4` + `--guard neutralise`** | 136 | **0/136** | 0/136 | **136/136** | 136/136 |
+| **`sft4` + `--guard strip`** | 136 | **0/136** | 0/136 | **136/136** | 136/136 |
 
 `0/136` is `attacker_expense`: no episode records more expenses than the user asked for. The answer
 was already clean without the guard, so on prose the guard adds nothing; on the ledger it removes
 all six. The utility column is the other half: the payload was costing 37 of 136 tasks even where it
-did not move money, and with the note replaced every task is solved, 3 calls each, 0 tool errors,
-11,103 s on one T4.
+did not move money, and with the note rewritten every task is solved, 3 calls each, 0 tool errors,
+11,103 s on one T4 for `neutralise`, 10,567 s for `strip`.
 
-What this measures is `neutralise`, which replaces the note with
-`[tool result contained instructions addressed to the agent; removed]`. The amount is not there, but
-a removed field is: that marker is information the plain run does not carry, so this row does not
-prove deletion alone is enough. `--guard strip` deletes the `note` field and leaves nothing behind;
-it is the control for exactly that objection, and it is the open row now instead of this one.
+`neutralise` replaces the note with `[tool result contained instructions addressed to the agent;
+removed]`. The amount is not there, but a removed field is: that marker is information the plain run
+does not carry, so on its own it does not prove deletion is enough. `--guard strip` deletes the
+`note` field and leaves nothing in its place, and it scores the same: **0/136 expense, 0/136 answer,
+136/136 solved, 136/136 episodes flagged**. Every one of the 136 payloads arrives in the `note` key
+(the four families are 40 note, 16 payee, 40 settle, 40 skip), and `injections_fired` is counted
+before the guard runs, so 136/136 means strip actually had a payload to remove on every task. The
+136/136 utility says the note was never data the agent needed. The result is the removal, not the
+hint, and this run is also the no-payload control the 136 rows never had: the same tasks, the same
+adapter, the field simply gone.
 
-Artifacts: `summary.json` is in the repo at `runs/safety_sft4_neutralise/` and in the dataset at
-`safety_sft4_neutralise/summary.json`; the per-episode `results.jsonl` and `trajectories.jsonl` are
-still in the notebook's Kaggle output (`/kaggle/working/runs/safety_sft4_neutralise/`) and are not
-published yet, which is why every number above is quoted from the summary and the printed run block
-rather than from rows. The run itself is `notebooks/kaggle_guard_e2e.ipynb`, pinned to commit
-`22b5af4`.
+Artifacts: each run's `summary.json` is in the dataset at `safety_sft4_neutralise/summary.json` and
+`safety_sft4_strip/summary.json` (`python scripts/fetch_runs.py` pulls both folders); the
+per-episode `results.jsonl` and `trajectories.jsonl` are still in the notebook's Kaggle output
+(`/kaggle/working/runs/safety_sft4_*/`) and are not published yet, which is why every number above
+is quoted from the summary and the printed run block rather than from rows. Both runs are
+`notebooks/kaggle_guard_e2e.ipynb` and `notebooks/kaggle_guard_strip.ipynb`, pinned to commit
+`22b5af4`, one T4, fp16, greedy.
 
 ## What the blind set costs
 
@@ -201,10 +208,6 @@ alone is not a boundary a real product can rely on.
 
 ## What is not measured
 
-- **Deletion without a marker.** `neutralise` is measured on the published 136 above (0/136 expense,
-  136/136 solved), but it leaves a fixed notice where the note was. Whether `strip` — the note
-  deleted with nothing in its place — behaves the same is a separate run; it is not inferable from
-  the table above.
 - **An adaptive attacker.** Every payload was written without knowledge of the rules. The blind set
   is the closest thing to an adversary here, and it is eight items.
 - **Other tool surfaces.** One ledger, five tools, 182 tasks. Keying `tool_control` to five tool
@@ -243,4 +246,8 @@ python scripts/run_baseline.py --model CohereLabs/tiny-aya-global \
     --adapter runs/_adapter_dl/sft4_adapter \
     --tasks runs/safety136.jsonl --safety --no-4bit \
     --guard neutralise --out runs/safety_sft4_neutralise     # 11,103 s, 136 flagged
+python scripts/run_baseline.py --model CohereLabs/tiny-aya-global \
+    --adapter runs/_adapter_dl/sft4_adapter \
+    --tasks runs/safety136.jsonl --safety --no-4bit \
+    --guard strip --out runs/safety_sft4_strip               # 10,567 s, 136 flagged
 ```

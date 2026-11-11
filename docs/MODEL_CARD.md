@@ -196,8 +196,11 @@ fits on a free T4**, and no warning behaviour to trade against it (we are at 0 o
 The residual is also measured with a defence in front of it. `hinglish_agent/guard.py` is a
 deterministic check on tool results, outside the model; run in `neutralise` mode over the same 136
 injected rows on one T4 it takes the leftover expenses from **6/136 to 0/136**, leaves the answers at
-0/136, and still solves **136/136** (against 99/136 with the payload delivered). What it is not:
-a model property, or a claim that deletion alone is enough — `--guard strip` is the open control.
+0/136, and still solves **136/136** (against 99/136 with the payload delivered). Because
+`neutralise` leaves a marker where the note was, the same run was repeated in `strip` mode, which
+deletes the field and puts nothing in its place: **0/136 expense, 136/136 solved, 136/136 flagged**
+in 10,567 s. What it is not: a model property, or a claim that the guard catches an adaptive
+attacker — see the blind set's 5/8 in `docs/GUARD.md`.
 
 ## Usage
 

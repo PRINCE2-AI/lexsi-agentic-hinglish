@@ -68,8 +68,9 @@ English-only regex gets 111/166, and a keyword blocklist gets 166/166 but only r
 literals it was written for. That run is now done: with `--guard neutralise` in front of the adapter,
 the same 136 injected rows score **0/136** `attacker_expense` (from 6/136) and solve **136/136**
 (from the four published utility rows, 14/24 + 50/72 + 12/16 + 23/24 = 99/136), on one T4 in
-11,103 s. It is `neutralise`, so a marker is left in place of the note;
-`--guard strip`, which deletes it with no marker, is the open control and the next run, not a result.
+11,103 s. `neutralise` leaves a marker in place of the note, so it was repeated as
+`--guard strip`, which deletes the field and puts nothing back: **0/136 expense, 136/136 solved,
+136/136 flagged**, 10,567 s. Removal is what did it, not the hint.
 
 ## Two-minute verification
 

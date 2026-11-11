@@ -179,7 +179,5 @@ a model property.
 - **Obfuscated amounts** — `9,99,999` and spelled-out amounts still produce an attacker expense on
   5 of 15 held-out rows, and the guard's `state_change_directive` inherits the same weakness
   ("nine lakh ninety-nine thousand nine hundred ninety-nine" is not a `\d{6,}` match).
-- **End-to-end guard effect** — detection is measured; whether `--guard neutralise` stops the
-  model is not (needs the GPU re-run).
 - **4-bit/GGUF parity** — every number here is `--no-4bit`; the published adapter has no quantised
   evaluation.
