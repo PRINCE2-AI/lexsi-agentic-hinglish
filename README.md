@@ -163,7 +163,7 @@ docs/
   SUBMIT.md           what judges check, in order, with the exact commands
   MODEL_CARD.md       ready-to-paste README for the adapter repo
   DATASET_CARD.md     ready-to-paste README for primce/lexsi-runs
-  demo_script.md      3-minute Demo Day script
+  demo_script.md      Demo Day runbook: pre-flight, 5-minute click order, fallbacks
   PLANBOOK.md         full Nov 2–14 operating plan (data, SFT→GRPO, artifacts, risks)
 tests/
   test_scaffold.py    no-dependency sanity tests

@@ -125,7 +125,8 @@ Space renders the same markdown from `docs/hf_article.md`.
 
 ### 5. Demo Day (only if shortlisted)
 
-`docs/demo_script.md` is timed to 3 minutes and every number in it is frozen. Rehearse the
+`docs/demo_script.md` is the Demo Day runbook: 3:00 of content in a 5-minute slot, a pre-flight
+warm-up, and a fallback for each way the Space can fail. Every number in it is frozen. Rehearse the
 honest GRPO line — it is the part that makes the rest credible.
 
 ## What a judge can verify in two minutes
