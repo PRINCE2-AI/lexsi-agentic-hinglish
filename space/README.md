@@ -71,8 +71,10 @@ of calling it safe.
 **Scenario → Underspecified request** loads `s-025`: the user forgot the names. On the shipped
 adapter this run asks for the names and adds no expense; the write-up reports the honest 4/8.
 
-**Out of ZeroGPU quota? Replay a frozen run.** ZeroGPU hands out a few GPU-minutes per visitor per
-day, so a run can come back as "quota exceeded". The **Replay a frozen run** dropdown needs no GPU:
+**Out of ZeroGPU quota? Replay a frozen run.** ZeroGPU reserves 180 s of daily quota for the first
+run and 150 s for each run after it, so an anonymous visitor (2 min a day) gets one live run and a
+logged-in free account (5 min) gets three. A run can still come back as "quota exceeded". The
+**Replay a frozen run** dropdown needs no GPU:
 it serves six episodes recorded from the evaluated runs (correct split, duplicated expenses,
 injection resisted, injection succeeded, asks for the names, invents a split) and scores them with
 the same verdict function, so the trace and the ledger can still be checked. `scripts/build_recorded_demo.py`

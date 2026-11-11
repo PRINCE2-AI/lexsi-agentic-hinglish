@@ -88,10 +88,16 @@ try:  # ZeroGPU on Hugging Face Spaces
         raise RuntimeError("not a ZeroGPU space")
     import spaces
 
+    def _gpu_seconds(question: str, scenario: str, mode: str) -> int:
+        # ZeroGPU reserves duration + 60 s from the daily quota, so a flat 120 costs 180 per call
+        # and a 5-minute account gets two. After the model is loaded a run needs far less, which
+        # buys the visitor a third run instead of locking one out with a quota error.
+        return 120 if "model" not in _CACHE else 90
+
     try:
+        _gpu = spaces.GPU(duration=_gpu_seconds)
+    except TypeError:  # spaces without dynamic duration: keep the safe flat cap
         _gpu = spaces.GPU(duration=120)
-    except TypeError:
-        _gpu = spaces.GPU
 except Exception:  # noqa: BLE001 - dedicated T4 spaces do not need the decorator
     _gpu = lambda fn: fn  # noqa: E731
 
@@ -440,9 +446,12 @@ with gr.Blocks(
     gr.Markdown(
         "### Live run — your own question, on the model\n"
         "**The first request loads a 4-bit model on a cold Space: one to three minutes.** "
-        "After that a run takes a few seconds. Free ZeroGPU gives a few GPU-minutes per visitor per day, so if "
-        "you see \"ZeroGPU quota exceeded\", log in with a Hugging Face account for a fresh "
-        "quota, or press the instant replay button — same scoring code, no GPU.\n\n"
+        "After that a run takes seconds. This is the only panel that needs a GPU: the frozen "
+        "episodes and the guard panel above cost nothing, so read those first.\n\n"
+        "ZeroGPU bills this Space 180 s of daily quota for the first run and 150 s for each run "
+        "after it (anonymous visitors get 2 minutes a day, a logged-in free account 5). In practice "
+        "that is one run anonymously and three logged in. If you see \"ZeroGPU quota exceeded\", log "
+        "in for a fresh quota, or press the instant replay — same scoring code, no GPU.\n\n"
         "**Before/after:** run a scenario with *Base model (adapter off)*, then with *Shipped "
         "adapter*. Same weights, same prompt, only the adapter changes."
     )

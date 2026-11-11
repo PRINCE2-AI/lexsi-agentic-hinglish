@@ -53,9 +53,15 @@ and `docs/STATS.md`. Do not improvise new ones.
 3. In **Try the guard yourself**, press **Run the guard** on whatever example is selected. Expect a
    verdict line with a microsecond count (300–700 µs). This confirms the CPU path.
 4. In **Live run**, set **Mode → Shipped adapter (sft4)**, leave the default Sawal, press
-   **Run on the model (~60 s first time)**. Wait for the verdict to say the ledger matches. This pays
-   the model load once; from here a run is seconds, not minutes.
+   **Run on the model (~60 s first time)**. Wait for the verdict to say the ledger matches. This is
+   run 1 of 3: it pays the model load once, and from here a run is seconds, not minutes.
 5. Leave the tab scrolled to the top. Do not reload it.
+
+**GPU budget, measured on the live Space (2026-11-11):** ZeroGPU reserves duration + 60 s from the
+daily quota, so the 120 s cold call costs 180 s and each 90 s warm call costs 150 s. Anonymous
+visitors get 2 minutes a day — **one run** — and a logged-in free account gets 5 minutes —
+**three runs**. That is exactly the pre-flight plus the two optional live runs below, and nothing
+else. Do not spend a fourth.
 
 If step 4 fails with "ZeroGPU quota exceeded", do not spend time on it: the demo runs entirely on
 frozen replays plus the guard panel, and the fallback plan below has the wording.
@@ -128,7 +134,8 @@ mis-copies state gives confidently wrong money answers at scale."
 
 ### If the live GPU run is healthy and there is time (optional, +40 s)
 
-Set **Mode → Base model (adapter off)**, press **Run on the model** on the default Sawal
+Runs 2 and 3 of the three. Set **Mode → Base model (adapter off)**, press **Run on the model** on
+the default Sawal
 ("Rahul ne 1200 INR diye pizza ke liye..."), let it finish, then **Mode → Shipped adapter (sft4)** and
 run again. Base ends in MISMATCH; the adapter's ledger shows Rahul 900 and the other three -300.
 Warm, each run takes seconds. **Skip this if anything above was slow — the frozen panels already
@@ -140,7 +147,7 @@ made the point.**
 
 | What happens | Do this | Say this |
 |---|---|---|
-| **ZeroGPU quota exceeded** / `CUDA out of memory` | Do nothing on the GPU. Use the frozen panel and the guard panel; skip the optional live run. | "The GPU quota is per visitor and this Space has already served today's traffic, so I'll use the frozen episodes — same scoring code, rendered without the model. Here is the same run recorded a few days ago." |
+| **ZeroGPU quota exceeded** / `CUDA out of memory` | Do nothing on the GPU. Use the frozen panel and the guard panel; skip the optional live run. | "The GPU quota is 2 minutes anonymously and 5 logged in, and this Space has already served today's traffic, so I'll use the frozen episodes — same scoring code, rendered without the model. Here is the same run recorded a few days ago." |
 | **Space is slow or a click hangs** | Stop clicking. Open the article tab and scroll to the numbers table. | "I'll use the write-up, which carries the same numbers with their sources." |
 | **Space is down / 500** | Play the local video from 0:40 (before/after) and 1:20 (injection), then the article table. | "This is the Space recording: same tasks, same tool trace." |
 | **No network at all** | Local video, then the number card; the guard panel does not work either, so narrate the blind-set example from `docs/GUARD.md`. | "No network, so I'll describe the guard and point to the repo, which reproduces every number on CPU." |
@@ -171,6 +178,10 @@ first model call takes one to three minutes — meanwhile, here is the same run 
 - **Is the agent safe?** Measured, not asserted: 6 of 136 ledgers and 0 of 136 answers across four
   pinned splits, no LLM judge; with the guard, 0 of 136 and 136 of 136 still solved; and the guard's
   blind spots are published (5/8 on the blind set).
+- **The injection card says "solved: no".** The task asks for Amit's signed balance (`-833.46`); the
+  adapter settles the transfer correctly but phrases it as "Amit → Neha 833.46", so the
+  answer-contains check fails while the ledger is right. That is the answer-shape miss class — 9 of
+  the 90 holdout misses are this shape, and none of them is a tool error.
 - **What would you do with $200 of compute?** Seeds are done; the spread is 1.11 pp on hard-90. Next
   is cold-start GRPO, a Devanagari injection set at scale, and the schema shift on hard-90 instead
   of hard-30.
