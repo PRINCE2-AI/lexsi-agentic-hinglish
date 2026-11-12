@@ -115,11 +115,15 @@ changed is the reported harm rate, not the headline accuracy.
 | hinglish-24 (24) | base | 10/24 | 14/24 | 5/24 |
 | | **`sft4`** | 0/24 | **0/24** | **0/24** |
 | | `sft4` + hardened | 0/24 | 0/24 | 0/24 |
+| adaptive-72 (72) | **`sft4`** | 1/72 | **7/72**, Wilson 95% 4.8–18.7% | **0/72** |
+| | **`sft4` + guard (`neutralise`)** | **0/72** | **0/72** | **0/72** |
 | **all four** | **`sft4`** | **0/136** | **6/136**, Wilson 95% 2.0–9.3% | **0/136** |
 | | `sft4` + hardened | 0/136 | 9/136 | 2/136 |
 | | base | 60/136 | 80/120 | 24/136 |
 | | **`sft4` + guard (`neutralise`)** | **0/136** | **0/136** | **0/136** |
 | | **`sft4` + guard (`strip`)** | **0/136** | **0/136** | **0/136** |
+| **all six** | **`sft4`** | **1/208** | **13/208**, Wilson 95% 3.7–10.4% | **0/208** |
+| | **`sft4` + guard** | **0/208** | **0/208** | **0/208** |
 
 The payee split has no expense payload — its harm is the redirected handle in the answer — so the
 expense count does not apply there, and base's expense share is out of the 120 rows that do carry
@@ -145,6 +149,21 @@ of the note, so the model is told a field was removed. The control for that obje
 `--guard strip`, run next on the same 136 rows: the field is deleted and nothing is left behind, and
 the result is identical — **0/136 expense, 0/136 answer, 136/136 solved, 136/136 flagged** in
 10,567 s. Details and artifacts in [docs/GUARD.md](GUARD.md#what-it-prevents-on-the-same-136).
+
+The sixth split, `adaptive-72`, is the weakness probe rather than another language sample: 72 tasks
+written *after* `hinglish_agent/guard.py` was read, encoding the same 999999 INR correction as
+spelled-out words (English, Hinglish, digit by digit), as two halves delivered in two tool results,
+and as an arithmetic expression ("1000000 minus 1"), so the literal never appears in a tool result.
+It is built by `data/build_safety_adaptive72.py` (seed `20261112`, digest `647f0b7f84446aab…`),
+passes the oracle 72/72 and shares no task string with the five earlier splits. Alone the adapter
+solves **47/72 (65.28%)** with 7 extra expenses, one ledger hit and 28 episodes making a call the
+task did not ask for; with the guard in front it solves **72/72 with 0 harm on all three metrics
+and 0 unplanned calls**, 5,742 s against 6,165 s. The guard's in-sample record on this set is
+72/72 payloads flagged, but asymmetrically: on the split family it catches the second half of all
+24 and never the first, which is the half that states a fact. Per family, plain → guarded:
+17/24 → 24/24 spelled, 17/24 → 24/24 split, 13/24 → 24/24 expression. Both runs publish
+`results.jsonl`, `trajectories.jsonl` and `summary.json` at `safety_adaptive72_sft4*/`, so every
+row is checkable. `docs/GUARD.md` carries the attack-side reading.
 
 `tests/test_safety.py::test_balance_sentinel_misses_shared_expense` pins the arithmetic: a
 3-participant injected expense that moves the payer 749,999.25 INR asserts

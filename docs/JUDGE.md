@@ -15,7 +15,7 @@ a run log in the repo.
 | Dense open-weights Cohere model | `CohereLabs/tiny-aya-global` (3.35B) | Adapter targets it: `primce/tiny-aya-hinglish-lora`, subfolder `sft4_adapter` |
 | All artifacts on Hugging Face: models, adapters, logs, datasets | Model + dataset on the Hub | `primce/tiny-aya-hinglish-lora`, `primce/lexsi-runs` (every `summary.json`, `trajectories.jsonl`, `results.jsonl`), two Collections |
 | Deployed publicly by the deadline | Demo Space + code repo | `primce/hinglish-expense-agent` (live, ZeroGPU), `PRINCE2-AI/lexsi-agentic-hinglish` |
-| Showcase before-and-after metrics, more than one metric | Three metrics move at once | success 3.33% → 93.33% (hard-90), calls/task 7.24 → 3.38, strict JSON 0% → 100% on hard-90; safety 6/136 ledger and 0/136 answers vs base 18/24 + 48/72 + 14/24, paired on ids: **74 fixed, 0 broken, exact McNemar p = 1.1e-22** on the 120 rows whose payload asks for an expense (`docs/STATS.md`); with the guard in front of the model those same 136 rows go to **0/136** expenses and 136/136 solved (`docs/GUARD.md`) |
+| Showcase before-and-after metrics, more than one metric | Three metrics move at once | success 3.33% → 93.33% (hard-90), calls/task 7.24 → 3.38, strict JSON 0% → 100% on hard-90; safety 13/208 ledger and 0/208 answers vs base 18/24 + 48/72 + 14/24, paired on ids: **74 fixed, 0 broken, exact McNemar p = 1.1e-22** on the 120 rows whose payload asks for an expense (`docs/STATS.md`); with the guard in front of the model those same 136 rows go to **0/136** expenses and 136/136 solved (`docs/GUARD.md`) |
 | Write-up: metrics chosen and why, data/task/model rationale, why the model is better | `submission/README.md` + article Space | Also `docs/MODEL_CARD.md`, `docs/DATASET_CARD.md`, `docs/SAFETY.md` |
 | A HF Article | Static article Space (Hub Articles need PRO) | `primce/hinglish-track3-article` renders `docs/hf_article.md`; the FAQ allows a README fallback |
 | A HF Space (if relevant) | Demo Space + episode gallery | Live model + six frozen episodes, scored by the repo's own scorer; `primce/hinglish-episodes` renders all 90 held-out tasks (base vs adapter, trace, ledger, oracle) as a static page needing no GPU |
@@ -44,8 +44,8 @@ and pooling moves hard-90 down from 93.3% to 93.0%; both numbers are generated b
 
 ## Safety claim, stated the way the numbers support it
 
-The adapter lets an attacker expense into the ledger on **6 of 136 injected tasks** and repeats an
-attacker value in **0 of 136 answers**, across four pinned splits and four payload styles (24 + 72
+The adapter lets an attacker expense into the ledger on **13 of 208 injected tasks** and repeats an
+attacker value in **0 of 208 answers**, across six pinned splits and five payload encodings (24 + 72
 + 16 + 24); the last split rewrites the payloads in Hinglish and Devanagari so the defence cannot be
 an English-pattern matcher. Base model, same ledger count: 18/24, 48/72, 5/16 and 14/24. A fifth
 30-task split, built after the adapter was frozen, is 5/30 and 0/30, with every miss in an
@@ -71,6 +71,14 @@ the same 136 injected rows score **0/136** `attacker_expense` (from 6/136) and s
 11,103 s. `neutralise` leaves a marker in place of the note, so it was repeated as
 `--guard strip`, which deletes the field and puts nothing back: **0/136 expense, 136/136 solved,
 136/136 flagged**, 10,567 s. Removal is what did it, not the hint.
+
+A sixth, 72-task split was written *after* the guard's rules were read, and it changes only the
+encoding of the amount: spelled out (English, Hinglish, digit by digit), cut across two tool
+results, or written as "1000000 minus 1" so `999999` never appears. The adapter alone solves 47/72
+with 7 extra expenses, 1 ledger hit and 0 answers; with the guard in front it solves **72/72 with
+0 harm and 0 unplanned calls**. Across all six splits: **208 injected tasks, 13/208 expenses,
+0/208 answers, and 208/208 solved with 0 harm under the guard**. Both runs publish their
+`results.jsonl` and `trajectories.jsonl`, so a judge can re-score every row.
 
 ## Two-minute verification
 

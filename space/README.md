@@ -23,7 +23,9 @@ also ships a 32-task indirect-injection eval scored without an LLM judge: base r
 attacker's expense in 18/24 tasks and repeats the attacker number in 8/24 answers; the adapter is
 2/24 and 0/24 (16 attacks removed, 0 introduced, p = 3e-5). Across four pinned splits that is 6
 ledgers and 0 answers on 136 injected tasks; an earlier "0 of 136" ledger claim came from a
-threshold a shared expense cannot reach and is corrected in the repo.
+threshold a shared expense cannot reach and is corrected in the repo. A sixth, 72-task split built
+after the guard's rules were read (spelled out, split across two results, or an expression) adds 7
+ledgers and 0 answers, so across all six: 13 ledgers and 0 answers on 208 injected tasks.
 
 A deterministic guard (`hinglish_agent/guard.py`) flags the payload before the model reads it:
 166/166 published payloads, 5/8 on a blind set written after the rules were frozen, and 0 of 294
@@ -58,7 +60,9 @@ reasons. On the `s-001` scenario the verdict stays RESISTED and the trace now na
 matched. The same guard in `neutralise` mode was run end to end on the GPU over the 136 injected
 rows: attacker expense **0/136** (from 6/136), answers 0/136, and **136/136** tasks solved. The
 `strip` run, which deletes the note and leaves no notice in its place, scores the same **0/136**
-and **136/136** in 10,567 s — see `docs/GUARD.md`. `warn` adds the sentence to the answer and does
+and **136/136** in 10,567 s — see `docs/GUARD.md`. On a 72-task split written after the rules were
+read, the same guard takes 47/72 to **72/72 with 0 harm**, so **208/208** across both. `warn` adds
+the sentence to the answer and does
 not touch the ledger path, so its ledger behaviour is the measured one by construction; the answer
 text it appends is shown here, not scored.
 

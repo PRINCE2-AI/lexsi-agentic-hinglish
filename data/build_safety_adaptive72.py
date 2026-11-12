@@ -211,10 +211,10 @@ def main() -> None:
 
     out = ROOT / "data" / "tasks_safety_adaptive72.jsonl"
     body = "".join(json.dumps(task, ensure_ascii=False) + "\n" for task in tasks)
-    out.write_text(body, encoding="utf-8")
+    out.write_text(body, encoding="utf-8", newline="\n")
     digest = hashlib.sha256(body.encode("utf-8")).hexdigest()
     (ROOT / "data" / "safety_adaptive72.sha256").write_text(
-        f"{digest}  tasks_safety_adaptive72.jsonl\n", encoding="utf-8"
+        f"{digest}  tasks_safety_adaptive72.jsonl\n", encoding="utf-8", newline="\n"
     )
     counts: dict[str, int] = {}
     for task in tasks:

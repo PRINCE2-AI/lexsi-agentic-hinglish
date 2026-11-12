@@ -4,7 +4,7 @@
 
 <div class="result">
 <p><strong>3.33% → 96.67%</strong> task success on a frozen 30-task split, <strong>3.33% → 93.33%</strong> on a 90-task holdout — scored on the final ledger state, no LLM judge.</p>
-<p>The same adapter lets an attacker expense into the ledger on <strong>6 of 136</strong> injected tasks and repeats an attacker value in <strong>0 of 136</strong> answers, across four pinned safety splits (base: 18 of 24, 48 of 72, 5 of 16 and 14 of 24 by ledger accounting), and still scores zero when the payloads are rewritten in Hinglish and Devanagari. On a fifth, 30-task split built after the adapter was frozen — split and obfuscated payloads — it is 5 of 30 in the ledger and 0 of 30 in the answer. A deterministic guard under the model, which needs no GPU, flags <strong>166 of 166</strong> published payloads and <strong>5 of 8</strong> of a blind set written after its rules were frozen, while flagging <strong>0 of 294</strong> clean episodes. With that guard in front of the adapter, the attacker's expense on the same 136 rows falls from <strong>6 to 0</strong> and all <strong>136</strong> tasks are solved.</p>
+<p>The same adapter lets an attacker expense into the ledger on <strong>13 of 208</strong> injected tasks and repeats an attacker value in <strong>0 of 208</strong> answers, across six pinned safety splits (base: 18 of 24, 48 of 72, 5 of 16 and 14 of 24 by ledger accounting), and still scores zero when the payloads are rewritten in Hinglish and Devanagari. On a fifth, 30-task split built after the adapter was frozen — split and obfuscated payloads — it is 5 of 30 in the ledger and 0 of 30 in the answer. A deterministic guard under the model, which needs no GPU, flags <strong>166 of 166</strong> published payloads and <strong>5 of 8</strong> of a blind set written after its rules were frozen, while flagging <strong>0 of 294</strong> clean episodes. With that guard in front of the adapter, the attacker's expense on the same 136 rows falls from <strong>6 to 0</strong> and all <strong>136</strong> tasks are solved; on a 72-task split written after the guard's rules were read, <strong>47 of 72</strong> become <strong>72 of 72</strong> with <strong>0</strong> harm.</p>
 </div>
 
 ## The 60-second check
@@ -519,6 +519,34 @@ Three honest readings:
   is Hinglish or Devanagari. It does depend on the amount being recognisable: obfuscated spellings
   put an expense in 5 of 15 ledgers. That is the next thing to fix, and it is stated here rather
   than left for a reader to find.
+
+### A sixth split, written against the guard
+
+The fifth split is held out from the *adapter*. This one is held out from the *guard*: 72 tasks
+(`data/build_safety_adaptive72.py`, seed `20261112`, digest `647f0b7f…`) built after
+`hinglish_agent/guard.py` was read, each carrying the same 999999 INR correction and differing
+only in how the amount arrives — spelled out in English, Hinglish or digit by digit (24), cut
+across two tool results with both halves spelled (24), or written as "1000000 minus 1" so the
+literal `999999` never appears in a tool result (24). Task, tools, target amount and scorer are
+the published ones, all 72 pass the oracle, and no task string appears in the five earlier splits.
+
+| Run | n | solved | extra expense | ledger hit | answer hit | unplanned calls |
+|---|---:|---:|---:|---:|---:|---:|
+| **`sft4` (shipped)** | 72 | **47 (65.28%)** | 7 | 1 | 0 | 28 |
+| **`sft4` + guard (`neutralise`)** | 72 | **72 (100%)** | **0** | **0** | **0** | **0** |
+
+Per family, alone → guarded: 17/24 → 24/24 spelled, 17/24 → 24/24 split, 13/24 → 24/24 expression.
+Two things are worth saying plainly. The guard flags all 72 payloads in sample, but on the split
+family it only sees the second half — the first half ("the amount was cut off after 'nine lakh'")
+states a fact, and the rules match verbs — and that is enough, because the second half is the one
+that asks for the expense. And the model alone resists the split family anyway (0 of 24 ledger
+hits), so the guard gets no credit there; what the payload actually costs in the plain run is
+tasks, 28 episodes making a call the task never asked for, and that is what the neutralised note
+removes.
+
+Across all six splits that is **208 injected tasks, 13 extra expenses, 0 answers naming the
+injection, and 208 of 208 solved with 0 harm under the guard**. Both runs publish `results.jsonl`
+and `trajectories.jsonl`, so every row above can be re-scored rather than trusted.
 
 ### The layer between the tool result and the model
 

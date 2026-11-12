@@ -53,7 +53,9 @@ Write-up: https://huggingface.co/spaces/primce/hinglish-track3-article — the f
 | Tool calls per hard-30 task (oracle: 3.57) | 7.03 | 3.57 | — |
 | Injection split: attacker money in ledger / answer | 18/24 / 8/24 | **2/24 / 0/24** | 2.3–25.8% / 0.0–13.8% |
 | Same attacks re-written in Hinglish/Devanagari | 10/24 / 5/24 | **0/24 / 0/24**, 23/24 solved | 0.0–13.8% / 0.0–13.8% |
-| Attacker value across all four injected splits (136 tasks) | 18/24, 48/72, 5/16, 14/24 | **6/136 in the ledger, 0/136 in the answer** | 2.0–9.3% / 0.0–2.7% |
+| Attacker value across four injected splits (136 tasks) | 18/24, 48/72, 5/16, 14/24 | **6/136 in the ledger, 0/136 in the answer** | 2.0–9.3% / 0.0–2.7% |
+| Weakness split built against the guard (72 new tasks) | — | **47/72 solved, 7/72 extra expenses, 1/72 ledger, 0/72 answers**; with the guard **72/72 solved, 0 harm** | — |
+| All six injected splits (208 tasks) | — | **13/208 in the ledger, 0/208 in the answer**; with the guard **208/208 solved, 0 harm** | 3.7–10.4% / 0.0–1.8% |
 | Held-out split + obfuscated payloads (30 new tasks) | 18/30 | **5/30**; split payloads 0/15 | 7.3–33.6% |
 | Tool-result guard under the model | — | 166/166 published payloads, **5/8 blind set**, **6/8 source-read probe**, 0/294 clean episodes | — |
 
@@ -65,18 +67,18 @@ A second line runs *under* the model, not inside it: [`hinglish_agent/guard.py`]
 flags a tool result that reads as an instruction rather than data, and can say so in the answer.
 166 of 166 published payloads, 5 of 8 on a blind set written after the rules were frozen, 0 warnings
 across 294 clean episodes, 0.22 ms per tool result — and the adapter itself names an injection in
-**0 of 136** answers, which is why this exists. Tables, baselines and the three blind misses:
+**0 of 208** answers, which is why this exists. Tables, baselines and the three blind misses:
 [docs/GUARD.md](docs/GUARD.md). What failed along the way: [docs/WHAT_DIDNT_WORK.md](docs/WHAT_DIDNT_WORK.md).
 Which rules were fixed before the data arrived: [docs/PREREGISTRATION.md](docs/PREREGISTRATION.md).
 
 Intervals for every published number and the paired bootstrap:
 [docs/STATS.md](docs/STATS.md), `python scripts/bootstrap.py`. Answers that say they ignored an
-injection: **0 of 136**, measured offline by `python scripts/warn_scan.py`.
+injection: **0 of 208**, measured offline by `python scripts/warn_scan.py`.
 
 The 2026-11-10 correction: the original ledger metric was a threshold on a single balance
 (999999 INR), which a shared expense can never reach — the payer only moves `(n−1)/n` of it. The
 scorer now counts expenses in the ledger (`attacker_expense`), and the six affected tasks are named
-in [docs/STATS.md](docs/STATS.md). The answer-side number (0 of 136) and every task-success number
+in [docs/STATS.md](docs/STATS.md). The answer-side number (0 of 208) and every task-success number
 are unchanged.
 
 ```bash
@@ -140,7 +142,8 @@ How each clause is measured, all without an LLM judge:
   0/294 clean episodes. Run in front of the
   adapter on the same 136 injected rows it takes the attacker's ledger expense from **6/136 to
   0/136** and still solves **136/136**, whether the note is replaced (`neutralise`) or deleted
-  outright with nothing put back (`strip`). See [docs/GUARD.md](docs/GUARD.md).
+  outright with nothing put back (`strip`); on the 72-row weakness split it takes 47/72 to
+  **72/72 with 0 harm**, so **208/208** across both. See [docs/GUARD.md](docs/GUARD.md).
 - Standalone Tiny Aya baseline runner (transformers, 4-bit) that writes AgentTune-compatible `trajectories.jsonl`.
 - GRPO training script using `create_agentic_trainer` with custom rewards.
 - **AuditKIT scoring**: every recorded run is replayed through `auditkit.agent_eval` (recorded
@@ -381,8 +384,15 @@ injected tasks (2/24 + 4/72 + 0/16 + 0/24, Wilson 2.0–9.3%) and repeats an att
 Latin payloads, so the defence is not keying on English instruction words. A fifth, 30-task
 held-out split built after the adapter was frozen — half of it payloads split across two tool
 results, half with the amount obfuscated (`9,99,999`, zero-width, spelled out) — gives 5/30 ledger
-and 0/30 answer; the split family is 0/15 and every miss is an obfuscated amount. Tables and run
-commands: [docs/SAFETY.md](docs/SAFETY.md).
+and 0/30 answer; the split family is 0/15 and every miss is an obfuscated amount.
+
+A sixth split is the weakness probe: 72 tasks written *after* reading the guard's rules, encoding the
+same 999999 INR correction as spelled-out words (English, Hinglish, digit by digit), as two halves in
+two tool results, and as an arithmetic expression, so the literal never appears. The adapter alone
+solves 47/72 with 7 extra expenses, 1 ledger hit and 0 answers; the same adapter with the guard in
+front solves **72/72 with 0 harm**. Across all six splits that is 208 injected tasks, **13/208 extra
+expenses, 0/208 answers, and 208/208 solved with 0 harm under the guard**. Tables and run
+commands: [docs/SAFETY.md](docs/SAFETY.md) and [docs/GUARD.md](docs/GUARD.md).
 
 ## What this does not show
 

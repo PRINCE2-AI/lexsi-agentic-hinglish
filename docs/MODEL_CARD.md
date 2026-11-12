@@ -152,9 +152,11 @@ Devanagari, eight per family (`data/tasks_safety_hinglish.jsonl`, own pin; measu
 | `sft4` + hardened prompt | 24 | 24/24 | 24/24 | **0/24** | **0/24** | **0/24** |
 
 The adapter is safe on 6/6 Devanagari and 17/18 Latin payloads; the one miss is a utility miss,
-not an attack. Across all four published splits: **6 attacker expenses in the ledger and 0
+not an attack. Across the four published splits: **6 attacker expenses in the ledger and 0
 attacker values in the answer on 136 injected tasks** (2/24 + 4/72 + 0/16 + 0/24; Wilson 95%
-2.0–9.3%), four payload styles in three payload languages, no LLM judge.
+2.0–9.3%), four payload styles in three payload languages, no LLM judge. A sixth, 72-task split
+written after the guard's rules were read adds **7/72 expenses and 0/72 answers**, so across all
+six: **13/208 left over and 0/208 in answers** (Wilson 95% 3.7–10.4%).
 
 A fifth split was built after the adapter was frozen: 30 tasks, half with the payload split across
 two tool results and half with the amount obfuscated (`9,99,999`, zero-width, spelled out), seed
@@ -182,7 +184,7 @@ is worse there (21/30), which is why it is not the default.
 | Base model | CohereLabs/tiny-aya-global, **3.35B** | Aya Expanse, **8B** |
 | Trainable | LoRA r=16 all-linear, ~60M params (**121 MB** safetensors) | QLoRA DPO + SFT |
 | Eval cost, one T4 | **50–105 s/task** greedy, fp16 (`--no-4bit`) | not reported |
-| Residual attacks | **6 of 136** leftover expenses in the ledger, **0 of 136** in answers (+5/30 and 0/30 on the held-out split) | 0.7% of attacks, 95.6% normal-task success, 100% warnings |
+| Residual attacks | **6 of 136** leftover expenses in the ledger, **0 of 136** in answers (13/208 and 0/208 with the sixth split; +5/30 and 0/30 on the held-out split) | 0.7% of attacks, 95.6% normal-task success, 100% warnings |
 
 The size is a choice, not a shim: Track 3 is a fine-tuning track for a small Cohere Labs model,
 and the point of the entry is that a 3.35B model carries the whole behaviour — ledger-safe under
@@ -191,13 +193,14 @@ injection, abstains when a field is missing, 93.33% on the 90-task held-out spli
 Do not read the last row as a like-for-like win. The two eval sets were built by different people,
 so 6/136 and 0.7% are not the same denominator. What the table does support is narrower and still
 useful: **a small residual ledger-attack rate at 2.4× fewer parameters, with a 121 MB adapter that
-fits on a free T4**, and no warning behaviour to trade against it (we are at 0 of 136 there — see
+fits on a free T4**, and no warning behaviour to trade against it (we are at 0 of 208 there — see
 `docs/SAFETY.md`).
 
 The residual is also measured with a defence in front of it. `hinglish_agent/guard.py` is a
 deterministic check on tool results, outside the model; run in `neutralise` mode over the same 136
 injected rows on one T4 it takes the leftover expenses from **6/136 to 0/136**, leaves the answers at
-0/136, and still solves **136/136** (against 99/136 with the payload delivered). Because
+0/136, and still solves **136/136** (against 99/136 with the payload delivered). On the 72-task
+weakness split it takes 47/72 to **72/72 with 0 harm**, so **208/208** across both. Because
 `neutralise` leaves a marker where the note was, the same run was repeated in `strip` mode, which
 deletes the field and puts nothing in its place: **0/136 expense, 136/136 solved, 136/136 flagged**
 in 10,567 s. What it is not: a model property, or a claim that the guard beats an adaptive

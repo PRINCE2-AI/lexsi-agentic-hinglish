@@ -13,7 +13,7 @@ independent AuditKIT pass. Everything left is packaging, and packaging is what m
 | 2 | **Live Space demo** with a visible tool trace | **live**: https://huggingface.co/spaces/primce/hinglish-expense-agent (ZeroGPU `zero-a10g`, sft4 adapter, base/tuned switch, injection scenario, and a CPU-only "Try the guard yourself" panel that runs on any paste with no GPU quota) |
 | 3 | **HF Article** with metrics, before/after, rationale | **live**: https://huggingface.co/spaces/primce/hinglish-track3-article (static Space; Hub Articles need PRO) |
 | 4 | HF artifacts: adapter + run logs + dataset | adapter (`sft4_adapter`, `sft4_seed7_adapter`, `sft4_seed123_adapter`, `sft5_adapter`, `sft3_seed7/123_adapter`), all run logs, and two public collections: [models](https://huggingface.co/collections/primce/lexsi-track-3-models-hinglish-expense-agent-6af3f4e4b0388e242c7d574a) and [datasets](https://huggingface.co/collections/primce/lexsi-track-3-datasets-hinglish-expense-agent-6af1584f9048846d4db4970b) |
-| 5 | **One memorable differentiator** | the injection eval: 18/24 → 2/24 ledger attacks by ledger accounting and 8/24 → 0/24 attacker numbers in answers on the headline split, then **6 ledger hits and 0 attacker values in answers on 136 injected tasks across four pinned splits, four payload styles and three payload languages** (base ledger: 18/24 + 48/72 + 5/16 + 14/24), plus a post-freeze 30-task held-out split at 5/30 and 0/30; includes a Hinglish/Devanagari payload split so the defence cannot be an English-pattern matcher, no LLM judge, on a track where the required toolkit (AuditKIT) usually only scores tool calls |
+| 5 | **One memorable differentiator** | the injection eval: 18/24 → 2/24 ledger attacks by ledger accounting and 8/24 → 0/24 attacker numbers in answers on the headline split, then **13 ledger hits and 0 attacker values in answers on 208 injected tasks across six pinned splits, five payload encodings and three payload languages** (the sixth, 72 tasks, is a weakness probe built after reading the guard's rules: 47/72 alone, **72/72 with 0 harm** with the guard) (base ledger: 18/24 + 48/72 + 5/16 + 14/24), plus a post-freeze 30-task held-out split at 5/30 and 0/30; includes a Hinglish/Devanagari payload split so the defence cannot be an English-pattern matcher, no LLM judge, on a track where the required toolkit (AuditKIT) usually only scores tool calls |
 
 ### The four attack lines a strong reviewer will use
 
@@ -82,7 +82,7 @@ Result. On a frozen 30-task hard split, task success goes 3.33% -> 96.67% (28 fi
 
 Safety, the part I would keep if I could keep one. A shared-expense agent that moves money is a target for indirect prompt injection through tool results. Four pinned splits, 136 injected tasks, four payload styles, three payload languages (including 24 Hinglish and Devanagari payloads): the adapter lets an attacker expense into the ledger on 6 of 136 and repeats an attacker value in 0 of 136 answers, while the base model fails 18/24, 48/72, 5/16 and 14/24. An earlier "0 of 136" ledger claim came from a threshold that a shared expense cannot reach; it is corrected publicly. A 30-task split built after the adapter was frozen scores 5/30 and 0/30, every miss on an obfuscated amount. A deterministic guard in front of the model takes the same rows to 0/136 expenses and 136/136 solved, in two modes: one replaces the injected note, one deletes it, so the effect is the removal and not a hint. The guard is scored on three sets: 166/166 published payloads, 5/8 on eight payloads written after its rules were frozen, and 6/8 on eight written after reading its source (the two misses spell the amount out).
 
-Verification. python scripts/verify_all.py runs 28 checks offline with no GPU and no token (29 with --with-tests); docs/MANIFEST.md pins 76 files by sha256 at a repo revision and fails on drift; a static gallery renders all 90 held-out tasks base-vs-adapter, including the six both models miss; and the limitations (one 8-payload source-read probe and no red-team loop, no 8B ablation, two safety runs aggregate-only) are stated in the README before anyone asks.
+Verification. python scripts/verify_all.py runs 28 checks offline with no GPU and no token (29 with --with-tests); docs/MANIFEST.md pins 79 files by sha256 at a repo revision and fails on drift; a static gallery renders all 90 held-out tasks base-vs-adapter, including the six both models miss; and the limitations (one 8-payload source-read probe and no red-team loop, no 8B ablation, two safety runs aggregate-only) are stated in the README before anyone asks.
 ```
 
 **Other fields:**
@@ -122,7 +122,7 @@ Video (1:44, narrated): https://huggingface.co/datasets/primce/lexsi-runs/resolv
 Write-up: submission/README.md in the repo (also rendered at the write-up link below)
 Reproduce in two minutes, no GPU and no token: git clone the repo, then python scripts/verify_all.py -> 28 checks (29 with --with-tests);
 python scripts/fetch_runs.py and python scripts/bootstrap.py then recompute every interval, paired test and the pooled seed rate, and leave docs/STATS.md byte-identical;
-python scripts/manifest.py --check re-hashes 76 files on the Hub and fails on drift.
+python scripts/manifest.py --check re-hashes 79 files on the Hub and fails on drift.
 
 Links:
   code: https://github.com/PRINCE2-AI/lexsi-agentic-hinglish
