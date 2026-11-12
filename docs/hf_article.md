@@ -148,15 +148,16 @@ anyway, and names the exact entry points so the claim can be checked by opening 
 
 | Feature | Where | What it does here |
 |---|---|---|
-| `agenttune.core.backend_factory.create_agentic_trainer` | `scripts/train_grpo.py:237` | Builds the GRPO trainer for the RL stage (round 1: 30 steps, round 2: 40 steps, lr 3e-6, 2 generations). |
+| `agenttune.core.backend_factory.create_agentic_trainer` | `scripts/train_grpo.py:237` | Builds the GRPO trainer for the RL stage: round 1, 30 steps at lr 1e-6; round 2, 40 steps at lr 3e-6; 2 generations in both. |
 | Agentic rollout plumbing | same trainer | Tool-calling rollouts with a per-turn step cap; on a 20 GB T4 the script auto-caps `max_steps_per_turn` and `max_completion_length` because 8×256-token rollouts OOM at backward. |
 | Custom graded reward | `scripts/train_grpo.py:grade_text` | Not a toolkit built-in: format + required-tool + argument-name/value + answer-number terms, a no-duplicate-calls term, and in round 2 an abstain term that pays 1.0 when the only call is `finish` with a question on an `abstain=1` row. |
 
 Not used, and why: PPO, RLOO and BCO (the SFT warm start fixed the format, so the question was
 whether GRPO could move answer shape — it did not), the self-healing loop and DECIDE workflows, and
 `RuleGuardCombinator` (we replaced the judge entirely with a deterministic ledger scorer rather than
-clamping a judge). The null result and its diagnosis — `frac_reward_zero_std` 0.8–0.95 at 2
-generations — are in `docs/ROUND2.md`.
+clamping a judge). The null result is in `docs/ROUND2.md`, with its diagnosis: at `num_generations=2` on a policy that
+already answers 96% of the mix, both rollouts in a group usually scored the same, so the advantage
+and the gradient were zero.
 
 **AuditKIT 1.1.3** — https://github.com/Lexsi-Labs/AuditKIT (Lexsi Labs Source Available License v1.2)
 
@@ -165,7 +166,7 @@ generations — are in `docs/ROUND2.md`.
 | `episode_from_openai_messages` + `types.OBSERVED` | `scripts/auditkit_eval.py:209` | Rebuilds each recorded trajectory from `trajectories.jsonl` as an AuditKIT episode, no re-generation. |
 | `AgentEvalRunner` + `AgentEvalSpec(mode="recorded")` | `scripts/auditkit_eval.py:231` | Re-scores the same episodes a second way, CPU only, so "the model got the ledger right" is an independent reading rather than ours. |
 | `FinalStateAssertion` | `scripts/auditkit_eval.py:build_case` | Asserts the closing ledger equals the oracle ledger. |
-| `CustomPredicate` | same | The answer-contains check, which is where the 9 answer-shape misses on hard-90 show up. |
+| `CustomPredicate` | same | The answer-contains check. The six hard-90 misses split three ways: two have the right ledger and only the sentence wrong, two pick a wrong tool name but still settle the ledger right, two settle the ledger wrong. Zero parse failures, zero loops, zero extra calls. |
 | Scorers `tool_call_f1`, `tool_call_f1_name`, `tool_call_validity`, `redundant_tool_calls`, `agent_loop_detection` | `LEDGER_SCORERS` | Exact-call accuracy 0.033 → 1.000 and name-level F1 0.188 → 1.000 on the same 30 tasks. |
 
 Two routes run on every run directory: a ledger route with `finish` dropped, and a full route with
@@ -735,8 +736,9 @@ shipped property.
 
 The cost basis is the one in the ROI section: a T4 at $0.53/GPU-hour, measured wall times from the
 stored runs (a hard-90 eval is 1.26 GPU-hours). $200 is therefore about **377 GPU-hours** — roughly
-300 hard-90 evaluations or 40 GRPO rounds the size of the two already run. Four experiments, in the
-order I would spend it, each with the number that exists today and the number it would replace:
+300 hard-90 evaluations, or a much smaller number of GRPO rounds, since a rollout-heavy round costs
+more than one eval. Four experiments, in the order I would spend it, each with the number that
+exists today and the number it would replace:
 
 | # | Experiment | Before (published) | What the credits buy |
 |---|---|---|---|

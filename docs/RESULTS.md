@@ -68,7 +68,9 @@ both numbers from the run logs.
 `convert_sum` is the family that moved: 7/15 (`sft2`) → 8/15 (`sft3`) → **13/15** (`sft4`), with
 `empty_balance` back to **15/15** from 4/15. The cost is two `two_query` tasks (14/15 → 12/15).
 `sft4` keeps `tac` 0.967, `ter` 0.000, `overcall` 0.000, `rad` 0.000, `lcf` 0.000 and
-`parse_failures` 0.000 — all nine misses are answer-shape misses, not tool misses.
+`parse_failures` 0.000 — six misses on hard-90, every one of them failing the answer-contains
+check: two answer-shape only, two with a wrong tool name and the ledger still right, two with the
+ledger wrong. None is a loop, a crash or an unparseable turn.
 
 ### Per family on hard-90 (15 each)
 
@@ -362,9 +364,11 @@ probe of this size.
 Twelve tasks on hard-90 were the price of teaching "ask". Round 3 identified that the model had
 learned the *surface* of an abstention (a verbatim answer) and not its *trigger*, fixed it with
 contrast pairs that put an empty ledger and a missing number side by side, and recovered the
-twelve plus four more (84/90) while keeping the ask behaviour. The remaining nine misses are all
-answer shape in `convert_sum` (13/15) and `two_query` (12/15), with zero tool errors, zero
-redundant calls and zero loops — so the next lever is the answer format, not the tool policy.
+twelve plus four more (84/90) while keeping the ask behaviour. The six remaining misses are 3 in
+`two_query`, 2 in `convert_sum` and 1 in `paraphrase`; two of the six are answer-shape only, two
+pick a wrong tool name and still settle the ledger right, two settle the ledger wrong. The run has
+zero tool execution errors, zero redundant calls and zero loops — so the next lever is the answer
+and settlement format, not the tool policy.
 
 ---
 

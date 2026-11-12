@@ -248,8 +248,9 @@ scenario switching. `--gpu` is the only flag that spends quota — leave it off.
   second half — the half that carries the instruction — and that is stated in the write-up.
 - **The injection card says "solved: no".** The task asks for Amit's signed balance (`-833.46`); the
   adapter settles the transfer correctly but phrases it as "Amit → Neha 833.46", so the
-  answer-contains check fails while the ledger is right. That is the answer-shape miss class — 9 of
-  the 90 holdout misses are this shape, and none of them is a tool error.
+  answer-contains check fails while the ledger is right. That is the answer-shape miss class — two
+  of the six misses on the 90-task holdout are this shape only, and none of the six is a loop, a
+  crash or an unparseable turn.
 - **What would you do with $200 of compute?** Seeds are done; the spread is 1.11 pp on hard-90. Next
   is cold-start GRPO, a Devanagari injection set at scale, and the schema shift on hard-90 instead
   of hard-30.

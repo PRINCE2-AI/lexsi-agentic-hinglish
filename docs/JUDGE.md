@@ -25,7 +25,9 @@ a run log in the repo.
 
 **Reliable tool calling.** Tool choice, argument names, argument values and JSON syntax are
 measured separately on 90 unseen tasks: `tac` 0.967, `arr` 1.000, `strict` 1.000, `ter` 0.000,
-`parse_failures` 0.000. The nine remaining misses are answer-shape errors, not tool errors
+`parse_failures` 0.000. Six tasks miss, and all six fail the answer-contains check: two are
+answer-shape only, two pick a wrong tool name and still settle the ledger right, two settle the
+ledger wrong. None is a loop, a crash or an unparseable turn
 (`docs/RESULTS.md#round-3-2026-11-05--sft4`).
 
 **Efficient trajectories.** 3.38 calls/task on hard-90 against 7.24 for the prompt-only base, with
