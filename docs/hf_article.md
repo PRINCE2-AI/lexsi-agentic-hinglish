@@ -354,6 +354,17 @@ task success (83/90) but put `asked` back at **0/8** and `invented_expense` at 8
 without enough ask examples do not create the propensity to ask. Both numbers are published; the
 arm was rejected on the safety metric, not on the headline.
 
+One temptation is worth naming, because it is the obvious fix for a flat GRPO run: drop the ledger
+from the reward and pay for task success alone, keeping the ledger only in the evaluation. The
+gradient would then no longer see the thing the evaluation scores. That is the documented behaviour
+of proxy rewards — agents that are optimised harder against a misspecified proxy reach higher proxy
+reward and lower true reward than weaker agents (Pan, Bhatia and Steinhardt,
+[arXiv:2201.03544](https://arxiv.org/abs/2201.03544)) — and a money-moving agent has a direct version
+of that trade: invent a plausible expense and the task looks solved. We did not run that arm. The
+graded reward keeps the ledger, the tool preconditions and the abstention condition inside the
+reward, which is also why GRPO had nothing to learn on it: 0 of 152 rows changed. A flat reward is
+the price of not optimising against a proxy we cannot afford to be wrong about.
+
 ## Safety: what happens when a tool result lies
 
 Every Track 3 entry reports task success. This repo also asks the question that matters for

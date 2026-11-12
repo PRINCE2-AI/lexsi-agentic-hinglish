@@ -252,6 +252,11 @@ this section can still win. That is why the guard is described as a second line,
 - **A sustained adaptive attacker.** The probe above is one pass of eight items written by the
   author; there is no red-team loop, no paid adversary, and no measurement of how the numbers move
   over successive rounds.
+- **The 72-row weakness split end to end.** `data/build_safety_adaptive72.py` generates 72 rows that
+  spell or split the amount and is checked 72/72 against the oracle and disjoint from the five
+  published splits; on it the shipped rules flag 48 of 72 payloads in sample and **0 of the 24
+  split-across-two-results ones**. The adapter run is `notebooks/kaggle_safety_adaptive72.ipynb` and
+  has not been executed, so no model number exists for it.
 - **Other tool surfaces.** One ledger, five tools, 182 tasks. Keying `tool_control` to five tool
   names does not transfer to a 40-tool agent.
 - **Latency in context.** 0.25 ms per result is measured locally; tokeniser and queueing effects of

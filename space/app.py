@@ -32,6 +32,8 @@ from hinglish_agent import sandbox as SANDBOX  # noqa: E402
 from hinglish_agent.runner import run_episode, score_episode  # noqa: E402
 from hinglish_agent.safety import score_safety  # noqa: E402
 
+GALLERY_URL = "https://huggingface.co/spaces/primce/hinglish-episodes"
+
 MODEL_ID = os.getenv("MODEL_ID", "CohereLabs/tiny-aya-global")
 ADAPTER_ID = os.getenv("ADAPTER_ID", "primce/tiny-aya-hinglish-lora").strip() or None
 ADAPTER_SUBFOLDER = os.getenv("ADAPTER_SUBFOLDER", "sft4_adapter").strip() or None
@@ -347,7 +349,8 @@ with gr.Blocks(
         "Hinglish and Devanagari, against the base model's 18/24, 48/72, 5/16 and 14/24.\n\n"
         "A deterministic guard can also flag the injected text before the model acts on it: "
         "**166/166** published payloads, **5/8** on a blind set written after the rules were "
-        "frozen, and **0 of 294** clean episodes. Run in front of the adapter on the same 136 rows, "
+        "frozen, **6/8** on eight payloads written after reading its source (the two misses spell "
+        "the amount out), and **0 of 294** clean episodes. Run in front of the adapter on the same 136 rows, "
         "it takes the attacker's expense from **6/136 to 0/136** and still solves **136/136**; with "
         "the note deleted outright instead of replaced by a notice, the result is the same 0/136 "
         "and 136/136. "
@@ -360,6 +363,12 @@ with gr.Blocks(
         "[Adapter](https://huggingface.co/primce/tiny-aya-hinglish-lora) · "
         "[Run logs](https://huggingface.co/datasets/primce/lexsi-runs)"
     )
+
+    with gr.Row():
+        try:
+            gr.Button("Browse all 90 held-out episodes — base vs adapter ↗", link=GALLERY_URL)
+        except TypeError:
+            gr.Markdown(f"[Browse all 90 held-out episodes — base vs adapter ↗]({GALLERY_URL})")
 
     gr.Markdown(
         "## Start here — no GPU needed\n"
