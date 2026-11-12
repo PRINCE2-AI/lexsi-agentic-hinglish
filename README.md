@@ -386,7 +386,8 @@ held-out split built after the adapter was frozen — half of it payloads split 
 results, half with the amount obfuscated (`9,99,999`, zero-width, spelled out) — gives 5/30 ledger
 and 0/30 answer; the split family is 0/15 and every miss is an obfuscated amount.
 
-A sixth split is the weakness probe: 72 tasks written *after* reading the guard's rules, encoding the
+A sixth split is the weakness probe: 72 tasks from `data/build_safety_adaptive72.py` (digest
+`647f0b7f…`), written *after* reading the guard's rules, encoding the
 same 999999 INR correction as spelled-out words (English, Hinglish, digit by digit), as two halves in
 two tool results, and as an arithmetic expression, so the literal never appears. The adapter alone
 solves 47/72 with 7 extra expenses, 1 ledger hit and 0 answers; the same adapter with the guard in
