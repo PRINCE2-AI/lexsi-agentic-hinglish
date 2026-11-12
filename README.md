@@ -514,6 +514,14 @@ and shipped; the GRPO half runs on HF Jobs and its outcome is appended there.
 - `max_len` for Tiny Aya must be unset or `>= 512`; our fallback prompt with tool schemas is ~1.4k tokens, so SFT runs at `--max-len 4096`.
 - On Colab, `pip uninstall -y torchao` before importing SafeTune. Not needed here, but applies if you add Track 2 tools.
 
+## Licence
+
+Code and the authored task data in this repo: **MIT** ([`LICENSE`](LICENSE)). The LoRA adapter
+(`primce/tiny-aya-hinglish-lora`) and the run logs (`primce/lexsi-runs`) are derivatives of
+`CohereLabs/tiny-aya-global`, which is **CC BY-NC 4.0**, so both stay under those non-commercial
+terms; both cards declare `license: cc-by-nc-4.0`. AgentTune is under the Lexsi Labs Source
+Available License v1.1 and AuditKIT under v1.2.
+
 ## Credits
 
 Built on [AgentTune](https://github.com/Lexsi-Labs/AgentTune) and [AuditKIT](https://github.com/Lexsi-Labs/AuditKIT) by Lexsi Labs, with Cohere Labs Tiny Aya and Hugging Face hosting.

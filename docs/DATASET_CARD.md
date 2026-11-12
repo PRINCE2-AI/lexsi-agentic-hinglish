@@ -2,6 +2,7 @@
 language:
   - hi
   - en
+license: cc-by-nc-4.0
 tags:
   - agent
   - tool-calling

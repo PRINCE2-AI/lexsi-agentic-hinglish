@@ -3,6 +3,7 @@ language:
   - hi
   - en
 base_model: CohereLabs/tiny-aya-global
+license: cc-by-nc-4.0
 library_name: peft
 tags:
   - agent
