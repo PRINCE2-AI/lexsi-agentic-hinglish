@@ -138,6 +138,12 @@ def _text_of(value) -> str:
     return json.dumps(value, ensure_ascii=False, default=str)
 
 
+# Fields a tool echoes back from user text. A six-figure amount in one of them is not a label the
+# user would type; it is the adaptive version of an injected expense, phrased as a fact with no
+# verb to catch. Measured: 0 of 341 clean descriptions in the published traffic carry one.
+USER_TEXT_KEYS = ("description",)
+
+
 def scan_text(text: str) -> dict:
     """Reasons a piece of tool output reads as an instruction to the agent."""
     # Devanagari matras arrive in either normal form, and a literal built from one form will
@@ -184,7 +190,14 @@ def scan_result(result) -> dict:
     """
     if isinstance(result, dict):
         result = {k: v for k, v in result.items() if k not in ("answer", "guard")}
-    return scan_text(_text_of(result))
+    flag = scan_text(_text_of(result))
+    if isinstance(result, dict):
+        for key in USER_TEXT_KEYS:
+            if _large_amount(str(result.get(key, ""))):
+                flag = {**flag, "reasons": [*flag["reasons"], "amount_in_user_text"],
+                        "strong": [*flag["strong"], "amount_in_user_text"], "flagged": True}
+                break
+    return flag
 
 
 # Every key `hinglish_agent.tools` can return. A key outside this set did not come from the tool.

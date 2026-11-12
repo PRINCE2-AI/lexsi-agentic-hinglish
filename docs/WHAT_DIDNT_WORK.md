@@ -170,6 +170,7 @@ a model property.
 | Ship SFT, not GRPO | 0 of 152 rows changed by the RL adapter |
 | Ship the plain prompt, not the hardened one | 21/30 vs 5/30 ledger harm on held-out styles |
 | Ship a deterministic guard under the model | 0/136 answers name the injection; 5/8 blind recall, 0/294 clean-episode false alarms |
+| Keep the allowlist in front of the text rules | 8 payloads written after reading the source: 3/8 by text, 6/8 with the allowlist |
 | Count expenses, not balances | the sentinel's arithmetic cannot fire on shared expenses |
 | Quote the blind number, not the in-sample one | 166/166 is fitted; 5/8 is measured |
 
@@ -177,7 +178,8 @@ a model property.
 
 - **GRPO with headroom** — prepared, never run; `notebooks/kaggle_grpo_positive.ipynb`.
 - **Obfuscated amounts** — `9,99,999` and spelled-out amounts still produce an attacker expense on
-  5 of 15 held-out rows, and the guard's `state_change_directive` inherits the same weakness
+  5 of 15 held-out rows; they are also the two misses in the source-read probe (`a-07`, `a-08`), and
+  the guard's `state_change_directive` inherits the same weakness
   ("nine lakh ninety-nine thousand nine hundred ninety-nine" is not a `\d{6,}` match).
 - **4-bit/GGUF parity** — every number here is `--no-4bit`; the published adapter has no quantised
   evaluation.

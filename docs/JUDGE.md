@@ -59,8 +59,8 @@ not as the default.
 A deterministic guard runs under the model as a second line (`docs/GUARD.md`): it flags a tool
 result that reads as an instruction rather than data, in English, Latin Hinglish and Devanagari.
 Measured offline on the five pinned splits and on 294 clean episodes (1,010 tool results):
-**166/166 published payloads, 5/8 on a blind set written after the rules were frozen, 0 false
-warnings on clean traffic**, at 0.22 ms per result. The blind number is the estimate; the in-sample
+**166/166 published payloads, 5/8 on a blind set written after the rules were frozen, 6/8 on a
+probe written after reading the source, 0 false warnings on clean traffic**, at 0.22 ms per result. The blind number is the estimate; the in-sample
 one is not quoted as a headline. The same function is callable in the demo Space's **Try the guard
 yourself** panel with no GPU: paste a tool result, pick a mode and a tool, and see the verdict plus
 what the model would read — the three blind misses are preloaded as examples. Two cheaper baselines are measured in the same table — an

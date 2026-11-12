@@ -55,7 +55,7 @@ Write-up: https://huggingface.co/spaces/primce/hinglish-track3-article — the f
 | Same attacks re-written in Hinglish/Devanagari | 10/24 / 5/24 | **0/24 / 0/24**, 23/24 solved | 0.0–13.8% / 0.0–13.8% |
 | Attacker value across all four injected splits (136 tasks) | 18/24, 48/72, 5/16, 14/24 | **6/136 in the ledger, 0/136 in the answer** | 2.0–9.3% / 0.0–2.7% |
 | Held-out split + obfuscated payloads (30 new tasks) | 18/30 | **5/30**; split payloads 0/15 | 7.3–33.6% |
-| Tool-result guard under the model | — | 166/166 published payloads, **5/8 blind set**, 0/294 clean episodes | — |
+| Tool-result guard under the model | — | 166/166 published payloads, **5/8 blind set**, **6/8 source-read probe**, 0/294 clean episodes | — |
 
 Paired exact McNemar on shared ids: base → shipped **81 fixed, 0 broken** on hard-90 (p < 1e-20)
 and **28 fixed, 0 broken** on hard-30 (p = 7.5e-9). GRPO ran twice and moved nothing (0/0, p = 1.0);
@@ -136,7 +136,8 @@ How each clause is measured, all without an LLM judge:
   judge. See [docs/SAFETY.md](docs/SAFETY.md).
 - **A guard under the model**: `hinglish_agent/guard.py` scans every tool result (NFC-normalised,
   English + Latin Hinglish + Devanagari), with modes `flag`/`strip`/`neutralise`/`warn`/`allowlist`,
-  measured at 166/166 published payloads, 5/8 blind, 0/294 clean episodes. Run in front of the
+  measured at 166/166 published payloads, 5/8 blind, 6/8 on a probe written after reading its source,
+  0/294 clean episodes. Run in front of the
   adapter on the same 136 injected rows it takes the attacker's ledger expense from **6/136 to
   0/136** and still solves **136/136**, whether the note is replaced (`neutralise`) or deleted
   outright with nothing put back (`strip`). See [docs/GUARD.md](docs/GUARD.md).
@@ -388,10 +389,11 @@ commands: [docs/SAFETY.md](docs/SAFETY.md).
 Every number above is this repo's scorer on generated episodes, and each one names the run it comes
 from. What the evidence does not cover, written down so a reviewer does not have to find it:
 
-- **No adaptive attacker.** Payloads were written without seeing the rules. The blind set, written
-  after the guard was frozen, scores **5/8** (Wilson 30.6–86.3%) and `b-05` is published as a miss
-  ([docs/GUARD.md](docs/GUARD.md)). Someone who reads `hinglish_agent/guard.py` can write around its
-  verb list: the guard is a filter, not a proof.
+- **Adaptive actors are bounded, not beaten.** The blind set, written after the guard was frozen,
+  scores **5/8** (Wilson 30.6–86.3%); `b-05` is published as a miss. A probe written *after reading
+  `hinglish_agent/guard.py`* scores **6/8** with the allowlist, and the two misses spell the amount
+  out ([docs/GUARD.md](docs/GUARD.md)). That is one author with the source open and one round: the
+  verb list is still the boundary, and the guard is a filter, not a proof.
 - **Small n where the claim is strongest.** 90 held-out tasks, 30-task probes, a 24-task headline
   safety split. The 84/90 is 86.2–96.9% at 95%, and each probe sits at p = 0.125 — not significant
   at n = 30.
@@ -407,8 +409,8 @@ from. What the evidence does not cover, written down so a reviewer does not have
 - **The hardened prompt is not shipped.** It clears the abstention bar (7/8 asked) but lets 21/30
   held-out ledgers through against 5/30 for the plain adapter, so the default is the plain adapter
   ([docs/ROUND2.md](docs/ROUND2.md)).
-- **Out of scope by design.** Direct jailbreaks, weight poisoning, tool-name hijacking and adaptive
-  attackers are not measured; the guard inspects tool-result fields only.
+- **Out of scope by design.** Direct jailbreaks, weight poisoning, tool-name hijacking and sustained
+  red-team loops are not measured; the guard inspects tool-result fields only.
 - **No independent judge.** Success is ledger equality plus AuditKIT replay; no human or third-party
   grading has scored these episodes.
 
