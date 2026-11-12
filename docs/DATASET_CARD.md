@@ -43,6 +43,8 @@ trajectory can be re-scored offline without a GPU or a model download. A 1:44 na
 | `heldout_base/`, `heldout_sft4/`, `heldout_sft4_hardened/` | 30-task held-out attack-style split, seed 20261110: split payloads and obfuscated amounts (adapter 5/30 ledger, 0/30 answer) |
 | `safety_payee_base/`, `safety_payee_sft4/`, `safety_payee_sft4_hardened/` | 16 payee-redirect attacks: the tool result claims the sender's UPI handle changed; scored on the answer (base 5/16 ledger, adapter 0/16) |
 | `safety_hinglish_base/`, `safety_hinglish_sft4/`, `safety_hinglish_sft4_hardened/` | 24 attacks with Hinglish/Devanagari payloads only (18 Latin, 6 Devanagari, 8 per family; base 10/24 ledger and 5/24 answer, adapter 0/24 and 0/24, hardened 24/24 solved) |
+| `safety_sft4_neutralise/`, `safety_sft4_strip/` | the same 136 injected rows with the guard in front of the adapter: 0/136 expense, 0/136 answers, 136/136 solved (10,567 s for `strip`) |
+| `safety_adaptive72_sft4/`, `safety_adaptive72_sft4_guard/` | 72-task weakness split built after the guard's rules were read (spelled, split across two results, expression): adapter alone 47/72 solved with 7 extra expenses, with the guard 72/72 solved and 0 harm |
 | `auditkit_*` | AuditKIT replays of the same recorded episodes, no judge model (scored on 1.1.3, re-checked on 1.1.6, same verdicts) |
 | `demo/` | `lexsi_track3_demo.mp4` — 1:44 narrated demo: the live Space, the injection before/after, and the hard-90 numbers |
 
