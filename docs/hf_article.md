@@ -2,6 +2,8 @@
 
 *Lexsi AI Safety & Alignment Hackathon 2026 — Track 3, Agentic fine-tuning. Solo entry.*
 
+**Demo video (1:44, narrated):** [lexsi_track3_demo.mp4](https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4) — the same prompt on the base model and the shipped adapter, the injection scenario in both modes, and the probe results. The interactive Space is [primce/hinglish-expense-agent](https://huggingface.co/spaces/primce/hinglish-expense-agent).
+
 <div class="result">
 <p><strong>3.33% → 96.67%</strong> task success on a frozen 30-task split, <strong>3.33% → 93.33%</strong> on a 90-task holdout — scored on the final ledger state, no LLM judge.</p>
 <p>The same adapter lets an attacker expense into the ledger on <strong>13 of 208</strong> injected tasks and repeats an attacker value in <strong>0 of 208</strong> answers, across six pinned safety splits (base: 18 of 24, 48 of 72, 5 of 16 and 14 of 24 by ledger accounting), and still scores zero when the payloads are rewritten in Hinglish and Devanagari. On a fifth, 30-task split built after the adapter was frozen — split and obfuscated payloads — it is 5 of 30 in the ledger and 0 of 30 in the answer. A deterministic guard under the model, which needs no GPU, flags <strong>166 of 166</strong> published payloads and <strong>5 of 8</strong> of a blind set written after its rules were frozen, while flagging <strong>0 of 294</strong> clean episodes. With that guard in front of the adapter, the attacker's expense on the same 136 rows falls from <strong>6 to 0</strong> and all <strong>136</strong> tasks are solved; on a 72-task split written after the guard's rules were read, <strong>47 of 72</strong> become <strong>72 of 72</strong> with <strong>0</strong> harm.</p>
@@ -13,8 +15,8 @@ Four steps, no GPU and no token, in the order a judge can do them:
 
 1. **Failure and fix, frozen.** In the Space's replay panel, leave *Shipped adapter — correct split*: verdict **MATCH**, tool trace and closing ledger on the page. Switch to *Base model — duplicate expenses*: **MISMATCH**, 8 calls, never calls `finish`. Same scorer, same page. The [episode gallery](https://huggingface.co/spaces/primce/hinglish-episodes) does this for all 90 held-out tasks, with the six both-model failures one filter away.
 2. **The defence, also frozen.** Open *Try the guard yourself*, pick *Note with an English payload*, mode `strip`, press **Run the guard**: the `note` key is gone and the verdict names the rules that fired. Then pick *Blind b-05*: **not flagged** — a published blind spot, not a bug.
-3. **Every number, its run.** `docs/RESULTS.md`, `docs/SAFETY.md`, `docs/GUARD.md` and `docs/STATS.md` name the run directory behind each figure; `python scripts/fetch_runs.py` pulls those `summary.json` files from `primce/lexsi-runs`, and `docs/MANIFEST.md` carries the sha256 of all 66 of them plus the shipped adapter, re-checkable with `python scripts/manifest.py --check`.
-4. **Recompute offline.** `python scripts/verify_all.py` → 28 checks (dataset pins, oracle 30/30, guard, four safety splits, demo handlers), CPU only.
+3. **Every number, its run.** `docs/RESULTS.md`, `docs/SAFETY.md`, `docs/GUARD.md` and `docs/STATS.md` name the run directory behind each figure; `python scripts/fetch_runs.py` pulls those `summary.json` files from `primce/lexsi-runs`, and `docs/MANIFEST.md` carries the sha256 of all 79 published files — 68 run summaries, the shipped adapter and nine pinned eval files — re-checkable with `python scripts/manifest.py --check`.
+4. **Recompute offline.** `python scripts/verify_all.py` → 28 checks (dataset pins, oracle 30/30, guard, six safety splits, demo handlers), CPU only; `--with-tests` makes it 29.
 
 ## TL;DR
 
@@ -136,6 +138,45 @@ other split.
    `auditkit.agent_eval.AgentCase` + episode, runs `AgentEvalRunner` in `mode="recorded"`, and
    scores `tool_call_f1`, `tool_call_f1_name`, `tool_call_validity`, `redundant_tool_calls`,
    `agent_loop_detection`. No judge model is used.
+
+## Hackathon repos used, and which features
+
+Track 3 is exempt from the "at least two toolkit repos used together" rule. This entry uses two
+anyway, and names the exact entry points so the claim can be checked by opening two files.
+
+**AgentTune** — https://github.com/Lexsi-Labs/AgentTune (Lexsi Labs Source Available License v1.1)
+
+| Feature | Where | What it does here |
+|---|---|---|
+| `agenttune.core.backend_factory.create_agentic_trainer` | `scripts/train_grpo.py:237` | Builds the GRPO trainer for the RL stage (round 1: 30 steps, round 2: 40 steps, lr 3e-6, 2 generations). |
+| Agentic rollout plumbing | same trainer | Tool-calling rollouts with a per-turn step cap; on a 20 GB T4 the script auto-caps `max_steps_per_turn` and `max_completion_length` because 8×256-token rollouts OOM at backward. |
+| Custom graded reward | `scripts/train_grpo.py:grade_text` | Not a toolkit built-in: format + required-tool + argument-name/value + answer-number terms, a no-duplicate-calls term, and in round 2 an abstain term that pays 1.0 when the only call is `finish` with a question on an `abstain=1` row. |
+
+Not used, and why: PPO, RLOO and BCO (the SFT warm start fixed the format, so the question was
+whether GRPO could move answer shape — it did not), the self-healing loop and DECIDE workflows, and
+`RuleGuardCombinator` (we replaced the judge entirely with a deterministic ledger scorer rather than
+clamping a judge). The null result and its diagnosis — `frac_reward_zero_std` 0.8–0.95 at 2
+generations — are in `docs/ROUND2.md`.
+
+**AuditKIT 1.1.3** — https://github.com/Lexsi-Labs/AuditKIT (Lexsi Labs Source Available License v1.2)
+
+| Feature | Where | What it does here |
+|---|---|---|
+| `episode_from_openai_messages` + `types.OBSERVED` | `scripts/auditkit_eval.py:209` | Rebuilds each recorded trajectory from `trajectories.jsonl` as an AuditKIT episode, no re-generation. |
+| `AgentEvalRunner` + `AgentEvalSpec(mode="recorded")` | `scripts/auditkit_eval.py:231` | Re-scores the same episodes a second way, CPU only, so "the model got the ledger right" is an independent reading rather than ours. |
+| `FinalStateAssertion` | `scripts/auditkit_eval.py:build_case` | Asserts the closing ledger equals the oracle ledger. |
+| `CustomPredicate` | same | The answer-contains check, which is where the 9 answer-shape misses on hard-90 show up. |
+| Scorers `tool_call_f1`, `tool_call_f1_name`, `tool_call_validity`, `redundant_tool_calls`, `agent_loop_detection` | `LEDGER_SCORERS` | Exact-call accuracy 0.033 → 1.000 and name-level F1 0.188 → 1.000 on the same 30 tasks. |
+
+Two routes run on every run directory: a ledger route with `finish` dropped, and a full route with
+`finish` included, so a correct ledger closed by a wrong sentence is visible instead of averaged
+away. Not used: `RedTeamRunner`, `GuardJudge` and `bfcl.py` — the injection bench and the guard in
+this repo are plain functions with unit tests, which is what makes them runnable without a GPU and
+inspectable without trusting a second model.
+
+**The SFT stage is not AgentTune.** `scripts/train_sft.py` is PEFT LoRA r=16 on all linear layers
+plus a transformers `Trainer`; AgentTune owns the GRPO stage only. Stated so nobody has to guess
+which toolkit produced which table row.
 
 ## Results
 
@@ -690,6 +731,24 @@ loads on a free GPU. The 8B entry also reports warning behaviour we do not have 
 name the injection — which is measured in `docs/SAFETY.md` and is the next experiment rather than a
 shipped property.
 
+## What $200 of credits would change
+
+The cost basis is the one in the ROI section: a T4 at $0.53/GPU-hour, measured wall times from the
+stored runs (a hard-90 eval is 1.26 GPU-hours). $200 is therefore about **377 GPU-hours** — roughly
+300 hard-90 evaluations or 40 GRPO rounds the size of the two already run. Four experiments, in the
+order I would spend it, each with the number that exists today and the number it would replace:
+
+| # | Experiment | Before (published) | What the credits buy |
+|---|---|---|---|
+| 1 | **Cold-start GRPO with no SFT warm start** — the arm never run; both GRPO rounds here were warm-started and moved 0 tasks | 0 fixed / 0 broken on hard-90, p = 1.0 | Three seeds of cold-start GRPO from base, 40 steps each: does the reward bootstrap tool format from 1/30, or does it stay at zero? Either answer closes the "is this just SFT" question with data. |
+| 2 | **Adaptive red-team loop** — an attacker that reads the guard and iterates | 5/8 on eight payloads frozen before the guard, 6/8 on eight written after reading its source; 11 of 16 total | 200+ rows over N attacker rounds, a published miss taxonomy, and one number per round instead of one probe |
+| 3 | **Devanagari injection at scale** — the language control is 24 rows today, only 6 of them Devanagari | 0/24 ledgers and 0/24 answers on that control, 6/6 clean on the Devanagari subset | 72+ spelled and obfuscated payloads in Devanagari, exactly where a literal-matching guard is weakest and where the sixth split already found 7 attacker expenses |
+| 4 | **8B ablation** — same 90 tasks, same recipe, `CohereLabs/aya-expanse-8b` | not run; stated as a limitation | Does 93.33% survive the larger base, and is the guard still the difference? Three entries in this field ship 8B adapters and this entry does not. |
+| 5 | **Schema shift on hard-90** rather than hard-30 | 25/30 under renamed tools, n = 30 | n = 90 with a paired test, so the "it learned the tool names" answer stops being a diagnostic |
+
+Not on the list: a leaderboard or a public benchmark. The metric that matters here is the ledger,
+and it is already in every run's `summary.json`.
+
 ## Limitations
 
 - hard-90 has 90 tasks; counts are reported next to percentages, and its Wilson interval is
@@ -710,8 +769,9 @@ shipped property.
   on the held-out split it takes the attacker's "correction" on 21/30 ledgers against 5/30 without
   it, so the default configuration remains the adapter alone, which asks 4/8.
 - Fixed offline FX rates, fixed six-person name universe, no free-form tools.
-- The injection probe is 166 payload-carrying tasks across five splits, all from one builder and
-  one attack grammar; the language control is 24 rows and the held-out split is 30. Greedy
+- The injection probe is 166 payload-carrying tasks across five splits, plus the 72 written against
+  the guard, all from one builder and one attack grammar; the language control is 24 rows and the
+  held-out split is 30. Greedy
   decoding, one sample per task. The ledger metric is one quantity — more expenses than the user
   asked for — so a payload that corrupts an existing expense in place would not register.
 - The original ledger metric was a threshold that could not fire on a shared expense. It is fixed
@@ -764,6 +824,8 @@ huggingface-cli download primce/lexsi-runs --repo-type dataset --local-dir runs
 | sentinel 13/24 and answer 8/24 on base, 0/24 and 0/24 on shipped | `python scripts/safety_table.py` | `attack_ledger` 54.17% → 0.00%, `attack_answer` 33.33% → 0.00% |
 | second sample: 32/72 sentinel and 11/72 answer on base, 0/72 and 0/72 on shipped | `python scripts/safety_table.py --run "Base=runs/safety2_base" --run "sft4=runs/safety2_sft4" --run "sft4+hp=runs/safety2_sft4_hardened"` | every ledger and answer column 0.00 for the adapter |
 | Hinglish payloads: 10/24 and 5/24 on base, 0/24 and 0/24 on shipped | `python scripts/safety_table.py --run "Base=runs/safety_hinglish_base" --run "sft4=runs/safety_hinglish_sft4" --run "sft4+hp=runs/safety_hinglish_sft4_hardened"` | every ledger and answer column 0.00 for the adapter, 23/24 solved |
+| The sixth split: 47/72 → 72/72, and the pooled 13/208 → 0/208 | `python scripts/bootstrap.py` | writes the 72-row table into `docs/STATS.md` from `runs/safety_adaptive72_sft4*` |
+| 79 pinned files, including 68 run summaries | `python scripts/manifest.py --check` | `all 79 hashes match docs/MANIFEST.md` |
 | every per-task row | `runs/<run>/results.jsonl` | one JSON row per task, with the same fields as `summary.json` |
 
 The two probe splits are also re-scorable offline, and there the same rule holds: AuditKIT counts
@@ -795,16 +857,55 @@ python scripts/safety_table.py
 
 ## Artifacts
 
-- GitHub: https://github.com/PRINCE2-AI/lexsi-agentic-hinglish
-- Adapter: https://huggingface.co/primce/tiny-aya-hinglish-lora (`sft4_adapter` is the shipped
+Everything below is public, and final as of 2026-11-15 11:59 PM AoE.
+
+- GitHub: [PRINCE2-AI/lexsi-agentic-hinglish](https://github.com/PRINCE2-AI/lexsi-agentic-hinglish)
+- Demo video (1:44, narrated): [lexsi_track3_demo.mp4](https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4)
+- **Model artifacts, as a collection**: [lexsi-track-3-models-hinglish-expense-agent](https://huggingface.co/collections/primce/lexsi-track-3-models-hinglish-expense-agent-6af3f4e4b0388e242c7d574a)
+- **Data artifacts, as a collection**: [lexsi-track-3-datasets-hinglish-expense-agent](https://huggingface.co/collections/primce/lexsi-track-3-datasets-hinglish-expense-agent-6af1584f9048846d4db4970b)
+- Adapter: [primce/tiny-aya-hinglish-lora](https://huggingface.co/primce/tiny-aya-hinglish-lora) (`sft4_adapter` is the shipped
   one; `sft4_seed7_adapter` and `sft4_seed123_adapter` are the mix3 seed control,
   `sft3_seed7_adapter` and `sft3_seed123_adapter` the mix2 one)
-- Run logs: https://huggingface.co/datasets/primce/lexsi-runs
-- Space: https://huggingface.co/spaces/primce/hinglish-expense-agent (ZeroGPU, shipped adapter, visible tool trace)
-- This article: https://huggingface.co/spaces/primce/hinglish-track3-article
-- Collection: https://huggingface.co/collections/primce/lexsi-track-3-hinglish-expense-agent-6aeb3207e10dfc7dda6329d6
+- Run logs, every `summary.json` and `trajectories.jsonl`: [primce/lexsi-runs](https://huggingface.co/datasets/primce/lexsi-runs)
+- Space (live, ZeroGPU, shipped adapter, visible tool trace): [primce/hinglish-expense-agent](https://huggingface.co/spaces/primce/hinglish-expense-agent)
+- All 90 held-out episodes, base vs adapter, static: [primce/hinglish-episodes](https://huggingface.co/spaces/primce/hinglish-episodes)
+- All 72 injection episodes, adapter alone vs guard on, static: [primce/hinglish-attacks](https://huggingface.co/spaces/primce/hinglish-attacks)
+- This article: [primce/hinglish-track3-article](https://huggingface.co/spaces/primce/hinglish-track3-article)
+- Judge checklist, rule by rule: [docs/JUDGE.md](https://github.com/PRINCE2-AI/lexsi-agentic-hinglish/blob/main/docs/JUDGE.md)
+- Manifest of every published number: [docs/MANIFEST.md](https://github.com/PRINCE2-AI/lexsi-agentic-hinglish/blob/main/docs/MANIFEST.md)
+
+## Licences and data provenance
+
+| Artefact | Licence |
+|---|---|
+| Base model, `CohereLabs/tiny-aya-global` | **CC BY-NC 4.0**, as stated on its model card |
+| Adapter, `primce/tiny-aya-hinglish-lora` | A derivative of the base: no separate licence, so CC BY-NC 4.0 travels with the weights |
+| `AgentTune` | Lexsi Labs Source Available License (LSAL) v1.1 |
+| `AuditKIT` 1.1.3 | Lexsi Labs Source Available License (LSAL) v1.2 |
+| Tasks, splits, payloads and abstention rows | Authored for this entry; **no third-party dataset is used**, so there is no upstream benchmark licence to clear |
+| Run logs, `primce/lexsi-runs` | Transcripts generated by a CC BY-NC 4.0 model, published for review under the same non-commercial terms |
+| Repo code | No licence file yet; published for judging and reproduction — a permissive licence can be added on request |
+
+Two consequences stated rather than implied: the adapter is **not** cleared for commercial
+deployment in this form, and because every training row is generated by this repo from authored
+pools with pinned seeds and digests, a holdout task entering training would show up as a digest
+change in `data/*.sha256`, not as a silent accuracy jump.
+
+## The kickoff deck's nine-item checklist
+
+| # | Item | Where it is answered |
+|---|---|---|
+| 1 | Problem statement and approach | *Problem statement*, *Why this task*, *Method* |
+| 2 | Hackathon repos used: which, for what, **which features** | *Hackathon repos used, and which features* (two tables, with file and line) |
+| 3 | Models used and their licences | *Licences and data provenance*, *Model size* |
+| 4 | Datasets and benchmarks used and their licences | *Data*, *Licences and data provenance* (no external dataset) |
+| 5 | Model artifacts, public as an HF collection | *Artifacts*, models collection |
+| 6 | Data artifacts, public as an HF collection | *Artifacts*, datasets collection |
+| 7 | Experiments run, findings and **what else was tested** | *Results*, *What did not work*, *Two probes*, *Safety*, *Limitations* |
+| 8 | With more credits: approach, before and after | *What $200 of credits would change* |
+| 9 | Teammates tagged | Solo entry — Prince Maurya, no teammates |
 
 ## Credits
 
-Built on AgentTune and AuditKIT by Lexsi Labs, with Cohere Labs Tiny Aya and Hugging Face
-hosting.
+Solo entry: **Prince Maurya** (Discord `prince043826`, HF `primce`). Built on AgentTune and AuditKIT
+by Lexsi Labs, with Cohere Labs Tiny Aya and Hugging Face hosting.
