@@ -25,7 +25,8 @@ Lexsi AI Safety & Alignment Hackathon 2026, Track 3 (Agentic fine-tuning), solo 
 Live demo: https://huggingface.co/spaces/primce/hinglish-expense-agent ·
 Demo video (1:44): https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4 ·
 Write-up: https://huggingface.co/spaces/primce/hinglish-track3-article ·
-All 90 held-out episodes, base vs adapter: https://huggingface.co/spaces/primce/hinglish-episodes
+All 90 held-out episodes, base vs adapter: https://huggingface.co/spaces/primce/hinglish-episodes ·
+72 injection episodes, adapter alone vs guard on: https://huggingface.co/spaces/primce/hinglish-attacks
 
 ![Same task, same prompt, same weights: base model ends in MISMATCH, this adapter matches the ledger](demo_before_after.gif)
 

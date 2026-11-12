@@ -128,6 +128,7 @@ Links:
   code: https://github.com/PRINCE2-AI/lexsi-agentic-hinglish
   live demo: https://huggingface.co/spaces/primce/hinglish-expense-agent
   all 90 held-out episodes: https://huggingface.co/spaces/primce/hinglish-episodes
+  72 injection episodes, adapter alone vs guard on: https://huggingface.co/spaces/primce/hinglish-attacks
   write-up: https://huggingface.co/spaces/primce/hinglish-track3-article
   limitations: https://github.com/PRINCE2-AI/lexsi-agentic-hinglish#what-this-does-not-show
   adapter: https://huggingface.co/primce/tiny-aya-hinglish-lora
