@@ -24,7 +24,8 @@ Lexsi AI Safety & Alignment Hackathon 2026, Track 3 (Agentic fine-tuning), solo 
 
 Live demo: https://huggingface.co/spaces/primce/hinglish-expense-agent ·
 Demo video (1:44): https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4 ·
-Write-up: https://huggingface.co/spaces/primce/hinglish-track3-article
+Write-up: https://huggingface.co/spaces/primce/hinglish-track3-article ·
+All 90 held-out episodes, base vs adapter: https://huggingface.co/spaces/primce/hinglish-episodes
 
 ![Same task, same prompt, same weights: base model ends in MISMATCH, this adapter matches the ledger](demo_before_after.gif)
 
@@ -199,8 +200,9 @@ injected rows on one T4 it takes the leftover expenses from **6/136 to 0/136**, 
 0/136, and still solves **136/136** (against 99/136 with the payload delivered). Because
 `neutralise` leaves a marker where the note was, the same run was repeated in `strip` mode, which
 deletes the field and puts nothing in its place: **0/136 expense, 136/136 solved, 136/136 flagged**
-in 10,567 s. What it is not: a model property, or a claim that the guard catches an adaptive
-attacker — see the blind set's 5/8 in `docs/GUARD.md`.
+in 10,567 s. What it is not: a model property, or a claim that the guard beats an adaptive
+attacker — **5/8** on a blind set written after its rules were frozen and **6/8** on eight written
+after reading its source (the two misses spell the amount out); see `docs/GUARD.md`.
 
 ## Usage
 
