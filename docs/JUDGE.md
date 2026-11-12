@@ -94,6 +94,16 @@ python scripts/bootstrap.py      # rewrites docs/STATS.md; git diff shows no cha
 No GPU, no token, no model download. Every published number is in a `summary.json` under
 `primce/lexsi-runs`; `docs/SUBMIT.md` lists the paste-ready link block.
 
+**How to compare this with another entry.** Cross-entry percentages are not comparable: each is
+measured on a different split, a different task family and a different scorer, and the organisers
+publish no shared benchmark. Compare the methods instead — was the split frozen before any
+training, does the number come from a run log rather than a notebook print, does a second scorer
+re-derive it, and is the failure class named. On this entry, two commands (`verify_all.py`,
+`bootstrap.py`) rebuild every figure in `docs/STATS.md` from `primce/lexsi-runs`; AuditKIT
+re-scores the same recorded hard-90 episodes and agrees with this repo's scorer on 88 of 90 decided
+tasks (0.9778). AuditKIT's predicate checks the ledger only and counts 86 successes against this
+repo's 84 — the headline stays with the stricter, answer-checking scorer.
+
 ## What this entry does not claim
 
 - eval-24 is generator-matched, so 24/24 there is a sanity result, not the headline.

@@ -6,13 +6,15 @@ A solo-friendly Track 3 (Agentic Fine-tuning) entry for the **Lexsi AI Safety & 
 
 Tiny Aya learns to call tools reliably in Hinglish: it records shared expenses, carries the ledger across turns, converts USD/EUR, and settles balances. Success is checked against the **final ledger state**, not an LLM judge, so the before/after numbers are reproducible.
 
+The half that matters more: **0 of 208** injected episodes put an attacker's money into the ledger once one deterministic, CPU-only guard sits under the model, and **208 of 208** still solve. The bare adapter is 13 of 208; the base model is worse on every split.
+
 ![Same task, same prompt, same weights. Base model: 8 calls, MISMATCH, never calls finish. Shipped adapter: ledger matches in 4 calls](docs/demo_before_after.gif)
 
 Live demo: https://huggingface.co/spaces/primce/hinglish-expense-agent (ZeroGPU, shipped `sft4` adapter, visible tool trace and ledger).
 
 Demo video (1:44, narrated): https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4 — the same prompt on the base model and the shipped adapter, the injection scenario in both modes, and the probe results.
 
-All 90 held-out episodes, browsable: https://huggingface.co/spaces/primce/hinglish-episodes — base model and shipped adapter side by side on every task, with the tool trace, the closing ledger against the oracle, and filters for the nine answer-shape misses and the six tasks both models fail (static page, no GPU).
+All 90 held-out episodes, browsable: https://huggingface.co/spaces/primce/hinglish-episodes — base model and shipped adapter side by side on every task, with the tool trace, the closing ledger against the oracle, and a filter for the six misses, all of which the base model misses too (static page, no GPU).
 
 All 72 injection episodes, adapter alone vs guard on: https://huggingface.co/spaces/primce/hinglish-attacks — every task in the sixth split, both columns replayed from the published run logs, with the exact text the model read after each tool call and a filter for the 7 tasks where the adapter alone moved the money.
 
