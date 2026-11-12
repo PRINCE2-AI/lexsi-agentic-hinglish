@@ -14,6 +14,8 @@ Demo video (1:44, narrated): https://huggingface.co/datasets/primce/lexsi-runs/r
 
 All 90 held-out episodes, browsable: https://huggingface.co/spaces/primce/hinglish-episodes — base model and shipped adapter side by side on every task, with the tool trace, the closing ledger against the oracle, and filters for the nine answer-shape misses and the six tasks both models fail (static page, no GPU).
 
+All 72 injection episodes, adapter alone vs guard on: https://huggingface.co/spaces/primce/hinglish-attacks — every task in the sixth split, both columns replayed from the published run logs, with the exact text the model read after each tool call and a filter for the 7 tasks where the adapter alone moved the money.
+
 Write-up: https://huggingface.co/spaces/primce/hinglish-track3-article — the full article (numbers, method, safety split, limitations). Hub Articles need PRO, so it is hosted as a free static Space rendered from `docs/hf_article.md`. The submission write-up itself is [`submission/README.md`](submission/README.md).
 
 ## Judge's 60-second view

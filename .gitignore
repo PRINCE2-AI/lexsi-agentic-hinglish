@@ -9,6 +9,7 @@ venv/
 runs/
 article/
 gallery/
+attacks/
 *.log
 .env
 

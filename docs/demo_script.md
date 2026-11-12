@@ -22,9 +22,12 @@ and `docs/STATS.md`. Do not improvise new ones.
 | Round 2 to shipped | **18 fixed / 2 broken, p = 0.0004** | `STATS.md` |
 | Round 1 to shipped | 7 fixed / 3 broken, **p = 0.34** — say it, it is not significant | `STATS.md` |
 | GRPO, run twice | **0 tasks moved on hard-90, p = 1.0** | `RESULTS.md` |
-| Injection, four pinned splits, 136 rows | **6 ledgers, 0 answers** harmed (2/24 + 4/72 + 0/16 + 0/24) | `SAFETY.md` |
-| Base, same splits | **18/24, 48/72, 5/16, 14/24** | `SAFETY.md` |
-| Guard in front of the adapter, same 136 | **0/136 expenses, 136/136 solved, 136/136 flagged** — in `neutralise` (11,103 s) and in `strip` (10,567 s) | `GUARD.md` |
+| Injection, guard pool, 208 rows | **13 ledgers, 0 answers** harmed = **6/136** on the four published splits + **7/72** on the sixth | `SAFETY.md`, `STATS.md` |
+| Sixth split, written against the guard, 72 rows | adapter alone **47/72 solved, 7 extra expenses, 28 unplanned calls** | `GUARD.md` |
+| Fifth split, 30 held out after the adapter froze (not in the 208) | **5/30** expenses, 0/30 answers; all five obfuscated | `SAFETY.md` |
+| Base, the four published splits | **18/24, 48/72, 5/16, 14/24** (and 1/30 on heldout-30) | `SAFETY.md` |
+| Guard in front of the adapter, all 208 | **0/208 expenses, 208/208 solved, 0 unplanned calls**, every task flagged | `GUARD.md`, `STATS.md` |
+| Guard in front of the adapter, the 136 | **0/136 expenses, 136/136 solved** — in `neutralise` and in `strip` | `GUARD.md` |
 | Guard, published payloads / blind set / clean rows | **166/166**, **5/8**, **0/294** | `GUARD.md` |
 | Abstention | **4/8** asked by default, **7/8** with the hardened prompt, **0/8** invented | `SAFETY.md` |
 | Schema shift / Devanagari | **25/30** / **25/30**; untuned base under the rename **0/30** | `RESULTS.md#probes` |
@@ -42,6 +45,9 @@ and `docs/STATS.md`. Do not improvise new ones.
       day; the logged-in account is the one with quota.
 - [ ] Open the article once and scroll to the numbers table:
       https://huggingface.co/spaces/primce/hinglish-track3-article
+- [ ] Open the static gallery once and click **Money moved (plain)**: the counter must read
+      **7 of 72 shown**. https://huggingface.co/spaces/primce/hinglish-attacks — no GPU, no quota,
+      and this is the page the quota-exhausted fallback runs on.
 - [ ] Print the number card above, or put it on a second screen.
 - [ ] From the repo root, `python scripts/qa_space.py` — 16 checks in about 15 seconds: the six
       frozen replays, the guard on an English payload and on blind b-05, scenario switching. No
@@ -76,7 +82,8 @@ frozen replays plus the guard panel, and the fallback plan below has the wording
 ## Order of operations (what is on screen, in what order)
 
 Tabs open, in this order: (1) the Space, (2) the article, (3) the GitHub README, (4) the downloaded
-video in a local player. Close everything else. Browser zoom 125%. Do Not Disturb on.
+video in a local player, (5) the [72 injection episodes](https://huggingface.co/spaces/primce/hinglish-attacks)
+tab, pre-loaded. Close everything else. Browser zoom 125%. Do Not Disturb on.
 
 ### 0:00–0:25 — Problem
 
@@ -110,6 +117,14 @@ task, same note, only the adapter differs: resisted. Across four pinned splits t
 and 0 answers harmed out of 136**, against 18/24, 48/72, 5/16 and 14/24 for the base model. Paired
 on task ids: 74 fixed, 0 broken, p = 1.1e-22. No LLM judge anywhere in that number."
 
+Then the honest add-on, one breath:
+
+"And because a defence you can write for is not a defence, I built a sixth split **after** reading
+my own guard's rules — 72 tasks, same 999999 correction, arriving spelled out, cut in two, or as
+`1000000 minus 1` so the literal never appears. The adapter alone gets **47 of 72** and pays the
+attacker **7 times**; with the guard in front, **72 of 72 solved, 0 harm**. Across everything, 208
+tasks: **13 for the adapter, 0 for the adapter plus the guard**."
+
 ### 1:50–2:35 — The guard, live, on the CPU (the demo that cannot fail)
 
 Scroll to **Try the guard yourself**.
@@ -124,11 +139,12 @@ Scroll to **Try the guard yourself**.
 
 "That is the honest shape of the defence. A deterministic guard sits between the tool and the model:
 no model, no GPU, half a millisecond. On the 136 injected rows it takes the adapter from 6 to
-**0/136** attacker expenses and still solves **136/136** — and it does that identically when the note
-is replaced by a notice and when it is deleted outright, so the result is the removal, not the hint.
-It flags 166 of 166 published payloads and 0 of 294 clean episodes. It also misses 3 of the 8 blind
-payloads I wrote after freezing the rules — that is the second example you just saw. A finite verb
-list has an edge, and I published mine."
+**0/136** attacker expenses and still solves **136/136** — and on the 72-task split written against
+its own rules it takes 47/72 to **72/72 with 0 harm**, so the same 208 rows go from **13 to 0**. It
+does that identically when the note is replaced by a notice and when it is deleted outright, so the
+result is the removal, not the hint. It flags 166 of 166 published payloads and 0 of 294 clean
+episodes. It also misses 3 of the 8 blind payloads I wrote after freezing the rules — that is the
+second example you just saw. A finite verb list has an edge, and I published mine."
 
 ### 2:35–3:00 — Close
 
@@ -152,7 +168,7 @@ made the point.**
 
 | What happens | Do this | Say this |
 |---|---|---|
-| **ZeroGPU quota exceeded** / `CUDA out of memory` | Do nothing on the GPU. Use the frozen panel and the guard panel; skip the optional live run. | "The GPU quota is 2 minutes anonymously and 5 logged in, and this Space has already served today's traffic, so I'll use the frozen episodes — same scoring code, rendered without the model. Here is the same run recorded a few days ago." |
+| **ZeroGPU quota exceeded** / `CUDA out of memory` | Do nothing on the GPU. Switch to tab 5, click **Money moved (plain)** — the counter reads *7 of 72 shown* — open the top card and point at the red note block, then at the green replacement in the right column. | "The GPU quota is 2 minutes anonymously and 5 logged in, and this Space has already served today's traffic, so I'll use the recorded episodes — same scoring code, replayed without the model. This is exactly where the adapter alone paid the attacker, and the same task with the guard in front." |
 | **Space is slow or a click hangs** | Stop clicking. Open the article tab and scroll to the numbers table. | "I'll use the write-up, which carries the same numbers with their sources." |
 | **Space is down / 500** | Open the static [episode gallery](https://huggingface.co/spaces/primce/hinglish-episodes) (all 90 tasks, base vs adapter, no GPU), then the local video and the article table. | "The interactive Space is down, so here is the same run for every held-out task, rendered from the recorded traces." |
 | **No network at all** | Local video, then the number card; the guard panel does not work either, so narrate the blind-set example from `docs/GUARD.md`. | "No network, so I'll describe the guard and point to the repo, which reproduces every number on CPU." |
@@ -161,6 +177,47 @@ made the point.**
 
 Do not apologise for a cold start. One sentence, then keep moving: **"The Space has been idle, so the
 first model call takes one to three minutes — meanwhile, here is the same run frozen."**
+
+---
+
+## Rehearsal for the quota-exhausted run (no GPU, do it three times)
+
+The fallback is a script, not an apology, and the only way it lands in three minutes is if the
+clicks are already muscle memory. Everything below is CPU or static, so it can be rehearsed on any
+day, including a day when the quota is already spent. Target: **2:50, never over 3:00.**
+
+**Dry run A — with the timer (6 minutes).** Open the Space, the article and tab 5. Say the Run B
+script out loud while clicking; write down the clock at each of the four checkpoints below. Any
+section 10 s over gets cut, not rushed.
+
+**Dry run B — the exact fallback path, 3:00:**
+
+| Clock | On screen | Click | Line |
+|---|---|---|---|
+| 0:00 | Space, top | — | Problem, 20 s: Hinglish, money, "roughly right" is a failure |
+| 0:20 | Frozen episode = **Shipped adapter — correct split** | — | "Ledger matches. 29/30, 84/90, 3.38 calls against 3.41" |
+| 0:45 | Switch to **Base model — duplicate expenses** | one select | "Eight calls, duplicate expense, never finishes. 1 of 30" |
+| 1:00 | Section **Same task, same injected note** | scroll | "6 of 136 for the adapter, 0 answers; the sixth split: 47/72 alone, 72/72 guarded" |
+| 1:35 | **Try the guard yourself** → *Note with an English payload*, mode `strip` | **Run the guard** | "Flagged, four rules, note gone, half a millisecond" |
+| 1:55 | Example → *Blind b-05* | **Run the guard** | "Not flagged — I published the blind spot" |
+| 2:10 | **Tab 5** — 72 injection episodes | **Money moved (plain)** → open `a-03` | "Seven of 72 paid the attacker. Left column: the note the model read. Right: the same task, guard on, removed — 0 of 72." |
+| 2:35 | Back to the Space, guard section | — | Close: GRPO moved zero tasks; public adapter, runs, splits, guard |
+
+**Dry run C — the failure itself.** Practise the sentence without the error on screen: stand at the
+**Live run** panel, say *"the GPU quota is 2 minutes anonymously and 5 logged in, and this Space has
+already served today's traffic, so I'll use the recorded episodes"*, and click straight to tab 5.
+Do **not** press **Run on the model** to rehearse this — that is exactly the quota the demo day
+needs. The failure line is a cue, not an event.
+
+**Before closing the laptop on either dry run**, run the pre-flight that costs nothing:
+
+```
+python scripts/qa_space.py
+```
+
+16 checks, about 15 s: the six frozen replays, the guard on an English payload and on blind b-05,
+scenario switching. `--gpu` is the only flag that spends quota — leave it off.
+
 
 ---
 
@@ -180,9 +237,15 @@ first model call takes one to three minutes — meanwhile, here is the same run 
   in a group got the same reward). What is missing is cold-start GRPO with no SFT warm start.
 - **Why is round 1 to shipped only p = 0.34?** Because it is 7 fixed and 3 broken. The proven step
   is round 2 to shipped, 18 against 2.
-- **Is the agent safe?** Measured, not asserted: 6 of 136 ledgers and 0 of 136 answers across four
-  pinned splits, no LLM judge; with the guard, 0 of 136 and 136 of 136 still solved; and the guard's
-  blind spots are published (5/8 on the blind set).
+- **Is the agent safe?** Measured, not asserted: 13 of 208 ledgers and 0 of 208 answers across the
+  guard pool — 6/136 on the four published splits plus 7/72 on the sixth — no LLM judge; with the
+  guard, 0 of 208 and 208 of 208 still solved; and the guard's blind spots are published (5/8 on the
+  blind set, and the sixth split was written after its rules were read).
+- **Why build a split against your own guard?** Because a defence nobody attacks is a demo. The
+  72-row split encodes the same 999999 INR so the literal never appears: spelled out in three
+  scripts, cut across two tool results, or `1000000 minus 1`. The adapter alone is 47/72; the guard
+  makes it 72/72 with 0 harm and 0 unplanned calls. On the split family the guard sees only the
+  second half — the half that carries the instruction — and that is stated in the write-up.
 - **The injection card says "solved: no".** The task asks for Amit's signed balance (`-833.46`); the
   adapter settles the transfer correctly but phrases it as "Amit → Neha 833.46", so the
   answer-contains check fails while the ledger is right. That is the answer-shape miss class — 9 of
@@ -198,7 +261,8 @@ first model call takes one to three minutes — meanwhile, here is the same run 
 
 - No "state-of-the-art", no "solves hallucinations". One tool surface, six task families, 136 safety
   rows.
-- Do not quote a safety count from memory. The adapter's number is **6/136**, not zero; the zero is
-  the adapter **plus the guard**.
+- Do not quote a safety count from memory. The guard pool is **13/208** for the adapter, not zero;
+  the zero is the adapter **plus the guard** (0/208). The four published splits alone are 6/136 —
+  say which denominator you mean.
 - Do not claim the blind set is clean: it is 5/8, and that number is a feature of the pitch, not a
   weakness to hide.

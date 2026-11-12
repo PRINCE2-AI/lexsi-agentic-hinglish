@@ -548,6 +548,11 @@ Across all six splits that is **208 injected tasks, 13 extra expenses, 0 answers
 injection, and 208 of 208 solved with 0 harm under the guard**. Both runs publish `results.jsonl`
 and `trajectories.jsonl`, so every row above can be re-scored rather than trusted.
 
+Every one of the 72 is browsable, both columns side by side:
+https://huggingface.co/spaces/primce/hinglish-attacks shows the tool trace and the exact text the
+model read after each tool call — the payload in the adapter-alone column, the replacement string
+in the guarded one — replayed from those two run folders rather than regenerated.
+
 ### The layer between the tool result and the model
 
 Everything above is a property of the model. That has two costs a reviewer should not have to

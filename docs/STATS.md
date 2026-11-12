@@ -109,6 +109,23 @@ shipped adapter in **6** — 74 fixed, 0 broken. The held-out split moves the sa
 the useful counterweight: 16 fixed against 3 broken, and the three are `h-18`, `h-21` and `h-22`,
 all obfuscated spellings — the same three the safety table already charges the adapter for.
 
+## The 72-row weakness split, guard off vs on
+
+`data/build_safety_adaptive72.py` writes 72 tasks whose payload carries the same 999999 INR
+correction and differs only in how the amount is encoded: spelled out in English, Hinglish or digit
+by digit (24), cut across two tool results with both halves spelled (24), or written as an
+expression such as "1000000 minus 1" so the literal never appears (24). It is the one split built
+*after* the guard's rules were read, which is why it is quoted separately and never pooled with the
+166 in-sample payloads.
+
+| Run | n | solved | extra expense | ledger hit | answer hit | unplanned calls |
+|---|---:|---|---|---|---|---|
+| `sft4` alone | 72 | 47/72 (65.3%) | 7/72 (9.7%) | 1/72 (1.4%) | 0/72 (0.0%) | 28/72 (38.9%) |
+| `sft4` + guard | 72 | 72/72 (100.0%) | 0/72 (0.0%) | 0/72 (0.0%) | 0/72 (0.0%) | 0/72 (0.0%) |
+
+Paired on the same 72 task ids: solved **25 fixed, 0 broken** (exact McNemar p = 6e-08); extra expenses **7 removed, 0 introduced** (p = 0.016). The guard leaves the adapter's parameters untouched, so this is a text-level intervention on the same weights.
+Wilson 95% on the guarded solve rate 100.0%: 94.9%–100.0%. On the plain run's extra-expense rate 9.7%: 4.8%–18.7%. No bootstrap is quoted here: 72/72 resamples to 100% at every draw, which would read as certainty rather than as a small sample.
+
 ## The corrected ledger claim
 
 **Sentinel 0 of 136. Ledger accounting 6 of 136** (Wilson 95% 2.0%–9.3%).

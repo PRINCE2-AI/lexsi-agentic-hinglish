@@ -232,7 +232,8 @@ judge and no regeneration. This is the seed-42 run; three seeds pooled are <b>25
 Six tasks fail for both models — the <b>Both fail</b> filter lists them.
 <a href="https://github.com/PRINCE2-AI/lexsi-agentic-hinglish">Repo</a> ·
 <a href="https://huggingface.co/spaces/primce/hinglish-expense-agent">Live demo</a> ·
-<a href="https://huggingface.co/spaces/primce/hinglish-track3-article">Write-up</a></p>
+<a href="https://huggingface.co/spaces/primce/hinglish-track3-article">Write-up</a> ·
+<a href="https://huggingface.co/spaces/primce/hinglish-attacks">72 injection episodes, guard off vs on</a></p>
 <div class=controls>
   <input id=search type=search placeholder="Search task text, id or family…">
   <select id=family><option value="">All families</option><!--FAMILIES--></select>
