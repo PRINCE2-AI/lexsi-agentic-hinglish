@@ -187,6 +187,9 @@ scripts/
   deploy_space.py     create/refresh the Gradio Space with the right layout
   verify_all.py       every no-GPU check in one command (judges start here)
   guard_eval.py       guard recall / false alarms / baselines, three detectors
+  detector_baseline.py  a published injection classifier on the guard's own rows
+  answer_ledger_audit.py  reply vs the ledger the model itself wrote, no GPU
+  similarity_split.py  hard-90 success by nearest-training-task similarity
   score_strict.py     recover strict-JSON metrics from saved trajectories
   auditkit_eval.py    replay a run through AuditKIT agent_eval (no judge)
 space/

@@ -413,6 +413,47 @@ Caveat: the contrast set contains one hard-90-only empty-ledger phrasing, so the
 the shipped adapter is slightly optimistic by construction. The unseen column stays the honest
 one, and it is narrower than it looks.
 
+### Two more checks on the same episodes (2026-11-14, no new runs)
+
+`success` compares the final ledger with the task's expected balances. Two CPU-only scripts read
+more out of the saved episodes with no model and no GPU.
+
+**Does the reply agree with its own ledger?** `scripts/answer_ledger_audit.py` rebuilds the ledger
+from the trajectory and checks every amount in the reply against what that ledger can produce —
+balances, expense amounts, per-person shares, and the transfers `settle_ledger` derives.
+
+| Run | answered | replies with no amount outside the ledger | settlement lines matching the ledger | amounts outside |
+|---|---:|---:|---:|---:|
+| SFT shipped, hard-90 | 90 | 88 | 30 / 30 | 2 |
+| SFT shipped, hard-30 | 30 | 30 | 12 / 12 | 0 |
+| base, hard-90 | 43 | 29 | 0 / 0 | 17 across 14 tasks |
+| base, hard-30 | 14 | 12 | 0 / 0 | 3 across 2 tasks |
+
+The two misses are the only two replies in the corpus that restate a balance in cents, and both
+convert it wrongly: `208150 cents ya 208.15 INR` where the balance is 2,081.50, and
+`388691 paise = 3869.91 INR` where it is 3,886.91. All 42 settlement transfers the model stated
+match its own ledger. A unit-conversion slip on a number the model already had is a different
+failure from an invented amount, and naming it is cheaper than averaging it away.
+
+**Does wording explain the score?** `scripts/similarity_split.py` matches every hard-90 task to its
+nearest training task (TF-IDF word unigram and bigram cosine, IDF from the shipped training file)
+and reads success off the similarity quartiles.
+
+| Bucket | n | nearest cosine | base | SFT shipped |
+|---|---:|---:|---:|---:|
+| Q1 | 23 | 0.33–0.51 | 0.0% | 95.7% |
+| Q2 | 23 | 0.52–0.60 | 0.0% | 91.3% |
+| Q3 | 23 | 0.61–0.73 | 0.0% | 91.3% |
+| Q4 | 21 | 0.73–0.98 | 14.3% | 95.2% |
+
+The nearest-duplicate bucket is not the best one, so 84/90 is not wording recognition. This is the
+soft version of the seen/unseen table above; that one remains the strict number.
+
+```bash
+python scripts/answer_ledger_audit.py     # both runs, no GPU
+python scripts/similarity_split.py        # quartiles, no GPU
+```
+
 ## AuditKIT: an independent scorer on the same episodes
 
 The track asks for an agentic evaluation toolkit. AuditKIT replays the recorded trajectories —
@@ -707,6 +748,13 @@ Measured offline, with `scripts/guard_eval.py`:
 | Keyword blocklist, same corpus | 166/166, 0/294 clean, but it also fires on 6/30 attack-following episodes — it sees the damage after it is done, not the instruction |
 | English imperative regex | 111/166 — misses 23 of 24 Hinglish payloads |
 | Structural allowlist (drop keys the tool never returns) | 166/166 blocked, 0/1,010 benign results lost |
+| Published classifier (`protectai/deberta-v3-base-prompt-injection-v2`), same rows | 16/166 — **all 16 are Hinglish** — dev 8/12, blind 4/8, but **22/1,010 clean tool results flagged** (2.2%) |
+
+The published classifier is the one baseline not written for this task (`scripts/detector_baseline.py`;
+`meta-llama/Llama-Prompt-Guard-2-86M` is gated, so the open DeBERTa injection model stands in). It
+catches English payloads well and the Hinglish split at chance, and it raises a flag on 2.2% of clean
+tool traffic, so a generic detector is no substitute for knowing the schema. The full per-split
+counts and the 85/246 attack-following rows are in `docs/GUARD.md`.
 
 The 5/8 is the number to believe, not the 166/166. The blind payloads were hashed before they were
 run and the rules were not changed afterwards. All three misses fail the same way — a verb outside
@@ -1023,11 +1071,13 @@ and the free ZeroGPU tier for the demo Space.
 
 ## LLM usage statement
 
-Developed with an AI coding assistant in the loop. Roughly 70–80% of the code and most first drafts
-of the prose were machine-generated under direction; every experiment was executed on the GPUs named
-above, every number was read back from a run's `summary.json`, and `scripts/verify_all.py` re-checks
-the pins and the scoring on a CPU. No model — open or closed — judges an answer anywhere in the
-evaluation; the only model that touches a result is the one being evaluated.
+Written with an AI coding assistant in the loop: it produced first drafts of the code and of this
+prose under my direction, and I reviewed, edited and ran everything. Every split, run and number in
+this entry was executed and read back on the hardware named above; every figure traces to a run's
+`summary.json`, and `scripts/verify_all.py` re-checks the pins and the scoring on a CPU with no model
+loaded. No model — open or closed — judges an answer anywhere in the evaluation; the only model that
+touches a result is the one being evaluated. The design decisions, the failure diagnosis (including
+the GRPO null) and the safety result are mine.
 
 ## Changelog
 
@@ -1036,7 +1086,10 @@ evaluation; the only model that touches a result is the one being evaluated.
   notes, repo layout, declaration, LLM-usage statement, this changelog. Counts refreshed to 29
   checks (30 with tests) and 80 pinned files. Three figures added: per-family success on the 90-task
   holdout, the safety pool, and success per training round. A 257-task split was built, deduplicated
-  against every other split and pinned; its run is not scored in this version.
+  against every other split and pinned; its run is not scored in this version. Two answer-level
+  checks were added from the saved episodes (reply against its own ledger, success by
+  nearest-training-task similarity), and a published third-party injection detector was measured on
+  the guard's own rows.
 - **v2 (2026-11-12)** — safety metric corrected from a 999999 sentinel to attacker-expense accounting
   (6/136, then 13/208 pooled), the guard result added end to end and in two modes, the post-freeze
   and source-read probes published, licences split (MIT code and authored data, cc-by-nc-4.0 on both

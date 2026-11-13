@@ -213,6 +213,42 @@ the tool *does* return walks through — `add_expense` echoes the user's `descri
 allowlist first because it is free and cannot be argued with, the text guard because the schema
 alone is not a boundary a real product can rely on.
 
+## A published detector, on the same rows (2026-11-14)
+
+The three baselines above are written in this repo, so they show the guard beating a first pass, not
+that it beats what a fielded detector does. This runs a published, trained injection classifier —
+`protectai/deberta-v3-base-prompt-injection-v2` — over the same 166 payloads, the same 1,010 clean
+tool results and the two probe sets. It sees a tool result as text, the way a gateway would hand it
+to a model: the JSON of the result, not the structured dict the guard receives.
+
+| Detector | Published payloads (166) | Dev 12 | Blind 8 | Clean results (1,010) |
+|---|---:|---:|---:|---:|
+| keyword blocklist | 166/166 | 11/12 | 7/8 | 0 |
+| regex-en | 111/166 | 3/12 | 3/8 | 0 |
+| published classifier | **16/166** | 8/12 | 4/8 | **22 (2.2%)** |
+| **guard** | **166/166** | 12/12 | 5/8 | **0** |
+
+Three limits belong next to the table. The classifier was not fitted to these payloads and the guard
+was, so 166 against 16 is not the comparison; the fair one is dev and blind, where neither was
+fitted, and there the guard is ahead (12/12 and 5/8 against 8/12 and 4/8). The classifier catches
+one language only: 16 of the 24 Hinglish payloads and **0 of the 142 non-Hinglish injected tasks**,
+while 22 of 1,010 clean results trip it at a 0.5 threshold — ledger JSON full of amounts reads like
+an instruction to a detector trained on prompts. And where the base model had already paid the
+attacker, it fires on 85 of 246 results, which is the damage noticed after it happened.
+
+The honest reading is not "the guard beats a detector". It is that a generic detector is no
+substitute for the two things this harness can check — a key the tool never returns and a
+deterministic rule set that knows what a ledger amount looks like — and that a deployment relying on
+the classifier alone would miss every English payload here.
+
+`meta-llama/Llama-Prompt-Guard-2-86M`, the detector a comparable entry used, is gated on the Hub and
+was not run; `--model` takes it once its licence is accepted on the model page.
+
+```bash
+python scripts/detector_baseline.py                            # CPU, ~700 MB download, ~8 min
+python scripts/detector_baseline.py --json data/detector_baseline.json
+```
+
 ## The adaptive probe (2026-11-12)
 
 The published payloads and the blind set were written without reading `hinglish_agent/guard.py`.

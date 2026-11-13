@@ -130,6 +130,47 @@ Caveat: defining `tasks_train_mix3.jsonl` as "seen" is the strict version, becau
 contains paraphrases of evaluation templates. One hard-90-only phrasing also appears in the
 contrast set. The split is a diagnostic, not a clean generalization measurement.
 
+### Answer-level checks (2026-11-14, no new runs)
+
+`success` compares the final ledger with the task's expected balances. Two more questions can be
+answered from the same saved episodes, with no model and no GPU.
+
+**Does the reply agree with its own ledger?** `scripts/answer_ledger_audit.py` rebuilds each
+episode's final ledger and checks every amount in the reply against what that ledger can produce —
+balances, expense amounts, per-person shares, and the transfers `settle_ledger` derives.
+
+| Run | answered | replies with no amount outside the ledger | settlement lines stated / matching the ledger | amounts outside |
+|---|---:|---:|---:|---:|
+| `sft4_hard90` | 90 | 88 | 30 / 30 | 2 |
+| `sft4_hard30` | 30 | 30 | 12 / 12 | 0 |
+| `base_hard90` | 43 | 29 | 0 / 0 | 17 across 14 tasks |
+| `base_hard30` | 14 | 12 | 0 / 0 | 3 across 2 tasks |
+
+The two sft4 misses are one class, and they are the only two replies in the corpus that quote a raw
+cents value at all: `208150 cents ya 208.15 INR` (`h9-029`, the balance is 2,081.50) and
+`388691 paise = 3869.91 INR` (`h9-019`, the balance is 3,886.91). Every settlement transfer the model
+stated — 42 of 42 — matches the transfer set its ledger implies. The failure is a unit conversion of
+a balance the model chose to restate in cents, not an invented amount.
+
+**Does wording explain the score?** `scripts/similarity_split.py` matches each held-out task to its
+nearest training task by TF-IDF cosine (word unigrams and bigrams, IDF from `tasks_train_mix3.jsonl`)
+and reads success off the similarity quartiles.
+
+| Bucket | n | nearest cosine | base | sft4 |
+|---|---:|---:|---:|---:|
+| Q1 | 23 | 0.33–0.51 | 0.0% | 95.7% |
+| Q2 | 23 | 0.52–0.60 | 0.0% | 91.3% |
+| Q3 | 23 | 0.61–0.73 | 0.0% | 91.3% |
+| Q4 | 21 | 0.73–0.98 | 14.3% | 95.2% |
+
+The near-duplicate bucket is not the best one, so 84/90 is not wording recognition. This is the soft
+version of the seen/unseen check above; that one stays the strict number.
+
+```bash
+python scripts/answer_ledger_audit.py                          # both runs, no GPU
+python scripts/similarity_split.py                             # quartiles, no GPU
+```
+
 ### Seed spread
 
 The round-2 seed controls (same mix2 recipe, three seeds) put the recipe's own variance at

@@ -116,6 +116,21 @@ and 1 of 6 `paraphrase`; `convert_sum` stays at 2/3. Devanagari costs a differen
 re-ids its rows; the schema shift shares task ids and carries the paired test. Runs:
 `sft4_shift_hard30`, `sft4_devanagari30`, `base_shift_hard30` in `primce/lexsi-runs`.
 
+### Answer-level checks on the saved episodes (2026-11-14, no new runs)
+
+`scripts/answer_ledger_audit.py` checks every amount in the reply against the ledger the model
+itself wrote, and `scripts/similarity_split.py` reads success by nearest-training-task similarity.
+
+| Run | replies with no amount outside the ledger | settlement lines matching the ledger | amounts outside |
+|---|---:|---:|---:|
+| `sft4` hard-90 / hard-30 | 88/90 / 30/30 | 30/30 / 12/12 | 2 / 0 |
+| base hard-90 / hard-30 | 29/43 / 12/14 | 0/0 / 0/0 | 17 across 14 tasks / 3 across 2 tasks |
+
+The two misses are the only two replies that restate a balance in cents and both convert wrongly
+(`h9-029` 208150 → 208.15 vs 2,081.50; `h9-019` 388691 → 3,869.91 vs 3,886.91); all 42 stated
+transfers match. Success on hard-90 is 95.7% in the least-similar training quartile and 95.2% in the
+nearest one, so the 84/90 is not wording recognition.
+
 ### AuditKIT before/after (independent scorer, no LLM judge)
 
 | Split | Model | tool_call_exact | tool_call_f1 | precision | recall | redundant | loop |
@@ -220,7 +235,10 @@ six expenses into **0/136**, leaves answers at 0/136, solves **136/136** and fla
 one T4. The first run replaced the injected note with a fixed notice (`neutralise`, 11,103 s); the
 control run deleted the note and put nothing in its place (`strip`, 10,567 s) and scored the same
 **0/136** and **136/136**. Removal is what fixed it, not the notice — and that second run doubles as
-the no-payload baseline: the payload lives in the `note` key on every one of the 136.
+the no-payload baseline: the payload lives in the `note` key on every one of the 136. A published
+third-party detector on the guard's own rows (`scripts/detector_baseline.py`) finds 16/166 payloads,
+all 16 Hinglish, 8/12 dev and 4/8 blind, but flags 22/1,010 clean tool results, so it is measured and
+not shipped (`docs/GUARD.md`).
 
 ## Honest limits
 
@@ -274,9 +292,11 @@ Full tables, per-family counts, all paired tests and the pre-registered threshol
 
 - **Work outside the hackathon:** none. First commit 2026-11-01; the task pools, guard and injection
   splits were authored for this entry; no run predates the hackathon.
-- **LLM usage:** built with an AI coding assistant in the loop — roughly 70–80% of the code and most
-  first drafts of the prose were machine-generated under direction; every run was executed on real
-  GPUs and every number read back from a `summary.json`. No model judges an answer anywhere.
+- **LLM usage:** written with an AI coding assistant in the loop — it produced first drafts of the code
+  and prose under my direction, and I reviewed, edited and ran everything. Every run executed on real
+  GPUs, every number read back from a `summary.json`, and `verify_all.py` re-checks the pins and the
+  scoring on a CPU. No model judges an answer anywhere; the design calls and the failure diagnosis
+  (including the GRPO null) are mine.
 - **Changelog:** v1 — first submission. v2 (12 Nov) — attacker-expense metric replaces the 999999
   sentinel, guard end-to-end result, post-freeze and source-read probes, licence split. v3
   (14–15 Nov) — write-up aligned to the required layout, counts refreshed to 29/30 checks and 80

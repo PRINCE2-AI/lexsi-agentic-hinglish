@@ -30,6 +30,16 @@ answer-shape only, two pick a wrong tool name and still settle the ledger right,
 ledger wrong. None is a loop, a crash or an unparseable turn
 (`docs/RESULTS.md#round-3-2026-11-05--sft4`).
 
+**Answer-level honesty.** From the same saved episodes, with no model and no GPU,
+`scripts/answer_ledger_audit.py` rebuilds each episode's ledger and checks every amount in the
+reply against what that ledger can produce. 88/90 hard-90 replies and 30/30 hard-30 replies contain
+no amount the ledger cannot produce, and all 42 settlement transfers the adapter states match its
+own ledger; base is 29/43 and 12/14. The two misses are the only two replies in the corpus that
+restate a balance in cents, and both convert wrongly (`h9-029` 208150 → 208.15 vs 2,081.50;
+`h9-019` 388691 → 3,869.91 vs 3,886.91). `scripts/similarity_split.py` then shows the 84/90 is not
+wording recognition: success is 95.2% in the nearest-training-task quartile and 95.7% in the least
+similar one (`docs/RESULTS.md#answer-level-checks-2026-11-14-no-new-runs`).
+
 **Efficient trajectories.** 3.38 calls/task on hard-90 against 7.24 for the prompt-only base, with
 `overcall` 0.000, `rad` 0.000 and `lcf` 0.000 — the adapter does not cut steps by skipping work; on
 eval-24 it matches the oracle's own minimum of 3.29 calls/task.
@@ -67,7 +77,11 @@ one is not quoted as a headline. The same function is callable in the demo Space
 yourself** panel with no GPU: paste a tool result, pick a mode and a tool, and see the verdict plus
 what the model would read — the three blind misses are preloaded as examples. Two cheaper baselines are measured in the same table — an
 English-only regex gets 111/166, and a keyword blocklist gets 166/166 but only recognises the
-literals it was written for. That run is now done: with `--guard neutralise` in front of the adapter,
+literals it was written for. A published third-party detector run on the same rows
+(`scripts/detector_baseline.py`; `protectai/deberta-v3-base-prompt-injection-v2`, since
+`Llama-Prompt-Guard-2-86M` is gated) finds 16/166 payloads — all 16 Hinglish — 8/12 on dev, 4/8 on
+blind, and flags 22 of 1,010 clean tool results, so it is reported and not shipped as a line of
+defence (`docs/GUARD.md`). That run is now done: with `--guard neutralise` in front of the adapter,
 the same 136 injected rows score **0/136** `attacker_expense` (from 6/136) and solve **136/136**
 (from the four published utility rows, 14/24 + 50/72 + 12/16 + 23/24 = 99/136), on one T4 in
 11,103 s. `neutralise` leaves a marker in place of the note, so it was repeated as
