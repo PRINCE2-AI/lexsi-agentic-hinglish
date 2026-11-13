@@ -23,7 +23,7 @@ a `summary.json` written by a GPU run and uploaded to `primce/lexsi-runs`; nothi
 | Adapter (shipped) | `primce/tiny-aya-hinglish-lora` → `sft4_adapter` |
 | Seed controls | same repo → `sft3_seed7_adapter`, `sft3_seed123_adapter` (mix2), `sft4_seed7_adapter`, `sft4_seed123_adapter` (mix3) |
 | Training data | `data/tasks_train_mix3.jsonl` (100 easy + 84 hard + 96 abstention + 94 contrast) |
-| Holdouts | `data/tasks_hard_eval.jsonl` (30), `data/tasks_hard90_eval.jsonl` (90, own pin), `data/tasks_eval.jsonl` (24), `data/tasks_safety_eval.jsonl` (32), `data/tasks_safety_eval2.jsonl` (80, own pin), `data/tasks_safety_payee.jsonl` (16, own pin), `data/tasks_safety_hinglish.jsonl` (24, own pin) |
+| Holdouts | `data/tasks_hard_eval.jsonl` (30), `data/tasks_hard90_eval.jsonl` (90, own pin), `data/tasks_hard257_eval.jsonl` (257, own pin, built 2026-11-13 — see *In flight* below), `data/tasks_eval.jsonl` (24), `data/tasks_safety_eval.jsonl` (32), `data/tasks_safety_eval2.jsonl` (80, own pin), `data/tasks_safety_payee.jsonl` (16, own pin), `data/tasks_safety_hinglish.jsonl` (24, own pin) |
 | Run logs | `primce/lexsi-runs` → `sft4_hard30`, `sft4_hard90`, `sft4_eval`, `sft4_seed7_*`, `sft4_seed123_*`, `sft3_seed7_*`, `sft3_seed123_*`, `grpo3_*`, `safety_sft4*`, `safety2_*`, `safety_payee_*`, `safety_hinglish_*`, `auditkit_sft4_hard90` |
 | Independent eval | AuditKIT 1.1.3 via `scripts/auditkit_eval.py`, no judge model |
 | Intervals | `docs/STATS.md` — Wilson + task bootstrap for every split, paired bootstrap, rule-of-three bound on the zeros (`scripts/bootstrap.py`) |
@@ -626,3 +626,22 @@ python scripts/stats.py --a runs/base_hard30 --b runs/sft2_hard30
 
 No GPU is needed to confirm the data: `python scripts/train_sft.py --tasks
 data/tasks_train_mix.jsonl --check` prints `rows: 184  assistant turns: 630`.
+
+## In flight: hard-257 (built and pinned 2026-11-13, not yet scored)
+
+hard-90 puts the headline in an 86.2–96.9% Wilson interval because it is 90 tasks. `data/build_hard257.py`
+samples the same six families again from a fresh seed (`20261113`) at 50 tasks per family, with
+`empty_balance` capped at the 7 rows its phrasings × names pool still yields — the cap is in the
+plan, not hidden by reusing text or by inventing phrasings for this one split, so the family
+definitions stay identical to hard-90 and the per-family rates remain comparable.
+
+- Pin: `data/hard257_eval.sha256` = `4f8d30cb…`; `python data/build_hard257.py` re-derives it and
+  prints `hard-257 eval: 257/257 oracle success, 0 tool errors, strict JSON`.
+- Zero text overlap with every other file under `data/`. The dedupe globs all of `data/tasks*.jsonl`
+  after an earlier fixed list missed `tasks_train_contrast.jsonl`, the file the shipped adapter was
+  trained on — one empty-ledger string got through that way, which is what the glob now prevents.
+- Runner: `notebooks/kaggle_hard257_merged.ipynb` (~4 h wall, ~8 GPU-hours on Kaggle's T4 billing),
+  which also merges the adapter into the base weights, publishes them as
+  `primce/tiny-aya-hinglish-merged`, and checks the merged copy reproduces the adapter's verdicts.
+- No result is claimed here. When `runs/sft4_hard257/summary.json` exists it goes into the table
+  above with `n = 257`, and `scripts/publish_viewer.py` regenerates the browsable dataset.

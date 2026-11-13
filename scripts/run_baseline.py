@@ -86,6 +86,7 @@ def main() -> None:
     parser.add_argument("--tasks", default=str(ROOT / "data" / "tasks.jsonl"))
     parser.add_argument("--out", default=str(ROOT / "runs" / "baseline"))
     parser.add_argument("--limit", type=int, default=0)
+    parser.add_argument("--offset", type=int, default=0, help="skip the first N tasks, for resuming a long run")
     parser.add_argument("--max-steps", type=int, default=8)
     parser.add_argument("--max-new-tokens", type=int, default=256)
     parser.add_argument("--no-4bit", action="store_true")
@@ -119,6 +120,8 @@ def main() -> None:
         tasks = [task for task in tasks if task.get("family") in wanted]
         if not tasks:
             raise SystemExit(f"no tasks matched --families {args.families}")
+    if args.offset:
+        tasks = tasks[args.offset :]
     if args.limit:
         tasks = tasks[: args.limit]
 
@@ -163,6 +166,7 @@ def main() -> None:
     summary["guard_mode"] = args.guard or None
     summary["guarded_episodes"] = guarded
     summary["families_filter"] = args.families or None
+    summary["offset"] = args.offset
     summary["seconds"] = round(time.time() - started, 1)
     if args.safety:
         summary["families"] = by_family(scores, tasks)

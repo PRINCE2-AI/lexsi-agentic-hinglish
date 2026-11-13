@@ -37,6 +37,7 @@ STEPS = [
     ),
     ("abstention split oracle", ["data/build_abstain.py"]),
     ("hard-90 split pin + oracle", ["data/build_hard90.py"]),
+    ("hard-257 split pin + oracle", ["data/build_hard257.py"]),
     ("devanagari split pin + oracle", ["data/build_devanagari.py"]),
     ("contrast split oracle", ["data/build_contrast.py"]),
     ("mix2 leak check", ["data/build_mix.py", "--abstain", "--out", "data/tasks_train_mix2.jsonl"]),
