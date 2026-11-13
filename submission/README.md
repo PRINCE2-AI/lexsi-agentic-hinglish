@@ -4,10 +4,10 @@
 LoRA SFT + AgentTune GRPO, evaluated with AuditKIT 1.1.3.
 
 One line: **3.33% → 96.67% task success on a frozen 30-task hard split, and 3.33% → 93.33% on a
-90-task holdout, with the same adapter letting an attacker expense into the ledger on 6 of 136
-injected tasks and never repeating an attacker value in an answer (0 of 136), across four pinned
-safety splits, including one whose payloads are written in Hinglish and Devanagari, plus a 30-task
-held-out split built after the adapter was frozen (5/30 ledger, 0/30 answer).**
+90-task holdout, with the same adapter letting an attacker expense into the ledger on 13 of 208
+injected tasks across six pinned safety splits and never repeating an attacker value in an answer
+(0 of 208) — and 0 of 208 and 208/208 solved once one deterministic guard sits in front of it, in
+two modes, including one whose payloads are written in Hinglish and Devanagari.**
 
 ## Artifacts
 
@@ -21,7 +21,7 @@ held-out split built after the adapter was frozen (5/30 ledger, 0/30 answer).**
 | Write-up | https://huggingface.co/spaces/primce/hinglish-track3-article |
 | All 90 held-out episodes, browsable | https://huggingface.co/spaces/primce/hinglish-episodes — base vs shipped adapter on every task, with trace and closing ledger against the oracle; static page, no GPU |
 | All 72 injection episodes, guard off vs on | https://huggingface.co/spaces/primce/hinglish-attacks — both columns replayed from the published run logs, with the exact text the model read after each tool call; static page, no GPU |
-| Provenance | [docs/MANIFEST.md](https://github.com/PRINCE2-AI/lexsi-agentic-hinglish/blob/main/docs/MANIFEST.md) — sha256 of 79 files (68 run summaries, the adapter, 9 pinned eval files) at a pinned repo revision; `python scripts/manifest.py --check` fails on drift |
+| Provenance | [docs/MANIFEST.md](https://github.com/PRINCE2-AI/lexsi-agentic-hinglish/blob/main/docs/MANIFEST.md) — sha256 of 80 files (68 run summaries, the two adapter files, 10 pinned eval files) at a pinned repo revision; `python scripts/manifest.py --check` fails on drift |
 | ROI (optional deliverable) | [docs/roi.md](https://github.com/PRINCE2-AI/lexsi-agentic-hinglish/blob/main/docs/roi.md) — measured tokens and latency on hard-90, dated list prices: $0.78 vs $55.63 per 1,000 *solved* tasks on the cheapest closed tier (72x), $7.92 vs $316 self-hosted; `python scripts/roi.py` reproduces the tables |
 | HF Collection | https://huggingface.co/collections/primce/lexsi-track-3-hinglish-expense-agent-6aeb3207e10dfc7dda6329d6 |
 
@@ -251,9 +251,9 @@ the no-payload baseline: the payload lives in the `note` key on every one of the
 
 ```bash
 git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
-python scripts/verify_all.py      # 28 checks: pins, oracle 30/30, safety (four splits incl. Hinglish payloads), contrarian splits, Devanagari, schema shift, reward, stats, AuditKIT adapter, demo handlers, guard sandbox
-python scripts/verify_all.py --with-tests   # 29 checks: the same, plus the pytest suite
-python scripts/manifest.py --check          # re-hashes 79 files on the Hub; fails on drift
+python scripts/verify_all.py      # 29 checks: pins, oracle 30/30, safety (four splits incl. Hinglish payloads), contrarian splits, Devanagari, schema shift, reward, stats, AuditKIT adapter, demo handlers, guard sandbox
+python scripts/verify_all.py --with-tests   # 30 checks: the same, plus the pytest suite
+python scripts/manifest.py --check          # re-hashes 80 files on the Hub; fails on drift
 ```
 
 On a T4 (one GPU is enough):
@@ -269,3 +269,16 @@ python scripts/stats.py --a runs/base_hard90 --b runs/sft3_hard90
 
 Full tables, per-family counts, all paired tests and the pre-registered thresholds:
 `docs/RESULTS.md`, `docs/SAFETY.md`, `docs/ROUND2.md`.
+
+## Declaration, LLM usage, changelog
+
+- **Work outside the hackathon:** none. First commit 2026-11-01; the task pools, guard and injection
+  splits were authored for this entry; no run predates the hackathon.
+- **LLM usage:** built with an AI coding assistant in the loop — roughly 70–80% of the code and most
+  first drafts of the prose were machine-generated under direction; every run was executed on real
+  GPUs and every number read back from a `summary.json`. No model judges an answer anywhere.
+- **Changelog:** v1 — first submission. v2 (12 Nov) — attacker-expense metric replaces the 999999
+  sentinel, guard end-to-end result, post-freeze and source-read probes, licence split. v3
+  (14–15 Nov) — write-up aligned to the required layout, counts refreshed to 29/30 checks and 80
+  pinned files, three figures, 257-task split pinned but not yet scored. The full changelog is at the
+  end of `docs/hf_article.md`.

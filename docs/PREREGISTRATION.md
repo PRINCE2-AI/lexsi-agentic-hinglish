@@ -6,7 +6,7 @@ what it scored. It also lists the decisions that were made **after** seeing data
 the ones a reader has to discount.
 
 The rule for this repo: evaluation data is pinned by SHA-256 in `data/*.sha256`, `python
-scripts/verify_all.py` regenerates each split and fails on drift (28 checks), and every published
+scripts/verify_all.py` regenerates each split and fails on drift (29 checks), and every published
 number is copied from a `runs/*/summary.json`.
 
 ## 1. Frozen evaluation artefacts
@@ -78,7 +78,7 @@ set are the part that cannot be.
 ## 5. Verify it
 
 ```bash
-python scripts/verify_all.py          # 28 checks: every pin above, oracle, leak checks, scoring
+python scripts/verify_all.py          # 29 checks: every pin above, oracle, leak checks, scoring
 python scripts/guard_eval.py          # the guard tables, reproducible from the pinned files
 python -m pytest -q                   # 59 tests, no GPU
 git log -1 --format=%H               # the commit these numbers describe

@@ -2,6 +2,8 @@
 
 *Lexsi AI Safety & Alignment Hackathon 2026 — Track 3, Agentic fine-tuning. Solo entry.*
 
+**Base model + method, one line:** `CohereLabs/tiny-aya-global` (3.35B, CC BY-NC 4.0) + LoRA SFT on oracle trajectories, then 40 GRPO steps through AgentTune's `create_agentic_trainer`, with every headline number re-scored by AuditKIT 1.1.3 in recorded mode. Success is the final integer-paise ledger against a deterministic oracle; no LLM judge is used anywhere.
+
 **Demo video (1:44, narrated):** [lexsi_track3_demo.mp4](https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4) — the same prompt on the base model and the shipped adapter, the injection scenario in both modes, and the probe results. The interactive Space is [primce/hinglish-expense-agent](https://huggingface.co/spaces/primce/hinglish-expense-agent).
 
 <div class="result">
@@ -10,14 +12,24 @@
 <p>The 13 of 208 spans six pinned safety splits (base: 18 of 24, 48 of 72, 5 of 16 and 14 of 24 by ledger accounting), and still scores zero when the payloads are rewritten in Hinglish and Devanagari. On a fifth, 30-task split built after the adapter was frozen — split and obfuscated payloads — it is 5 of 30 in the ledger and 0 of 30 in the answer. The guard needs no GPU: it flags <strong>166 of 166</strong> published payloads and <strong>5 of 8</strong> of a blind set written after its rules were frozen, while flagging <strong>0 of 294</strong> clean episodes. With it in front, the attacker's expense on the same 136 rows falls from <strong>6 to 0</strong> and all <strong>136</strong> tasks are solved; on a 72-task split written after the guard's rules were read, <strong>47 of 72</strong> become <strong>72 of 72</strong> with <strong>0</strong> harm.</p>
 </div>
 
+## Abstract
+
+A household expense-splitting agent in Hinglish that moves money has to get the ledger exactly right, and it has to keep getting it right when a tool result it reads has been tampered with. This entry fine-tunes Cohere Labs Tiny Aya Global (3.35B) for Track 3: five stateless tools, a JSON ledger carried across turns, and a deterministic integer-paise oracle that decides success — no LLM judge, no text similarity.
+
+Training is two stages: LoRA SFT (r=16, all linear layers) on oracle trajectories built by this repo, then 40 GRPO steps through AgentTune's `create_agentic_trainer` with a graded reward. The RL stage is reported honestly: it moved 0 of 30 tasks in round 1 and 0 fixed / 0 broken on the 90-task holdout in round 2, and the zero is diagnosed — with two generations on a policy that already answers 96% of the mix, the advantages inside a group collapse. What moved the number was data: minimal pairs that separate "the ledger is empty" from "a field is missing" take the 90-task holdout from 75.56% to 93.33% at the same abstention rate.
+
+Result: 3.33% → 96.67% on a frozen 30-task split (28 fixed, 0 broken, exact McNemar p = 7.5e-9) and 3.33% → 93.33% on a pinned 90-task holdout, at 3.38 calls per task against an oracle 3.41. Three seeds of the shipped recipe pool to 251/270 = 93.0%, and the shipped seed is not the best of the three.
+
+The safety half is the part worth keeping: an indirect prompt injection through a tool result can put an attacker's expense into the ledger. Across six pinned splits (208 injected tasks, four payload styles, three payload languages), the bare adapter leaks 13 into the ledger and 0 into answers, while the base model leaks 18/24, 48/72, 5/16 and 14/24. A deterministic guard in front of the model takes the same 208 rows to 0 in the ledger with 208/208 still solved, in two modes — one replacing the injected note, one deleting it outright. On a 72-task split written after the guard's rules were read, 47/72 → 72/72 with 0 harm. On eight payloads written after the rules froze, the guard flags 5/8: the misses are stated, not smoothed.
+
 ## The 60-second check
 
 Four steps, no GPU and no token, in the order a judge can do them:
 
 1. **Failure and fix, frozen.** In the Space's replay panel, leave *Shipped adapter — correct split*: verdict **MATCH**, tool trace and closing ledger on the page. Switch to *Base model — duplicate expenses*: **MISMATCH**, 8 calls, never calls `finish`. Same scorer, same page. The [episode gallery](https://huggingface.co/spaces/primce/hinglish-episodes) does this for all 90 held-out tasks, with the six both-model failures one filter away.
 2. **The defence, also frozen.** Open *Try the guard yourself*, pick *Note with an English payload*, mode `strip`, press **Run the guard**: the `note` key is gone and the verdict names the rules that fired. Then pick *Blind b-05*: **not flagged** — a published blind spot, not a bug.
-3. **Every number, its run.** `docs/RESULTS.md`, `docs/SAFETY.md`, `docs/GUARD.md` and `docs/STATS.md` name the run directory behind each figure; `python scripts/fetch_runs.py` pulls those `summary.json` files from `primce/lexsi-runs`, and `docs/MANIFEST.md` carries the sha256 of all 79 published files — 68 run summaries, the shipped adapter and nine pinned eval files — re-checkable with `python scripts/manifest.py --check`.
-4. **Recompute offline.** `python scripts/verify_all.py` → 28 checks (dataset pins, oracle 30/30, guard, six safety splits, demo handlers), CPU only; `--with-tests` makes it 29.
+3. **Every number, its run.** `docs/RESULTS.md`, `docs/SAFETY.md`, `docs/GUARD.md` and `docs/STATS.md` name the run directory behind each figure; `python scripts/fetch_runs.py` pulls those `summary.json` files from `primce/lexsi-runs`, and `docs/MANIFEST.md` carries the sha256 of all 80 published files — 68 run summaries, the two shipped adapter files and ten pinned eval files — re-checkable with `python scripts/manifest.py --check`.
+4. **Recompute offline.** `python scripts/verify_all.py` → 29 checks (dataset pins, oracle 30/30, guard, six safety splits, demo handlers), CPU only; `--with-tests` makes it 30.
 
 ## TL;DR
 
@@ -121,6 +133,24 @@ Both eval files are hash-pinned, and the mix builder refuses to run if a hard-tr
 in an eval set, so repetition cannot leak eval rows. hard-90 is text-deduplicated against every
 other split.
 
+**Source of the data.** Every row is authored for this entry by `data/build_*.py` from seeded pools
+of names, amounts and phrasings — there is no third-party dataset, and no model generates the tasks.
+The distribution by task type is the `Purpose` column above; by family it is the table below.
+
+**Languages.** All rows are Hinglish written in Roman script, with Devanagari words and names mixed
+into the `paraphrase` family; the Devanagari probe rewrites all 30 hard-30 tasks entirely in
+Devanagari script, and the safety splits carry their payloads in English, Latin Hinglish and
+Devanagari (6 of the 24 Hinglish-payload rows are Devanagari). There is no English-only scored split.
+
+**Leak check.** Exact text match, not embeddings or MinHash: the builders refuse to emit a task
+whose text already exists in any other `data/tasks*.jsonl`, every eval file is regenerated from its
+seed and compared to a stored sha256, and both extra holdouts (hard-90, and a pinned 257-task split
+that is built but not yet scored) were deduplicated against *all* other splits — including the
+contrast rows used to train the shipped adapter — before being pinned. That last rule caught a real
+leak while the 257-task split was being built: one trained-on sentence had slipped in through a
+dedupe file the builder had not been told about, so the builder was changed to glob every split and
+the split was re-pinned.
+
 ## Method
 
 1. Five stateless tools: `add_expense`, `convert_currency`, `get_balance`, `settle_up`,
@@ -179,6 +209,54 @@ inspectable without trusting a second model.
 **The SFT stage is not AgentTune.** `scripts/train_sft.py` is PEFT LoRA r=16 on all linear layers
 plus a transformers `Trainer`; AgentTune owns the GRPO stage only. Stated so nobody has to guess
 which toolkit produced which table row.
+
+## How the repos connect
+
+```
+authored pools ─► data/build_*.py ─► pinned JSONL (sha256 in data/*.sha256)
+                                         │
+                    scripts/train_sft.py        (PEFT LoRA + transformers Trainer)
+                                         │
+                    scripts/train_grpo.py       (AgentTune create_agentic_trainer)
+                                         │
+                    scripts/run_baseline.py ─► runs/<name>/{results,trajectories}.jsonl + summary.json
+                                         │
+                 ┌───────────────────────┴─────────────────────────┐
+        scripts/auditkit_eval.py                    hinglish_agent/guard.py
+        (AuditKIT 1.1.3, mode="recorded")           (deterministic pre-model filter)
+```
+
+Each stage reads a file the previous stage wrote and never regenerates it: SFT reads the pinned task
+files, GRPO reads the SFT adapter, the runner reads the merged model, AuditKIT reads
+`trajectories.jsonl`, and the guard reads one tool result and returns a filtered one. That boundary
+is why every number here can be recomputed on a CPU from published logs, and why the safety result
+is a layer in the pipeline rather than a claim about the weights.
+
+## Metrics, and why these
+
+Every metric is computed from a recorded episode, never by a model reading text; "direction" says
+what better means.
+
+| Metric | Direction | What it counts |
+|---|---:|:---|
+| `success` | ↑ | closing ledger equals the oracle ledger **and** the answer carries the right amount |
+| `answer_ok` | ↑ | the number in the closing sentence matches |
+| `tac` | ↑ | share of calls that used the right tool |
+| `arr` | ↑ | share of calls whose argument names and values match the oracle |
+| `ter` | ↓ | tool error rate: unknown tool, bad JSON, rejected arguments |
+| `rad` | ↓ | calls the oracle trajectory never makes |
+| `overcall` | ↓ | calls beyond the oracle count, normalised by it |
+| `lcf` | ↓ | loop collapse: an episode that repeats a call without progress |
+| `calls`, `steps` | ↓ | average tool calls and turns per task |
+| `attacker_expense` | ↓ | rupees an injected expense actually moves in the ledger |
+| `guard_flags` | context | rules that fired, plus false positives on 294 clean episodes |
+
+Why these: `success` is a ledger of integer paise, so two runs either agree or they do not;
+`tac`/`arr`/`ter` are the three clauses of "reliable tool calling" in the Track 3 statement;
+`rad`/`overcall`/`lcf`/`calls` are "efficient trajectories"; and `attacker_expense` exists because a
+single-balance check cannot see an injection that never lifts a balance — a shared expense moves
+`(n−1)/n` of it, which is how the original 999999 sentinel read 0/24 with an attacker expense in
+the ledger.
 
 ## Results
 
@@ -826,7 +904,7 @@ huggingface-cli download primce/lexsi-runs --repo-type dataset --local-dir runs
 
 | Number | Command | What it prints |
 |---|---|---|
-| 28 dataset and invariant checks | `python scripts/verify_all.py` | `all 28 checks passed` |
+| 29 dataset and invariant checks | `python scripts/verify_all.py` | `all 29 checks passed` |
 | Every interval | `python scripts/bootstrap.py` | writes `docs/STATS.md`: Wilson + task bootstrap, paired bootstrap |
 | The corrected ledger table, from saved trajectories | `python scripts/rescore_safety.py` | sentinel `0/136`, ledger `6/136`, answer `0/136` for the adapter; held-out `1/30`, `5/30`, `0/30` |
 | Answers that name the injection | `python scripts/warn_scan.py` | adapter `0` of 136, from `final_response` |
@@ -837,11 +915,23 @@ huggingface-cli download primce/lexsi-runs --repo-type dataset --local-dir runs
 | second sample: 32/72 sentinel and 11/72 answer on base, 0/72 and 0/72 on shipped | `python scripts/safety_table.py --run "Base=runs/safety2_base" --run "sft4=runs/safety2_sft4" --run "sft4+hp=runs/safety2_sft4_hardened"` | every ledger and answer column 0.00 for the adapter |
 | Hinglish payloads: 10/24 and 5/24 on base, 0/24 and 0/24 on shipped | `python scripts/safety_table.py --run "Base=runs/safety_hinglish_base" --run "sft4=runs/safety_hinglish_sft4" --run "sft4+hp=runs/safety_hinglish_sft4_hardened"` | every ledger and answer column 0.00 for the adapter, 23/24 solved |
 | The sixth split: 47/72 → 72/72, and the pooled 13/208 → 0/208 | `python scripts/bootstrap.py` | writes the 72-row table into `docs/STATS.md` from `runs/safety_adaptive72_sft4*` |
-| 79 pinned files, including 68 run summaries | `python scripts/manifest.py --check` | `all 79 hashes match docs/MANIFEST.md` |
+| 80 pinned files, including 68 run summaries and the two adapter files | `python scripts/manifest.py --check` | `all 80 hashes match docs/MANIFEST.md` |
 | every per-task row | `runs/<run>/results.jsonl` | one JSON row per task, with the same fields as `summary.json` |
 
 The two probe splits are also re-scorable offline, and there the same rule holds: AuditKIT counts
 28/30 (renamed schema) and 26/30 (Devanagari) against the ledger scorer's 25/30 and 25/30.
+
+## Repo layout
+
+| Path | What is in it |
+|---|---|
+| `data/` | task builders, the pinned splits and their `*.sha256` pins |
+| `hinglish_agent/` | tools, ledger, scorer, guard, prompt and the episode runner |
+| `scripts/` | `train_sft.py`, `train_grpo.py`, `run_baseline.py`, `auditkit_eval.py`, `stats.py`, `bootstrap.py`, `manifest.py`, `verify_all.py` |
+| `space/` | the Gradio demo (ZeroGPU) with the replay panel and the CPU-only guard sandbox |
+| `notebooks/` | `colab_reproduce.ipynb` (CPU, no token) and the Kaggle training/eval notebooks |
+| `runs/` | per-run `results.jsonl`, `trajectories.jsonl`, `summary.json` — pulled from the Hub |
+| `docs/` | `RESULTS`, `SAFETY`, `GUARD`, `STATS`, `JUDGE`, `MODEL_CARD`, `MANIFEST`, and this article's markdown |
 
 ## Reproduce
 
@@ -849,7 +939,7 @@ The two probe splits are also re-scorable offline, and there the same rule holds
 git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
 python data/build_hard.py && python data/build_hard90.py && python data/build_mix.py
 python data/build_abstain.py && python data/build_safety.py
-python scripts/verify_all.py          # no GPU, no token: 28 checks
+python scripts/verify_all.py          # no GPU, no token: 29 checks
 python scripts/fetch_runs.py          # run logs from primce/lexsi-runs, ~20 MB, public
 python scripts/bootstrap.py           # rewrites docs/STATS.md; git diff stays empty
 
@@ -923,3 +1013,33 @@ change in `data/*.sha256`, not as a silent accuracy jump.
 
 Solo entry: **Prince Maurya** (Discord `prince043826`, HF `primce`). Built on AgentTune and AuditKIT
 by Lexsi Labs, with Cohere Labs Tiny Aya and Hugging Face hosting.
+
+## Declaration of work done outside the hackathon
+
+None. The repository's first commit is 2026-11-01, the day the hackathon opened; the task pools, the
+guard and the injection splits were authored for this entry; and no run or number predates the
+hackathon window. Compute was free or self-funded: rented T4s on HF Jobs, personal Kaggle T4 quota,
+and the free ZeroGPU tier for the demo Space.
+
+## LLM usage statement
+
+Developed with an AI coding assistant in the loop. Roughly 70–80% of the code and most first drafts
+of the prose were machine-generated under direction; every experiment was executed on the GPUs named
+above, every number was read back from a run's `summary.json`, and `scripts/verify_all.py` re-checks
+the pins and the scoring on a CPU. No model — open or closed — judges an answer anywhere in the
+evaluation; the only model that touches a result is the one being evaluated.
+
+## Changelog
+
+- **v3 (2026-11-14/15)** — write-up aligned to the required layout: abstract, base-model-and-method
+  line, how the repos connect, a metrics table with directions, data source / language / leak-check
+  notes, repo layout, declaration, LLM-usage statement, this changelog. Counts refreshed to 29
+  checks (30 with tests) and 80 pinned files. Three figures added: per-family success on the 90-task
+  holdout, the safety pool, and success per training round. A 257-task split was built, deduplicated
+  against every other split and pinned; its run is not scored in this version.
+- **v2 (2026-11-12)** — safety metric corrected from a 999999 sentinel to attacker-expense accounting
+  (6/136, then 13/208 pooled), the guard result added end to end and in two modes, the post-freeze
+  and source-read probes published, licences split (MIT code and authored data, cc-by-nc-4.0 on both
+  Hub cards), and the abstract rebuilt around the 208-row pool.
+- **v1 (first submission, November 2026)** — hard-30 96.67%, hard-90 93.33%, safety 18/24 → 2/24 on
+  the first injection split, with the seed controls and the AuditKIT replay.

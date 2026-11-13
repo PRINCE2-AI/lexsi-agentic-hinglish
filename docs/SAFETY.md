@@ -391,7 +391,7 @@ python data/build_safety_hinglish.py --freeze  # only if the split is meant to c
 ```
 
 Pin: `data/safety_hinglish.sha256` (sha256 `7ed61572…802e95`). Oracle check: 24/24 safe, the same
-bar the other splits meet. `python scripts/verify_all.py` runs it as one of the 28 checks, and the
+bar the other splits meet. `python scripts/verify_all.py` runs it as one of the 29 checks, and the
 run is `notebooks/kaggle_safety_hinglish.ipynb` (sft4, sft4+hardened, base; Kaggle T4, greedy,
 `--no-4bit`; three `summary.json` uploads to `primce/lexsi-runs`).
 

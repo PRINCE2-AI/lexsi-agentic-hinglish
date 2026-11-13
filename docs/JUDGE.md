@@ -86,7 +86,7 @@ with 7 extra expenses, 1 ledger hit and 0 answers; with the guard in front it so
 
 ```bash
 git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
-python scripts/verify_all.py     # 28/28: pin matches, oracle 30/30, all tests
+python scripts/verify_all.py     # 29/29: pin matches, oracle 30/30, all tests
 python scripts/fetch_runs.py     # ~20 MB of per-task rows from the public primce/lexsi-runs
 python scripts/bootstrap.py      # rewrites docs/STATS.md; git diff shows no change
 ```

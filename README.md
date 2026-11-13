@@ -87,7 +87,7 @@ are unchanged.
 
 ```bash
 git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
-python scripts/verify_all.py      # 28 checks, no GPU, no token
+python scripts/verify_all.py      # 29 checks, no GPU, no token
 python scripts/fetch_runs.py      # ~20 MB of run logs from primce/lexsi-runs
 python scripts/bootstrap.py       # rewrites docs/STATS.md; git diff shows no change
 ```
@@ -226,7 +226,7 @@ python scripts/verify_all.py
 
 That single command regenerates the hard, hard-90 and safety splits, checks every SHA-256 pin,
 runs every test suite, replays the oracle and runs the AuditKIT adapter tests. It prints
-`all 28 checks passed` when the dataset and the scoring are consistent.
+`all 29 checks passed` when the dataset and the scoring are consistent.
 
 
 ### Tiny Aya access
