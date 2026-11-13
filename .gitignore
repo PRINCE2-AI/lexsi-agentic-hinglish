@@ -15,3 +15,7 @@ attacks/
 
 # Hugging Face cache if someone points it here
 .cache/
+
+# Local scratch
+.viewer/
+.tmp_hardened/

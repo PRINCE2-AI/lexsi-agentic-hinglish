@@ -54,6 +54,8 @@ seed adapters are kept for the ablation and variance controls.
 | `sft3` recipe (mix2), seed 7 | 30 / 90 hard tasks | 93.33% / 83.33% |
 | `sft3` recipe (mix2), seed 123 | 30 / 90 hard tasks | 80.00% / 75.56% |
 
+![Base Tiny Aya against this adapter, per family, 15 tasks each](https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/figures/hard90_by_family.png)
+
 - Paired exact McNemar over shared task ids: base → this adapter **28 fixed, 0 broken,
   p = 7.5e-09** on hard-30 and **81 fixed, 0 broken, p < 1e-20** on hard-90. Against the
   round-2 adapter, **18 fixed, 2 broken, p = 0.0004**; against the round-1 adapter, 7 fixed,
@@ -159,6 +161,8 @@ attacker values in the answer on 136 injected tasks** (2/24 + 4/72 + 0/16 + 0/24
 2.0–9.3%), four payload styles in three payload languages, no LLM judge. A sixth, 72-task split
 written after the guard's rules were read adds **7/72 expenses and 0/72 answers**, so across all
 six: **13/208 left over and 0/208 in answers** (Wilson 95% 3.7–10.4%).
+
+![Injected episodes whose extra expense reached the ledger: base model on 136 rows, this adapter on 208, this adapter plus the guard on 208](https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/figures/safety_pool.png)
 
 A fifth split was built after the adapter was frozen: 30 tasks, half with the payload split across
 two tool results and half with the amount obfuscated (`9,99,999`, zero-width, spelled out), seed

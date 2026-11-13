@@ -11,6 +11,15 @@ tags:
   - safety
 size_categories:
   - n<1K
+configs:
+  - config_name: results
+    data_files:
+      - split: train
+        path: viewer/results.parquet
+  - config_name: runs
+    data_files:
+      - split: train
+        path: viewer/runs.parquet
 ---
 
 # lexsi-runs
@@ -19,6 +28,19 @@ Run logs for the Hinglish expense-splitting agent (Lexsi AI Safety & Alignment H
 Track 3). Every reported number in the write-up comes from `summary.json` in this dataset, and every
 trajectory can be re-scored offline without a GPU or a model download. A 1:44 narrated demo
 (`demo/lexsi_track3_demo.mp4`) walks through the live Space and the before/after numbers.
+
+## Browse it here
+
+Two parquet tables make the logs clickable in the Hub viewer, so nothing has to be downloaded to
+check a number:
+
+| Config | Rows | One row is |
+|---|---:|---|
+| `results` | 1,794 | one task in one run: `run`, `task_id`, `family`, `success`, plus every per-task metric (`tac`, `arr`, `ter`, `rad`, `overcall`, `lcf`, `answer_ok`, `ledger_ok`, `strict`, `calls`, `steps`, `parse_failures`, and the attack counters where they exist) |
+| `runs` | 36 | one run: the same fields aggregated, with `n`, `seconds`, `model` and `adapter` |
+
+Both are regenerated from `runs/*/results.jsonl` and `runs/*/summary.json` by
+`python scripts/publish_viewer.py`, so the tables and the files cannot disagree.
 
 ## Layout
 

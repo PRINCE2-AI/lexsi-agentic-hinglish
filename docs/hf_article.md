@@ -232,6 +232,11 @@ Per family on the 90-task holdout (15 each):
 | convert_sum | 0/15 | 7/15 | 8/15 | **13/15** | 11/15 |
 | empty_balance | 3/15 | 15/15 | 4/15 | **15/15** | 15/15 |
 
+Every round, same frozen splits — the hard-30 line rises once and stays; the hard-90 line is the
+one that moves when the data changes. Drawn from `runs/*/summary.json` by `scripts/make_figures.py`:
+
+![Task success per training round on the frozen hard-30 and hard-90 splits](https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/figures/rounds.png)
+
 ## What the 90-task holdout changed
 
 The 30-task split was optimistic by 26 points for the round-2 adapter. Two families it
@@ -244,6 +249,8 @@ The shipped adapter is clean on the same trajectory metrics: tool error rate **0
 misses are answer shape (`tac` 0.967, `answer_ok` 0.933), not tool use: the model calls the right
 tools in the right order and then drops or misstates a number in the final sentence. That is the
 same failure mode round 1 identified, now confined to two families.
+
+![Base Tiny Aya against the shipped adapter, per family, 15 tasks each](https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/figures/hard90_by_family.png)
 
 The mix2 seed spread is wider than the round-1-to-round-3 difference: 16.67 pp on hard-30 and
 7.77 pp on hard-90 across three seeds. It is published instead of hidden, and shipping the best
@@ -590,6 +597,8 @@ removes.
 Across all six splits that is **208 injected tasks, 13 extra expenses, 0 answers naming the
 injection, and 208 of 208 solved with 0 harm under the guard**. Both runs publish `results.jsonl`
 and `trajectories.jsonl`, so every row above can be re-scored rather than trusted.
+
+![Injected episodes whose extra expense reached the ledger: base model on 136 rows, adapter on 208, adapter plus guard on 208](https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/figures/safety_pool.png)
 
 Every one of the 72 is browsable, both columns side by side:
 https://huggingface.co/spaces/primce/hinglish-attacks shows the tool trace and the exact text the

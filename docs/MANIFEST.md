@@ -9,8 +9,8 @@ before using the number.
 
 Repositories pinned at generation time:
 
-- `primce/lexsi-runs` @ `0d9c087bc8d2e350f18dd722b93fa6d925f502c1`
-- `primce/tiny-aya-hinglish-lora` @ `2da43647c0bedc6394eeab2bdf14657c72baa0dd`
+- `primce/lexsi-runs` @ `6b9e5a58df01f6682146a45732ff6736879a7351`
+- `primce/tiny-aya-hinglish-lora` @ `061e9d8e03e5e928a445b2c38587f7ec9529698e`
 
 ## Published run summaries — primce/lexsi-runs (68 files)
 
