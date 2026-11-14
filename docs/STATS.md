@@ -21,6 +21,7 @@ the seed control exists separately.
 | hard-90 (sft4, seed 7) | `sft4_seed7_hard90` | 90 | 84/90 | 93.3% | 86.2%–96.9% | 87.8%–97.8% |
 | hard-90 (sft4, seed 123) | `sft4_seed123_hard90` | 90 | 83/90 | 92.2% | 84.8%–96.2% | 86.7%–97.8% |
 | hard-90 (hardened prompt) | `sft4_hard90_hardened` | 90 | 86/90 | 95.6% | 89.1%–98.3% | 91.1%–98.9% |
+| hard-257 (sft4, shipped) | `sft4_hard257` | 257 | 235/257 | 91.4% | 87.4%–94.3% | 87.9%–94.6% |
 
 ## Three training seeds, pooled
 

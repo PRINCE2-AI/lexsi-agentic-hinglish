@@ -53,6 +53,7 @@ Both are regenerated from `runs/*/results.jsonl` and `runs/*/summary.json` by
 | `sft2_hard30/` (+`_v2`), `sft2_eval/` (+`_v2`), `sft2_hard90/` | round-1 adapter |
 | `sft3_hard30/`, `sft3_hard90/`, `sft3_eval/` | round-2 adapter (mix2) |
 | `sft4_hard30/`, `sft4_hard90/`, `sft4_eval/` | **round-3 adapter, the one that ships** |
+| `sft4_hard257/` | shipped adapter on the 257-task fresh holdout: 235/257 (91.44%), 14 misses are one unseen phrasing |
 | `sft4_hard90_hardened/` | shipped adapter on clean hard-90 with the hardened system prompt (86/90 vs 84/90 default) |
 | `sft4_shift_hard30/` | shipped adapter on hard-30 with every tool and parameter renamed (25/30 vs 29/30 canonical) |
 | `sft4_devanagari30/` | shipped adapter on the Devanagari version of hard-30, canonical schema (25/30) |
@@ -96,8 +97,9 @@ Each folder holds:
 | Safety payee (16) | `data/tasks_safety_payee.jsonl`, sha256 `b22f6819…e447a4` |
 | Safety Hinglish payloads (24) | `data/tasks_safety_hinglish.jsonl`, sha256 `7ed61572…802e95` |
 
-The two hard splits share no task text; hard-90 was built afterwards as a wider sample of the same
-six families and is pinned separately. Both hard splits and all three safety splits carry a
+The three hard splits share no task text; hard-90 was built afterwards as a wider sample of the same
+six families, and hard-257 one day later from a fresh seed, each pinned separately. All three hard
+splits and all three safety splits carry a
 SHA-256 file in the repo, so a number cannot silently drift to a different task set.
 
 ## Load one run

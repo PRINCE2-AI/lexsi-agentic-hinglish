@@ -47,6 +47,7 @@ seed adapters are kept for the ablation and variance controls.
 | SFT on the mix + abstention pairs (`sft3`) | 30 / 90 hard tasks | 96.67% (29/30) / 75.56% (68/90) |
 | **SFT on the mix + contrast pairs (`sft4`, this adapter)** | **30 hard tasks** | **96.67% (29/30)** |
 | **Same adapter** | **90 hard tasks** | **93.33% (84/90)** |
+| **Same adapter** | **257 fresh hard tasks** | **91.44% (235/257)** |
 | Same adapter | 24 in-distribution tasks | 100.00% (24/24) |
 | `sft5` ablation (fewer ask rows) | 30 / 90 hard tasks | 100% (30/30) / 92.22% (83/90) |
 | `sft4` recipe, seed 7 (mix3) | 30 / 90 hard tasks | 100% (30/30) / 93.33% (84/90) |
@@ -64,6 +65,10 @@ seed adapters are kept for the ablation and variance controls.
   three-seed estimate is 251/270 = 93.0% on hard-90** (task-block bootstrap 95% 87.4–97.4%) and
   **88/90 = 97.8% on hard-30**. The shipped seed 42 is not a lucky seed; `docs/STATS.md` recomputes
   both from the run logs.
+- Wider holdout: the same adapter on a pinned 257-task split built from a fresh seed scores
+  **235/257 = 91.44%** (Wilson 87.4–94.3%), inside hard-90's interval. 14 of the 22 misses are one
+  unseen Hinglish phrasing (`"Dono jod ke INR me: …"`) that the split alone contains;
+  `docs/RESULTS.md` names it.
 - Tool calls per task: **3.57** on hard-30, exactly the oracle's count (base: 7.03). On hard-90:
   3.38 against an oracle 3.41 and a base 7.24 — 87 of 90 tasks take exactly the oracle number of
   calls, 3 take one fewer, none take more.

@@ -23,7 +23,7 @@ a `summary.json` written by a GPU run and uploaded to `primce/lexsi-runs`; nothi
 | Adapter (shipped) | `primce/tiny-aya-hinglish-lora` → `sft4_adapter` |
 | Seed controls | same repo → `sft3_seed7_adapter`, `sft3_seed123_adapter` (mix2), `sft4_seed7_adapter`, `sft4_seed123_adapter` (mix3) |
 | Training data | `data/tasks_train_mix3.jsonl` (100 easy + 84 hard + 96 abstention + 94 contrast) |
-| Holdouts | `data/tasks_hard_eval.jsonl` (30), `data/tasks_hard90_eval.jsonl` (90, own pin), `data/tasks_hard257_eval.jsonl` (257, own pin, built 2026-11-13 — see *In flight* below), `data/tasks_eval.jsonl` (24), `data/tasks_safety_eval.jsonl` (32), `data/tasks_safety_eval2.jsonl` (80, own pin), `data/tasks_safety_payee.jsonl` (16, own pin), `data/tasks_safety_hinglish.jsonl` (24, own pin) |
+| Holdouts | `data/tasks_hard_eval.jsonl` (30), `data/tasks_hard90_eval.jsonl` (90, own pin), `data/tasks_hard257_eval.jsonl` (257, own pin, built 2026-11-13 — scored below), `data/tasks_eval.jsonl` (24), `data/tasks_safety_eval.jsonl` (32), `data/tasks_safety_eval2.jsonl` (80, own pin), `data/tasks_safety_payee.jsonl` (16, own pin), `data/tasks_safety_hinglish.jsonl` (24, own pin) |
 | Run logs | `primce/lexsi-runs` → `sft4_hard30`, `sft4_hard90`, `sft4_eval`, `sft4_seed7_*`, `sft4_seed123_*`, `sft3_seed7_*`, `sft3_seed123_*`, `grpo3_*`, `safety_sft4*`, `safety2_*`, `safety_payee_*`, `safety_hinglish_*`, `auditkit_sft4_hard90` |
 | Independent eval | AuditKIT 1.1.3 via `scripts/auditkit_eval.py`, no judge model |
 | Intervals | `docs/STATS.md` — Wilson + task bootstrap for every split, paired bootstrap, rule-of-three bound on the zeros (`scripts/bootstrap.py`) |
@@ -668,7 +668,7 @@ python scripts/stats.py --a runs/base_hard30 --b runs/sft2_hard30
 No GPU is needed to confirm the data: `python scripts/train_sft.py --tasks
 data/tasks_train_mix.jsonl --check` prints `rows: 184  assistant turns: 630`.
 
-## In flight: hard-257 (built and pinned 2026-11-13, not yet scored)
+## hard-257: the 90-task estimate, tested on 257 fresh tasks (2026-11-14)
 
 hard-90 puts the headline in an 86.2–96.9% Wilson interval because it is 90 tasks. `data/build_hard257.py`
 samples the same six families again from a fresh seed (`20261113`) at 50 tasks per family, with
@@ -681,8 +681,43 @@ definitions stay identical to hard-90 and the per-family rates remain comparable
 - Zero text overlap with every other file under `data/`. The dedupe globs all of `data/tasks*.jsonl`
   after an earlier fixed list missed `tasks_train_contrast.jsonl`, the file the shipped adapter was
   trained on — one empty-ledger string got through that way, which is what the glob now prevents.
-- Runner: `notebooks/kaggle_hard257_merged.ipynb` (~4 h wall, ~8 GPU-hours on Kaggle's T4 billing),
-  which also merges the adapter into the base weights, publishes them as
-  `primce/tiny-aya-hinglish-merged`, and checks the merged copy reproduces the adapter's verdicts.
-- No result is claimed here. When `runs/sft4_hard257/summary.json` exists it goes into the table
-  above with `n = 257`, and `scripts/publish_viewer.py` regenerates the browsable dataset.
+
+`sft4` scores **235/257 = 91.44%** (Wilson 87.4–94.3%, bootstrap 87.9–94.6%), at 3.72 calls/task,
+strict JSON 1.000, `arr` 1.000, `ter` 0, `overcall` 0.0246, `lcf` 0, in 15,848.5 s on one T4
+(`runs/sft4_hard257/summary.json` on `primce/lexsi-runs`). The point estimate is 1.9 pp below
+hard-90's 93.33% and inside its interval, so the 90-task number was mildly optimistic; the wider
+split narrows the interval rather than changing the claim.
+
+| Family | hard-257 | hard-90 |
+|---|---:|---:|
+| settle5 | 50/50 | 15/15 |
+| two_query | **50/50** | 12/15 |
+| trap_combo | 50/50 | 15/15 |
+| empty_balance | 7/7 | 15/15 |
+| paraphrase | 48/50 | 14/15 |
+| convert_sum | **30/50** | 13/15 |
+
+The aggregate hides two moves in opposite directions. `two_query` goes from 12/15 to 50/50, so
+hard-90 was pessimistic there. `convert_sum` falls to 60%, and **14 of the 22 misses are one
+construction**: `"Dono jod ke INR me: 104 dollars aur 66.7 euros"`. The adapter reads it as a
+splitting request — two `add_expense` calls, `settle_up`, and an answer about balances — scoring
+**0 of 14** on that phrasing, which appears nowhere else under `data/` (checked with a text search
+over every `tasks*.jsonl`). Drop those 14 and the run is 235/243 = 96.7%; the other 36 convert_sum
+rows are 30/36, and the other eight misses are two `paraphrase` rows with the wrong ledger
+(`h27-167`, `h27-190`) and six total-arithmetic slips where both conversions are right and the
+stated total is off by 100 or 1,000 (e.g. `h27-207`: `Total 10457.20 INR` for 10,557.20;
+`h27-232`: 14,328.00 for 14,329.00).
+
+That is what a fresh holdout is for: hard-90 drew 15 convert_sum rows and never sampled this
+phrasing, and n=257 finds it at 14/14. It is published as a failure, not patched — a fix would be a
+training-data change after the freeze, and the split stays as it was run.
+
+The base model was not run on this split: it is the optional stage of
+`notebooks/kaggle_hard257_merged.ipynb` (~10.8 GPU-hours) and the paired base→adapter test is
+already published on hard-90 (`81 fixed, 0 broken`).
+
+The same notebook merged the adapter into the base weights and published them as
+`primce/tiny-aya-hinglish-merged` (8 files, one `model.safetensors`). The parity check replays the
+first three tasks through the adapter and through the merged copy: both score 3/3 with the same
+4 calls on each, so the published checkpoint behaves like the adapter on the tasks that were
+checked. Three tasks is a smoke test, not an equivalence proof, and it is quoted as one.

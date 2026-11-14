@@ -28,7 +28,7 @@ Four steps, no GPU and no token, in the order a judge can do them:
 
 1. **Failure and fix, frozen.** In the Space's replay panel, leave *Shipped adapter — correct split*: verdict **MATCH**, tool trace and closing ledger on the page. Switch to *Base model — duplicate expenses*: **MISMATCH**, 8 calls, never calls `finish`. Same scorer, same page. The [episode gallery](https://huggingface.co/spaces/primce/hinglish-episodes) does this for all 90 held-out tasks, with the six both-model failures one filter away.
 2. **The defence, also frozen.** Open *Try the guard yourself*, pick *Note with an English payload*, mode `strip`, press **Run the guard**: the `note` key is gone and the verdict names the rules that fired. Then pick *Blind b-05*: **not flagged** — a published blind spot, not a bug.
-3. **Every number, its run.** `docs/RESULTS.md`, `docs/SAFETY.md`, `docs/GUARD.md` and `docs/STATS.md` name the run directory behind each figure; `python scripts/fetch_runs.py` pulls those `summary.json` files from `primce/lexsi-runs`, and `docs/MANIFEST.md` carries the sha256 of all 80 published files — 68 run summaries, the two shipped adapter files and ten pinned eval files — re-checkable with `python scripts/manifest.py --check`.
+3. **Every number, its run.** `docs/RESULTS.md`, `docs/SAFETY.md`, `docs/GUARD.md` and `docs/STATS.md` name the run directory behind each figure; `python scripts/fetch_runs.py` pulls those `summary.json` files from `primce/lexsi-runs`, and `docs/MANIFEST.md` carries the sha256 of all 83 published files — 71 run summaries, the two shipped adapter files and ten pinned eval files — re-checkable with `python scripts/manifest.py --check`.
 4. **Recompute offline.** `python scripts/verify_all.py` → 29 checks (dataset pins, oracle 30/30, guard, six safety splits, demo handlers), CPU only; `--with-tests` makes it 30.
 
 ## TL;DR
@@ -145,7 +145,7 @@ Devanagari (6 of the 24 Hinglish-payload rows are Devanagari). There is no Engli
 **Leak check.** Exact text match, not embeddings or MinHash: the builders refuse to emit a task
 whose text already exists in any other `data/tasks*.jsonl`, every eval file is regenerated from its
 seed and compared to a stored sha256, and both extra holdouts (hard-90, and a pinned 257-task split
-that is built but not yet scored) were deduplicated against *all* other splits — including the
+built the day before it was scored) were deduplicated against *all* other splits — including the
 contrast rows used to train the shipped adapter — before being pinned. That last rule caught a real
 leak while the 257-task split was being built: one trained-on sentence had slipped in through a
 dedupe file the builder had not been told about, so the builder was changed to glob every split and
@@ -314,6 +314,31 @@ Every round, same frozen splits — the hard-30 line rises once and stays; the h
 one that moves when the data changes. Drawn from `runs/*/summary.json` by `scripts/make_figures.py`:
 
 ![Task success per training round on the frozen hard-30 and hard-90 splits](https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/figures/rounds.png)
+
+### The 257-task holdout (built 13 Nov, run 14 Nov)
+
+A third pinned split samples the same six families from a fresh seed, deduplicated against every
+training file, and scores the shipped adapter at **235/257 = 91.44%** (Wilson 87.4–94.3%),
+3.72 calls/task, strict JSON 1.000, `arr` 1.000, 15,848.5 s on one T4. That is 1.9 pp below
+hard-90 and inside its interval: the 90-task number was mildly optimistic, not wrong.
+
+| Family | 257-task split | 90-task split |
+|---|---:|---:|
+| settle5 | 50/50 | 15/15 |
+| two_query | **50/50** | 12/15 |
+| trap_combo | 50/50 | 15/15 |
+| empty_balance | 7/7 | 15/15 |
+| paraphrase | 48/50 | 14/15 |
+| convert_sum | **30/50** | 13/15 |
+
+Two moves in opposite directions. `two_query` rises from 12/15 to 50/50. `convert_sum` falls to
+60%, and **14 of the 22 misses are one construction**: `"Dono jod ke INR me: 104 dollars aur 66.7
+euros"`. The adapter reads it as a splitting request — two `add_expense` calls, `settle_up`, and a
+balance answer — and scores 0 of 14 on it. That sentence appears nowhere else under `data/`;
+without those rows the run is 235/243 = 96.7%. The other eight misses are two wrong ledgers and six
+total-sum slips where both conversions are right and the stated total is off by 100 or 1,000
+(`h27-207` says 10,457.20 for 10,557.20). This is reported, not patched: the split was pinned
+before the run, 15 tasks per family never sampled that phrasing, and 257 did.
 
 ## What the 90-task holdout changed
 
@@ -963,7 +988,7 @@ huggingface-cli download primce/lexsi-runs --repo-type dataset --local-dir runs
 | second sample: 32/72 sentinel and 11/72 answer on base, 0/72 and 0/72 on shipped | `python scripts/safety_table.py --run "Base=runs/safety2_base" --run "sft4=runs/safety2_sft4" --run "sft4+hp=runs/safety2_sft4_hardened"` | every ledger and answer column 0.00 for the adapter |
 | Hinglish payloads: 10/24 and 5/24 on base, 0/24 and 0/24 on shipped | `python scripts/safety_table.py --run "Base=runs/safety_hinglish_base" --run "sft4=runs/safety_hinglish_sft4" --run "sft4+hp=runs/safety_hinglish_sft4_hardened"` | every ledger and answer column 0.00 for the adapter, 23/24 solved |
 | The sixth split: 47/72 → 72/72, and the pooled 13/208 → 0/208 | `python scripts/bootstrap.py` | writes the 72-row table into `docs/STATS.md` from `runs/safety_adaptive72_sft4*` |
-| 80 pinned files, including 68 run summaries and the two adapter files | `python scripts/manifest.py --check` | `all 80 hashes match docs/MANIFEST.md` |
+| 83 pinned files, including 71 run summaries and the two adapter files | `python scripts/manifest.py --check` | `all 83 hashes match docs/MANIFEST.md` |
 | every per-task row | `runs/<run>/results.jsonl` | one JSON row per task, with the same fields as `summary.json` |
 
 The two probe splits are also re-scorable offline, and there the same rule holds: AuditKIT counts
@@ -1084,9 +1109,11 @@ the GRPO null) and the safety result are mine.
 - **v3 (2026-11-14/15)** — write-up aligned to the required layout: abstract, base-model-and-method
   line, how the repos connect, a metrics table with directions, data source / language / leak-check
   notes, repo layout, declaration, LLM-usage statement, this changelog. Counts refreshed to 29
-  checks (30 with tests) and 80 pinned files. Three figures added: per-family success on the 90-task
+  checks (30 with tests) and 83 pinned files. Three figures added: per-family success on the 90-task
   holdout, the safety pool, and success per training round. A 257-task split was built, deduplicated
-  against every other split and pinned; its run is not scored in this version. Two answer-level
+  against every other split and pinned, then scored: 235/257 (91.4%), with 14 of the 22 misses on
+  one unseen phrasing; the merged fp16 copy is published and matches the adapter on the three tasks
+  it was replayed on. Two answer-level
   checks were added from the saved episodes (reply against its own ledger, success by
   nearest-training-task similarity), and a published third-party injection detector was measured on
   the guard's own rows.

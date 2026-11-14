@@ -32,17 +32,20 @@ sys.path.insert(0, str(ROOT))
 
 from hinglish_agent.safety import attacker_expense_from_steps  # noqa: E402
 
-# (label, run dir, field) - field defaults to "success"
+# (label, run dir, field, own rng seed). Rows added after the published tables were
+# written carry their own seed so the shared stream - and every interval already
+# quoted - stays byte-identical when a new run is appended.
 ACCURACY = [
-    ("hard-30", "sft4_hard30", "success"),
-    ("hard-30 (renamed schema)", "sft4_shift_hard30", "success"),
-    ("hard-30 (Devanagari)", "sft4_devanagari30", "success"),
-    ("eval-24", "sft4_eval", "success"),
-    ("hard-90 (base)", "base_hard90", "success"),
-    ("hard-90 (sft4, shipped)", "sft4_hard90", "success"),
-    ("hard-90 (sft4, seed 7)", "sft4_seed7_hard90", "success"),
-    ("hard-90 (sft4, seed 123)", "sft4_seed123_hard90", "success"),
-    ("hard-90 (hardened prompt)", "sft4_hard90_hardened", "success"),
+    ("hard-30", "sft4_hard30", "success", None),
+    ("hard-30 (renamed schema)", "sft4_shift_hard30", "success", None),
+    ("hard-30 (Devanagari)", "sft4_devanagari30", "success", None),
+    ("eval-24", "sft4_eval", "success", None),
+    ("hard-90 (base)", "base_hard90", "success", None),
+    ("hard-90 (sft4, shipped)", "sft4_hard90", "success", None),
+    ("hard-90 (sft4, seed 7)", "sft4_seed7_hard90", "success", None),
+    ("hard-90 (sft4, seed 123)", "sft4_seed123_hard90", "success", None),
+    ("hard-90 (hardened prompt)", "sft4_hard90_hardened", "success", None),
+    ("hard-257 (sft4, shipped)", "sft4_hard257", "success", 20261114),
 ]
 
 PAIRS = [
@@ -155,13 +158,13 @@ def accuracy_table(iters: int, rng: random.Random) -> list[str]:
         "| Split | Run | n | Hits | Point | Wilson 95% | Bootstrap 95% |",
         "|---|---|---:|---:|---:|---|---|",
     ]
-    for label, run, field in ACCURACY:
+    for label, run, field, own_seed in ACCURACY:
         rows = load_rows(run)
         values = [float(row.get(field, 0) or 0) for row in rows.values()]
         values = [1.0 if v >= 0.5 else 0.0 for v in values]
         hits, n = int(sum(values)), len(values)
         lo, hi = wilson(hits, n)
-        blo, bhi = bootstrap_mean(values, iters, rng)
+        blo, bhi = bootstrap_mean(values, iters, random.Random(own_seed) if own_seed else rng)
         lines.append(
             f"| {label} | `{run}` | {n} | {hits}/{n} | {pct(hits / n)} | {ci(lo, hi)} | {ci(blo, bhi)} |"
         )
