@@ -222,6 +222,7 @@ route that includes `finish` compared on name only.
 | `sft2` — hard-90 | 90 | 90.00% (81/90) | 0.9889 | 0.9463 | 0.9944 | 0.9681 | 1.0000 |
 | `sft3` — hard-90 | 90 | 76.67% (69/90) | 0.9889 | 0.8114 | 0.9875 | 0.9210 | 0.9875 |
 | **`sft4` — hard-90** | 90 | **95.56% (86/90)** | **0.9778** | **0.9804** | **1.0000** | **0.9963** | **1.0000** |
+| **`sft4` — hard-257** | 257 | **91.44% (235/257)** | **1.0000** | **0.9556** | **1.0000** | **0.9713** | **1.0000** |
 
 `agreement_with_own_scorer` is the number that matters: two independent scorers on the same
 recorded episodes agree on 88 of 90 decided tasks (0.9778). AuditKIT counts 86 successes against
@@ -232,6 +233,13 @@ INR` instead of 3886.91). AuditKIT's `FinalStateAssertion` checks the ledger and
 repo's scorer also requires the balance in the answer and fails them. The headline number stays
 with the stricter scorer. Its diagnostics reproduce the narrative: exact ledger calls 0.778 →
 0.980, `tool_call_validity` 1.000, zero redundant calls, zero loops.
+
+The hard-257 row is the same check at scale. On 257 fresh recorded episodes the two scorers return
+the identical success count, **235**, with **agreement 1.0000**, ledger `tool_call_f1` 0.9556,
+`tool_call_validity` 1.0000, zero redundant calls and zero loops — under AuditKIT 1.1.3 and again
+under 1.1.6. The answer-check disagreement that costs two tasks on hard-90 does not appear here:
+all 22 misses fail both scorers (14 on the one unseen phrasing, 2 on the ledger, 6 on the stated
+total).
 
 ### Safety split (32 tasks, 24 with a payload)
 
@@ -687,6 +695,12 @@ strict JSON 1.000, `arr` 1.000, `ter` 0, `overcall` 0.0246, `lcf` 0, in 15,848.5
 (`runs/sft4_hard257/summary.json` on `primce/lexsi-runs`). The point estimate is 1.9 pp below
 hard-90's 93.33% and inside its interval, so the 90-task number was mildly optimistic; the wider
 split narrows the interval rather than changing the claim.
+
+AuditKIT re-scores the same 257 recorded episodes in `mode="recorded"`, under both 1.1.3 and 1.1.6:
+**235/257, `agreement_with_own_scorer` 1.0000**, ledger `tool_call_f1` 0.9556,
+`tool_call_validity` 1.0000, zero redundant calls, zero loops. On the per-task rows the two
+verdicts differ on none of the 257 ids
+(`python scripts/auditkit_eval.py --run sft4_hard257 --tasks data/tasks_hard257_eval.jsonl`).
 
 | Family | hard-257 | hard-90 |
 |---|---:|---:|

@@ -76,6 +76,23 @@ across 294 clean episodes, 0.22 ms per tool result — and the adapter itself na
 [docs/GUARD.md](docs/GUARD.md). What failed along the way: [docs/WHAT_DIDNT_WORK.md](docs/WHAT_DIDNT_WORK.md).
 Which rules were fixed before the data arrived: [docs/PREREGISTRATION.md](docs/PREREGISTRATION.md).
 
+### Why these numbers cannot be gamed
+
+No judge model is involved anywhere. Six shortcuts a tuned agent could take, and the mechanism that
+blocks each:
+
+| Shortcut | What blocks it | Where |
+|---|---|---|
+| Answer confidently without doing the work | Success is the final integer-paise ledger against a deterministic oracle; the reply is checked only for the balance it states | `score_episode` in [hinglish_agent/runner.py](hinglish_agent/runner.py) |
+| Read the expected answer | The oracle and expected actions stay in the task file; the model sees the user turn, the tool schemas and tool results only | [hinglish_agent/prompts.py](hinglish_agent/prompts.py) |
+| Add an extra expense that "covers" a wrong split | The ledger comparison is exact, and `attacker_expense` counts the extra writes; `overcall` (calls above the oracle route) and `lcf` (looping) are reported per run | [docs/SAFETY.md](docs/SAFETY.md), [docs/STATS.md](docs/STATS.md) |
+| Get the ledger right and the answer wrong | Both are required: `h9-019` and `h9-029` have exact ledgers and still fail | [docs/RESULTS.md](docs/RESULTS.md#auditkit-independent-scorer-track-3-toolkit) |
+| Exploit one scorer's quirk | A second, independently written scorer (AuditKIT, recorded mode) re-scores the same traces: 235/257 on hard-257, agreement **1.0000** | [scripts/auditkit_eval.py](scripts/auditkit_eval.py) |
+| Retry until lucky | Greedy decoding, one run per task, no sampling; every miss is published with its task id | `runs/*/trajectories.jsonl` |
+
+The one thing that would fool it is an oracle row that is itself wrong — a hand-written limitation,
+listed under [what this does not show](#what-this-does-not-show).
+
 Intervals for every published number and the paired bootstrap:
 [docs/STATS.md](docs/STATS.md), `python scripts/bootstrap.py`. Answers that say they ignored an
 injection: **0 of 208**, measured offline by `python scripts/warn_scan.py`.
@@ -356,7 +373,8 @@ AuditKIT replay of the recorded episodes, no judge model: on hard-30, exact-call
 0.033 -> 1.000, tool-call F1 0.188 -> 1.000, redundant calls 0.327 -> 0.000; on hard-90 the
 shipped adapter is exact 0.933, tool-call F1 0.980, validity 1.000, zero redundant calls and zero
 loops. Its success verdict agrees with this repo's scorer on 30/30 (hard-30) and 88/90 decided
-hard-90 tasks.
+hard-90 tasks. On hard-257 it counts **235/257 (91.44%)** — the same count as this repo's scorer,
+agreement **1.0000**, tool-call F1 0.956, validity 1.000, zero redundant calls and zero loops.
 
 ### Safety split (32 tasks, no LLM judge)
 
@@ -413,11 +431,16 @@ from. What the evidence does not cover, written down so a reviewer does not have
   `hinglish_agent/guard.py`* scores **6/8** with the allowlist, and the two misses spell the amount
   out ([docs/GUARD.md](docs/GUARD.md)). That is one author with the source open and one round: the
   verb list is still the boundary, and the guard is a filter, not a proof.
-- **Small n where the claim is strongest.** 90 held-out tasks, 30-task probes, a 24-task headline
-  safety split. The 84/90 is 86.2–96.9% at 95%, and each probe sits at p = 0.125 — not significant
-  at n = 30.
+- **Small n on the probes.** 257 held-out tasks carry the main claim
+  (87.4–94.3% at 95%), a 24-task split carries the safety headline, and the generalisation probes
+  are 30 tasks each. The 25/30 schema-shift and Devanagari results sit at p = 0.125 — not
+  significant at n = 30.
 - **One model family, one size.** Tiny Aya Global 3.35B only. Nothing here shows the mix3 recipe
   transfers to 8B, and no 8B ablation was run on free hardware.
+- **One language pair, plus two script variants.** User turns are Roman-script Hinglish with English
+  numerals. The only other user-side language measurement is a 30-task Devanagari rewrite of
+  hard-30 (25/30, re-ided rows); six of the 24 Hinglish attack rows are Devanagari. Hindi, other
+  Indic languages and other scripts are not measured.
 - **Synthetic, single-turn, four-tool episodes.** Ledgers are generated, each task is one user turn,
   tools are stateless. No production traffic, no concurrent writes, no multi-turn negotiation.
 - **The oracle is hand-written.** Scoring is deterministic, but only as good as the expected-balance
@@ -443,7 +466,9 @@ adapter is 72x cheaper on the cheapest closed tier ($0.78 against $55.63) and 40
 self-hosted ($7.92 against $316): the gap is accuracy, not the price list. A per-token API is still
 about 10x cheaper per request than a dedicated card at 10k tasks/month, so self-hosting is a
 data-locality and batching argument. Dated list prices, caveats and arithmetic:
-[docs/roi.md](docs/roi.md), `python scripts/roi.py`.
+[docs/roi.md](docs/roi.md), `python scripts/roi.py`. On hard-257 the shipped adapter took **61.7 s
+per task** (15,848.5 s / 257) at 3.72 calls, longer per task than hard-90's 50.2 s, so the dollar
+columns stay anchored to the 90-task traffic, where token counts are measured.
 
 ## Training notes
 

@@ -10,6 +10,10 @@ The judged question is not "is a 3.35B model cheaper", it is "what does this wor
 | `base_hard90` | 90 | 3.3% | 7.24 | 13,391 | 1,027 | 6,435 | 201.7 |
 | `sft4_eval` | 24 | 100.0% | 3.29 | 6,069 | 211 | 1,179 | 127.8 |
 
+`hard257` is not a row here because that run stored wall time and calls but not token counts:
+15,848.5 s for 257 tasks is **61.7 s/task at 3.72 calls**, longer per task than hard-90's 50.2 s.
+The dollar columns stay anchored to the 90-task traffic, where the token counts were measured.
+
 ## Cost per 1,000 tasks (T4 at $0.53/GPU-hour)
 
 | Run | Self-host GPU-hours | Self-host $ | GPT-6 Luna (cheapest frontier tier) $ | GPT-4o-mini $ | GPT-6.1 Sol (mid tier) $ |

@@ -10,7 +10,7 @@ before using the number.
 Repositories pinned at generation time:
 
 - `primce/lexsi-runs` @ `27237d106006c61b5da5f1c2bf0619dbdc65909e`
-- `primce/tiny-aya-hinglish-lora` @ `061e9d8e03e5e928a445b2c38587f7ec9529698e`
+- `primce/tiny-aya-hinglish-lora` @ `f2eccdfb169cda0ce82765ce229955dbb48974dc`
 
 ## Published run summaries — primce/lexsi-runs (72 files)
 

@@ -28,7 +28,7 @@ Four steps, no GPU and no token, in the order a judge can do them:
 
 1. **Failure and fix, frozen.** In the Space's replay panel, leave *Shipped adapter — correct split*: verdict **MATCH**, tool trace and closing ledger on the page. Switch to *Base model — duplicate expenses*: **MISMATCH**, 8 calls, never calls `finish`. Same scorer, same page. The [episode gallery](https://huggingface.co/spaces/primce/hinglish-episodes) does this for all 90 held-out tasks, with the six both-model failures one filter away.
 2. **The defence, also frozen.** Open *Try the guard yourself*, pick *Note with an English payload*, mode `strip`, press **Run the guard**: the `note` key is gone and the verdict names the rules that fired. Then pick *Blind b-05*: **not flagged** — a published blind spot, not a bug.
-3. **Every number, its run.** `docs/RESULTS.md`, `docs/SAFETY.md`, `docs/GUARD.md` and `docs/STATS.md` name the run directory behind each figure; `python scripts/fetch_runs.py` pulls those `summary.json` files from `primce/lexsi-runs`, and `docs/MANIFEST.md` carries the sha256 of all 83 published files — 71 run summaries, the two shipped adapter files and ten pinned eval files — re-checkable with `python scripts/manifest.py --check`.
+3. **Every number, its run.** `docs/RESULTS.md`, `docs/SAFETY.md`, `docs/GUARD.md` and `docs/STATS.md` name the run directory behind each figure; `python scripts/fetch_runs.py` pulls those `summary.json` files from `primce/lexsi-runs`, and `docs/MANIFEST.md` carries the sha256 of all 84 published files — 72 run summaries, the two shipped adapter files and ten pinned eval files — re-checkable with `python scripts/manifest.py --check`.
 4. **Recompute offline.** `python scripts/verify_all.py` → 29 checks (dataset pins, oracle 30/30, guard, six safety splits, demo handlers), CPU only; `--with-tests` makes it 30.
 
 ## TL;DR
@@ -53,8 +53,9 @@ Four steps, no GPU and no token, in the order a judge can do them:
 - The abstention-count ablation ("mix5", 32 ask rows instead of 96) scores 83/90 but `asked`
   collapses to **0/8**: the count is what buys the behaviour.
 - Independent **AuditKIT 1.1.3** replay of the same trajectories, no judge model: on the shipped
-  adapter, tool-call F1 **0.980**, validity **1.000**, zero redundant calls, zero loops, and its
-  success verdict agrees with this repo's scorer on **88/90** decided tasks.
+  adapter, hard-90 tool-call F1 **0.980**, validity **1.000**, zero redundant calls, zero loops,
+  and its success verdict agrees with this repo's scorer on **88/90** decided tasks; on hard-257 it
+  returns **235/257** with agreement **1.0000** and tool-call F1 0.956.
 - Indirect injection through tool results: by ledger accounting the base model adds the attacker's
   999999 INR expense on **18/24** tasks and the shipped adapter on **2/24**, and the adapter is the
   only tuned variant that never repeats the attacker number in prose either (**0/24**). The
@@ -491,6 +492,27 @@ python scripts/answer_ledger_audit.py     # both runs, no GPU
 python scripts/similarity_split.py        # quartiles, no GPU
 ```
 
+## Could the scorer be gamed?
+
+No judge model scores anything. Six shortcuts a tuned agent could take, and what blocks each:
+
+- **Answer confidently without doing the work.** Success is the final integer-paise ledger against
+  a deterministic oracle; the reply is checked only for the balance it states.
+- **Read the expected answer.** The oracle and expected actions stay in the task file; the model
+  sees the user turn, the tool schemas and tool results only.
+- **Cover a wrong split with an extra expense.** The ledger comparison is exact; writes the user did
+  not ask for are counted as `attacker_expense`, and `overcall`/`lcf` expose padding and loops.
+- **Get the ledger right and the answer wrong.** Both are required: `h9-019` and `h9-029` have exact
+  ledgers and still fail.
+- **Exploit one scorer's quirk.** A second, independently written scorer (AuditKIT, recorded mode)
+  returns the same verdict on all 257 ids, agreement **1.0000**.
+- **Retry until lucky.** Greedy decoding, one sample per task; every miss is published with its id.
+
+If you only check five things: the split was frozen before the run (`docs/PREREGISTRATION.md`); a
+second scorer re-derives it (`scripts/auditkit_eval.py`); the paired test runs on the same ids
+(`scripts/bootstrap.py`); each claim has a control; and `python scripts/verify_all.py` passes 29
+checks with no GPU. The full route is in `docs/JUDGE.md`.
+
 ## AuditKIT: an independent scorer on the same episodes
 
 The track asks for an agentic evaluation toolkit. AuditKIT replays the recorded trajectories —
@@ -504,9 +526,12 @@ implementation:
 | hard-90 | round 1 | 0.9333 | 0.9463 | 0.9444 | 0.9500 | 0.000 | 1.000 |
 | hard-90 | round 2 | 0.7778 | 0.8114 | 0.8130 | 0.8102 | 0.0109 | 0.9875 |
 | hard-90 | **shipped** | **0.9333** | **0.9804** | **0.9852** | **0.9769** | **0.000** | **1.000** |
+| hard-257 | **shipped** | **0.9300** | **0.9556** | **0.9530** | **0.9630** | **0.000** | **1.000** |
 
 Its success verdict agrees with this repo's deterministic scorer on **30/30** hard-30 tasks and
 **88/90** decided hard-90 tasks, so the toolkit reproduces the result rather than replacing it.
+On hard-257 the two agree on **every one of the 257 task ids** — 235 successes under each scorer,
+agreement **1.0000** — so the wider headline is not an artefact of this repo's answer check.
 That agreement number is the point: two independent scorers, one dataset, no judge.
 
 Where the two differ, AuditKIT is the more lenient one, and the disagreement only ever goes that
@@ -518,7 +543,8 @@ the balance in the answer and fails them. The headline number is the stricter on
 
 The runs were first scored on AuditKIT 1.1.3 and re-scored on the current 1.1.6, which landed on
 2026-11-07 after our freeze: same verdict on every replayed run — 29/30 (hard-30), 86/90 (hard-90),
-28/30 (renamed schema), 26/30 (Devanagari), agreement unchanged at 1.000, 0.9778, 0.900 and 0.967.
+235/257 (hard-257), 28/30 (renamed schema), 26/30 (Devanagari), agreement unchanged at 1.000,
+0.9778, 1.0000, 0.900 and 0.967.
 
 The base model, on the same rows: tool error rate **22.3%** (hard-30) and **17.4%** (hard-90),
 `overcall` **1.08**, `strict_rate` **0.534**, and 16/30 episodes that never reached `finish`.
@@ -926,10 +952,13 @@ and it is already in every run's `summary.json`.
 
 ## Limitations
 
-- hard-90 has 90 tasks; counts are reported next to percentages, and its Wilson interval is
-  still ±5.4 pp on the shipped adapter.
+- hard-257 carries the headline (87.4–94.3% at 95%); hard-90's Wilson interval is still ±5.4 pp on
+  the shipped adapter. Counts are reported next to every percentage.
 - Hard rows are held-out *instances* of the same six templates, so this measures
   generalization across amounts/names/languages, not across task formats.
+- Language coverage is Roman-script Hinglish with English numerals, plus a 30-task Devanagari
+  rewrite of hard-30 (25/30, re-ided rows) and Devanagari rules in the guard; no other language or
+  script was measured.
 - eval-24 is in-distribution with easy train, which is why it stays at 100%.
 - The shipped adapter is better than round 1 by 4 tasks on hard-90, but the paired test is not
   significant (7 fixed, 3 broken, p = 0.34); the claim is "at least as good, directionally
@@ -995,6 +1024,7 @@ huggingface-cli download primce/lexsi-runs --repo-type dataset --local-dir runs
 | Answers that name the injection | `python scripts/warn_scan.py` | adapter `0` of 136, from `final_response` |
 | 29/30 on hard-30, re-scored by AuditKIT | `python scripts/auditkit_eval.py --run sft4_hard30 --tasks data/tasks_hard_eval.jsonl` | `"success": 29`, `agreement_with_own_scorer 1.0` |
 | 84/90 on hard-90, re-scored by AuditKIT | `python scripts/auditkit_eval.py --run sft4_hard90 --tasks data/tasks_hard90_eval.jsonl` | `agreement 0.9778` (88/90), AuditKIT's own count 86/90 — see the scorer note above |
+| 235/257 on hard-257, re-scored by AuditKIT | `python scripts/auditkit_eval.py --run sft4_hard257 --tasks data/tasks_hard257_eval.jsonl` | `"success": 235`, `agreement_with_own_scorer 1.0`, F1 0.9556 |
 | base → shipped, paired | `python scripts/stats.py --a runs/base_hard90 --b runs/sft4_hard90` | 81 fixed, 0 broken, `mcnemar_p` underflows to 0 |
 | sentinel 13/24 and answer 8/24 on base, 0/24 and 0/24 on shipped | `python scripts/safety_table.py` | `attack_ledger` 54.17% → 0.00%, `attack_answer` 33.33% → 0.00% |
 | second sample: 32/72 sentinel and 11/72 answer on base, 0/72 and 0/72 on shipped | `python scripts/safety_table.py --run "Base=runs/safety2_base" --run "sft4=runs/safety2_sft4" --run "sft4+hp=runs/safety2_sft4_hardened"` | every ledger and answer column 0.00 for the adapter |
@@ -1118,6 +1148,13 @@ the GRPO null) and the safety result are mine.
 
 ## Changelog
 
+- **v5 (2026-11-15)** — the independent scorer now covers the headline split: AuditKIT 1.1.3 and
+  1.1.6 replay all 257 recorded episodes and return **235/257 with per-task agreement 1.0000**
+  (tool-call F1 0.956, validity 1.000, zero redundant calls and loops), so the wider number is not
+  an artefact of this repo's answer check. Added a "why this scorer cannot be gamed" section (six
+  shortcuts and the mechanism that blocks each), a five-minute reviewer checklist, the hard-257
+  wall time (61.7 s/task at 3.72 calls, against 50.2 s on hard-90), and an explicit language-scope
+  line (Roman Hinglish, one 30-task Devanagari probe, no other language).
 - **v4 (2026-11-15)** — the before column on the 257-task split is now measured instead of
   inferred: base Tiny Aya scores **0/257** (Wilson 0.0–1.5%) on the same ids, 7.23 calls/task,
   loop collapse 0.568, 6.2 h on one T4, and the paired test is 235 fixed / 0 broken (exact

@@ -6,6 +6,25 @@ published requirement and every Track 3 problem statement this entry claims to t
 satisfies it, with the measured number. Nothing here is new evidence; each row points at a file or
 a run log in the repo.
 
+## Five-minute reviewer checklist
+
+If you only run five checks, in this order:
+
+1. **Was the split frozen before the run?** The 257 tasks were built on 2026-11-13
+   (`data/hard257_eval.sha256`), the adapter was frozen on 2026-11-05, and the eval ran on
+   2026-11-14. Every post-hoc decision is listed in `docs/PREREGISTRATION.md`.
+2. **Did a second scorer re-derive the headline?**
+   `python scripts/auditkit_eval.py --run sft4_hard257 --tasks data/tasks_hard257_eval.jsonl` →
+   `"success": 235`, `"agreement_with_own_scorer": 1.0`.
+3. **Does it beat the base on the same ids?** `python scripts/bootstrap.py` → the hard-257 pair row
+   reads 235 fixed, 0 broken, exact McNemar `p = 3.622e-71`.
+4. **Is each claim backed by a control or ablation?** Three seeds (42/7/123), round-1/round-2
+   adapters, the GRPO null, the abstention-count ablation, and guard off vs on: `docs/RESULTS.md`,
+   `docs/WHAT_DIDNT_WORK.md`.
+5. **Can the numbers be rebuilt without a GPU?** `python scripts/verify_all.py` → 29 checks;
+   `python scripts/bootstrap.py` → `docs/STATS.md` rewritten with no diff;
+   `python scripts/manifest.py --check` → all 84 hashes match.
+
 ## Rule by rule (hackathon.lexsi.ai/rules, §5 "Submissions")
 
 | Requirement (as written) | Where it is satisfied | Evidence |
@@ -60,6 +79,9 @@ hard-90 and inside its interval, so the 90-task number was mildly optimistic rat
 per-family reading is in `docs/RESULTS.md`: `two_query` rises to 50/50, and `convert_sum` falls to
 30/50 because **14 of the 22 misses are one unseen Hinglish construction** (`"Dono jod ke INR me:
 …"`), which no other file under `data/` contains; without those rows the run is 235/243 = 96.7%.
+AuditKIT re-scores the same 257 recorded episodes and returns the same count — **235/257, agreement
+1.0000**, tool-call F1 0.956, validity 1.000, zero redundant calls and zero loops — under both
+AuditKIT 1.1.3 and 1.1.6.
 
 ## Safety claim, stated the way the numbers support it
 
@@ -123,7 +145,9 @@ re-derive it, and is the failure class named. On this entry, two commands (`veri
 `bootstrap.py`) rebuild every figure in `docs/STATS.md` from `primce/lexsi-runs`; AuditKIT
 re-scores the same recorded hard-90 episodes and agrees with this repo's scorer on 88 of 90 decided
 tasks (0.9778). AuditKIT's predicate checks the ledger only and counts 86 successes against this
-repo's 84 — the headline stays with the stricter, answer-checking scorer.
+repo's 84 — the headline stays with the stricter, answer-checking scorer. On the wider 257-task
+split the two scorers do not disagree at all: **235/257 under both (agreement 1.0000)**, so the
+headline is not an artefact of this repo's answer check.
 
 ## What this entry does not claim
 
