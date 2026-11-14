@@ -712,9 +712,16 @@ That is what a fresh holdout is for: hard-90 drew 15 convert_sum rows and never 
 phrasing, and n=257 finds it at 14/14. It is published as a failure, not patched — a fix would be a
 training-data change after the freeze, and the split stays as it was run.
 
-The base model was not run on this split: it is the optional stage of
-`notebooks/kaggle_hard257_merged.ipynb` (~10.8 GPU-hours) and the paired base→adapter test is
-already published on hard-90 (`81 fixed, 0 broken`).
+The base model was run on this split too (`runs/base_hard257`, 6.2 h on one T4, same greedy fp16
+settings): **0/257 = 0.00%** (Wilson 0.0–1.5%), `tac` 0.377, `arr` 0.768, `ter` 0.233, `lcf` 0.568,
+7.23 calls/task, answer contains the amount on 5 of 257. So the paired test is **235 fixed, 0
+broken, exact McNemar p = 3.6e-71**, and the before column is now measured on the same 257 ids
+instead of inferred from hard-90.
+
+That zero is not a surprise next to 1/30 and 3/90: the two smaller splits each found one clean
+base success, and at 257 tasks the same low rate lands at zero. It does mean this split carries no
+base success to dissect, which is why the base behaviour is still described from hard-30, where its
+single hit (`h-e-029`) came after inventing an 800 INR expense.
 
 The same notebook merged the adapter into the base weights and published them as
 `primce/tiny-aya-hinglish-merged` (8 files, one `model.safetensors`). The parity check replays the

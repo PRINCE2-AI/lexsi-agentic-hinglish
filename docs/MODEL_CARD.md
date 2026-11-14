@@ -41,6 +41,7 @@ seed adapters are kept for the ablation and variance controls.
 |---|---|---:|
 | Base Tiny Aya, prompt-only | 30 hard tasks | 3.33% (1/30) |
 | Base Tiny Aya, prompt-only | 90 hard tasks | 3.33% (3/90) |
+| Base Tiny Aya, prompt-only | 257 fresh hard tasks | 0.00% (0/257) |
 | SFT on easy split | 30 hard tasks | 63.33% |
 | + GRPO (30 steps, graded reward) | 30 hard tasks | 63.33% (no gain) |
 | SFT on the reweighted mix (`sft2`) | 30 / 90 hard tasks | 96.67% (29/30) / 88.89% (80/90) |
@@ -66,7 +67,9 @@ seed adapters are kept for the ablation and variance controls.
   **88/90 = 97.8% on hard-30**. The shipped seed 42 is not a lucky seed; `docs/STATS.md` recomputes
   both from the run logs.
 - Wider holdout: the same adapter on a pinned 257-task split built from a fresh seed scores
-  **235/257 = 91.44%** (Wilson 87.4–94.3%), inside hard-90's interval. 14 of the 22 misses are one
+  **235/257 = 91.44%** (Wilson 87.4–94.3%), inside hard-90's interval. The base was run on the same
+  ids for **0/257 = 0.00%** (Wilson 0.0–1.5%), so the before column is measured rather than inferred
+  (235 fixed, 0 broken, exact McNemar p = 3.6e-71). 14 of the 22 misses are one
   unseen Hinglish phrasing (`"Dono jod ke INR me: …"`) that the split alone contains;
   `docs/RESULTS.md` names it.
 - Tool calls per task: **3.57** on hard-30, exactly the oracle's count (base: 7.03). On hard-90:

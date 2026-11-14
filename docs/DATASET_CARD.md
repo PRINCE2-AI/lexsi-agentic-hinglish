@@ -36,8 +36,8 @@ check a number:
 
 | Config | Rows | One row is |
 |---|---:|---|
-| `results` | 2,057 | one task in one run: `run`, `task_id`, `family`, `success`, plus every per-task metric (`tac`, `arr`, `ter`, `rad`, `overcall`, `lcf`, `answer_ok`, `ledger_ok`, `strict`, `calls`, `steps`, `parse_failures`, and the attack counters where they exist) |
-| `runs` | 39 | one run: the same fields aggregated, with `n`, `seconds`, `model` and `adapter` |
+| `results` | 2,314 | one task in one run: `run`, `task_id`, `family`, `success`, plus every per-task metric (`tac`, `arr`, `ter`, `rad`, `overcall`, `lcf`, `answer_ok`, `ledger_ok`, `strict`, `calls`, `steps`, `parse_failures`, and the attack counters where they exist) |
+| `runs` | 40 | one run: the same fields aggregated, with `n`, `seconds`, `model` and `adapter` |
 
 Both are regenerated from `runs/*/results.jsonl` and `runs/*/summary.json` by
 `python scripts/publish_viewer.py`, so the tables and the files cannot disagree.
@@ -54,6 +54,7 @@ Both are regenerated from `runs/*/results.jsonl` and `runs/*/summary.json` by
 | `sft3_hard30/`, `sft3_hard90/`, `sft3_eval/` | round-2 adapter (mix2) |
 | `sft4_hard30/`, `sft4_hard90/`, `sft4_eval/` | **round-3 adapter, the one that ships** |
 | `sft4_hard257/` | shipped adapter on the 257-task fresh holdout: 235/257 (91.44%), 14 misses are one unseen phrasing |
+| `base_hard257/` | base Tiny Aya on the same 257 tasks: 0/257 (0.00%), 7.23 calls/task, loop collapse 0.568, 6.2 h (that run's files were truncated with its session, so it ships the log, a summary rebuilt from it, and `success`/`calls`/`errors`/`done` per task — see below) |
 | `sft4_hard90_hardened/` | shipped adapter on clean hard-90 with the hardened system prompt (86/90 vs 84/90 default) |
 | `sft4_shift_hard30/` | shipped adapter on hard-30 with every tool and parameter renamed (25/30 vs 29/30 canonical) |
 | `sft4_devanagari30/` | shipped adapter on the Devanagari version of hard-30, canonical schema (25/30) |
@@ -80,6 +81,12 @@ Each folder holds:
 - `results.jsonl` — the per-task score rows.
 - `summary.json` — the aggregate, including `seconds` (wall time) and, for safety runs, a
   per-family breakdown.
+
+`base_hard257/` is the one exception. The Kaggle session that ran it hung after the eval and its
+`results.jsonl` was saved empty, so the folder ships `run.log` (the script's own 257 per-task
+lines), a `summary.json` rebuilt from that log, and a `results.jsonl` carrying `success`, `calls`,
+`errors` and `done` per task. The other per-task metrics and the trajectories are not recoverable;
+they show as empty in the viewer table for that run.
 
 ## Provenance
 

@@ -21,7 +21,7 @@ two modes, including one whose payloads are written in Hinglish and Devanagari.*
 | Write-up | https://huggingface.co/spaces/primce/hinglish-track3-article |
 | All 90 held-out episodes, browsable | https://huggingface.co/spaces/primce/hinglish-episodes — base vs shipped adapter on every task, with trace and closing ledger against the oracle; static page, no GPU |
 | All 72 injection episodes, guard off vs on | https://huggingface.co/spaces/primce/hinglish-attacks — both columns replayed from the published run logs, with the exact text the model read after each tool call; static page, no GPU |
-| Provenance | [docs/MANIFEST.md](https://github.com/PRINCE2-AI/lexsi-agentic-hinglish/blob/main/docs/MANIFEST.md) — sha256 of 83 files (71 run summaries, the two adapter files, 10 pinned eval files) at a pinned repo revision; `python scripts/manifest.py --check` fails on drift |
+| Provenance | [docs/MANIFEST.md](https://github.com/PRINCE2-AI/lexsi-agentic-hinglish/blob/main/docs/MANIFEST.md) — sha256 of 84 files (72 run summaries, the two adapter files, 10 pinned eval files) at a pinned repo revision; `python scripts/manifest.py --check` fails on drift |
 | ROI (optional deliverable) | [docs/roi.md](https://github.com/PRINCE2-AI/lexsi-agentic-hinglish/blob/main/docs/roi.md) — measured tokens and latency on hard-90, dated list prices: $0.78 vs $55.63 per 1,000 *solved* tasks on the cheapest closed tier (72x), $7.92 vs $316 self-hosted; `python scripts/roi.py` reproduces the tables |
 | HF Collection | https://huggingface.co/collections/primce/lexsi-track-3-hinglish-expense-agent-6aeb3207e10dfc7dda6329d6 |
 
@@ -85,13 +85,15 @@ backs it; the rest are listed as not claimed, on purpose.
 | SFT-mix2 seed 7 | 93.33% (28/30) | 83.33% (75/90) | - |
 | SFT-mix2 seed 123 | 80.00% (24/30) | 75.56% (68/90) | - |
 | **Same adapter, 257-task fresh holdout** | - | **91.44% (235/257)** | - |
+| Base Tiny Aya, same 257 tasks | - | 0.00% (0/257) | - |
 
-Paired exact McNemar, same task ids: base → sft4 hard-90 **81 fixed, 0 broken, p < 1e-20**;
-sft3 → sft4 **18 fixed, 2 broken, p = 0.0004**; sft2 → sft4 7 fixed, 3 broken, p = 0.34
-(directional only). Wilson 95% on hard-90: **86.2–96.9%**; on hard-257: **87.4–94.3%**. The wider
-split was built from a fresh seed on 13 Nov and run on 14 Nov; 14 of its 22 misses are one unseen
-Hinglish construction (`"Dono jod ke INR me: …"`), which no other split contains — without those
-rows it is 235/243 = 96.7%. Per-family table in `docs/RESULTS.md`.
+Paired exact McNemar, same task ids: base → sft4 hard-90 **81 fixed, 0 broken, p < 1e-20** and
+hard-257 **235 fixed, 0 broken, p = 3.6e-71**; sft3 → sft4 **18 fixed, 2 broken, p = 0.0004**;
+sft2 → sft4 7 fixed, 3 broken, p = 0.34
+(directional only). Wilson 95% on hard-90: **86.2–96.9%**; on hard-257: **87.4–94.3%** (base
+0.0–1.5%). The wider split was built from a fresh seed on 13 Nov and run on 14 Nov; 14 of its 22
+misses are one unseen Hinglish construction (`"Dono jod ke INR me: …"`), which no other split
+contains — without those rows it is 235/243 = 96.7%. Per-family table in `docs/RESULTS.md`.
 
 The seed spread is published instead of hidden. On the shipped mix3 recipe, seeds 42 / 7 / 123
 score 84, 84 and 83 of 90 on hard-90 and 29, 30 and 29 of 30 on hard-30; seed 42 against seed 7 is
@@ -275,7 +277,7 @@ not shipped (`docs/GUARD.md`).
 git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
 python scripts/verify_all.py      # 29 checks: pins, oracle 30/30, safety (four splits incl. Hinglish payloads), contrarian splits, Devanagari, schema shift, reward, stats, AuditKIT adapter, demo handlers, guard sandbox
 python scripts/verify_all.py --with-tests   # 30 checks: the same, plus the pytest suite
-python scripts/manifest.py --check          # re-hashes 83 files on the Hub; fails on drift
+python scripts/manifest.py --check          # re-hashes 84 files on the Hub; fails on drift
 ```
 
 On a T4 (one GPU is enough):

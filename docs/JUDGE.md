@@ -131,8 +131,10 @@ repo's 84 — the headline stays with the stricter, answer-checking scorer.
 - The renamed-schema probe is 25/30 vs 29/30, exact McNemar p = 0.125 — a real drop that is not
   significant at n=30. It is reported as a drop.
 - Devanagari-30 (25/30) uses re-ided rows, so it is a nominal comparison only.
-- The base model was not run on hard-257, so that split has no before column; the paired test stays
-  on hard-90. The merged fp16 checkpoint matches the adapter on the three tasks it was replayed on —
+- The base model is 0/257 on hard-257, so that split's before column is a floor with a
+  0.0–1.5% Wilson interval, not a rate estimate. The 235 fixed / 0 broken McNemar is exact, but
+  the base's behaviour is still described from hard-30, where its one hit came after inventing an
+  expense. The merged fp16 checkpoint matches the adapter on the three tasks it was replayed on —
   a smoke test, not a proof of equivalence.
 - GRPO was run twice and moved nothing (0 fixed, 0 broken on hard-90, p = 1.0). The RL result is
   published as a null, not as a win; the full failure analysis is in `docs/WHAT_DIDNT_WORK.md`.

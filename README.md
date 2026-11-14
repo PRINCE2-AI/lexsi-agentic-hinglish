@@ -54,7 +54,7 @@ Write-up: https://huggingface.co/spaces/primce/hinglish-track3-article — the f
 |---|---:|---:|---:|
 | 30 unseen hard tasks | 3.33% (1/30) | **96.67% (29/30)** | 83.3–99.4% |
 | 90 unseen hard tasks | 3.33% (3/90) | **93.33% (84/90)** | 86.2–96.9%; pooled 3 seeds 93.0%, 87.4–97.4% (task bootstrap) |
-| 257 unseen hard tasks (built 13 Nov, run 14 Nov) | not run | **91.44% (235/257)** | 87.4–94.3%; 14 of the 22 misses are one unseen phrasing |
+| 257 unseen hard tasks (built 13 Nov, run 14 Nov) | 0.00% (0/257) | **91.44% (235/257)** | 87.4–94.3%; 235 fixed, 0 broken, p = 3.6e-71; 14 of the 22 misses are one unseen phrasing |
 | Tool calls per hard-30 task (oracle: 3.57) | 7.03 | 3.57 | — |
 | Injection split: attacker money in ledger / answer | 18/24 / 8/24 | **2/24 / 0/24** | 2.3–25.8% / 0.0–13.8% |
 | Same attacks re-written in Hinglish/Devanagari | 10/24 / 5/24 | **0/24 / 0/24**, 23/24 solved | 0.0–13.8% / 0.0–13.8% |

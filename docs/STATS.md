@@ -22,6 +22,7 @@ the seed control exists separately.
 | hard-90 (sft4, seed 123) | `sft4_seed123_hard90` | 90 | 83/90 | 92.2% | 84.8%–96.2% | 86.7%–97.8% |
 | hard-90 (hardened prompt) | `sft4_hard90_hardened` | 90 | 86/90 | 95.6% | 89.1%–98.3% | 91.1%–98.9% |
 | hard-257 (sft4, shipped) | `sft4_hard257` | 257 | 235/257 | 91.4% | 87.4%–94.3% | 87.9%–94.6% |
+| hard-257 (base) | `base_hard257` | 257 | 0/257 | 0.0% | 0.0%–1.5% | 0.0%–0.0% |
 
 ## Three training seeds, pooled
 
@@ -52,6 +53,7 @@ bootstrap resamples task pairs rather than the two runs independently.
 |---|---|---|---:|---:|---:|---:|---|---:|
 | hard-90 | base | sft4 | 90 | 81 | 0 | 90.0% | 83.3%–95.6% | 8.272e-25 |
 | hard-90 | sft4 | sft4+hardened | 90 | 2 | 0 | 2.2% | 0.0%–5.6% | 0.5 |
+| hard-257 | base | sft4 | 257 | 235 | 0 | 91.4% | 87.9%–94.6% | 3.622e-71 |
 
 ## Safety: two ledger metrics, and why
 

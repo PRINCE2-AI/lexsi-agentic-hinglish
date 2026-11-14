@@ -340,6 +340,18 @@ total-sum slips where both conversions are right and the stated total is off by 
 (`h27-207` says 10,457.20 for 10,557.20). This is reported, not patched: the split was pinned
 before the run, 15 tasks per family never sampled that phrasing, and 257 did.
 
+The base model was then run on the same 257 ids for the before column: **0/257 = 0.00%** (Wilson
+0.0–1.5%), 7.23 calls/task, loop collapse 0.568, 6.2 h on one T4. Zero is consistent with its
+3.33% on the 30- and 90-task splits — each of those found one clean hit, and the same low rate over
+257 draws lands on none — but it is published as zero rather than interpolated. The paired test on
+this split is **235 fixed, 0 broken, exact McNemar p = 3.6e-71**.
+
+The base run's own `results.jsonl` was truncated when its Kaggle session hung after the eval, so
+`base_hard257/` on the Hub ships the run log with all 257 per-task lines, a `summary.json` rebuilt
+from that log, and the per-task `success`, `calls`, `errors` and `done`; the aggregate metrics come
+from the summary the run printed itself and match the log (`calls` 7.2296 → 7.23, `errors` 1.8521 →
+1.85). Per-task tool metrics and trajectories for that run are not recoverable and are not claimed.
+
 ## What the 90-task holdout changed
 
 The 30-task split was optimistic by 26 points for the round-2 adapter. Two families it
@@ -988,7 +1000,7 @@ huggingface-cli download primce/lexsi-runs --repo-type dataset --local-dir runs
 | second sample: 32/72 sentinel and 11/72 answer on base, 0/72 and 0/72 on shipped | `python scripts/safety_table.py --run "Base=runs/safety2_base" --run "sft4=runs/safety2_sft4" --run "sft4+hp=runs/safety2_sft4_hardened"` | every ledger and answer column 0.00 for the adapter |
 | Hinglish payloads: 10/24 and 5/24 on base, 0/24 and 0/24 on shipped | `python scripts/safety_table.py --run "Base=runs/safety_hinglish_base" --run "sft4=runs/safety_hinglish_sft4" --run "sft4+hp=runs/safety_hinglish_sft4_hardened"` | every ledger and answer column 0.00 for the adapter, 23/24 solved |
 | The sixth split: 47/72 → 72/72, and the pooled 13/208 → 0/208 | `python scripts/bootstrap.py` | writes the 72-row table into `docs/STATS.md` from `runs/safety_adaptive72_sft4*` |
-| 83 pinned files, including 71 run summaries and the two adapter files | `python scripts/manifest.py --check` | `all 83 hashes match docs/MANIFEST.md` |
+| 84 pinned files, including 72 run summaries and the two adapter files | `python scripts/manifest.py --check` | `all 84 hashes match docs/MANIFEST.md` |
 | every per-task row | `runs/<run>/results.jsonl` | one JSON row per task, with the same fields as `summary.json` |
 
 The two probe splits are also re-scorable offline, and there the same rule holds: AuditKIT counts
@@ -1106,10 +1118,19 @@ the GRPO null) and the safety result are mine.
 
 ## Changelog
 
+- **v4 (2026-11-15)** — the before column on the 257-task split is now measured instead of
+  inferred: base Tiny Aya scores **0/257** (Wilson 0.0–1.5%) on the same ids, 7.23 calls/task,
+  loop collapse 0.568, 6.2 h on one T4, and the paired test is 235 fixed / 0 broken (exact
+  McNemar p = 3.6e-71). The run folder is published as `base_hard257/`; because its Kaggle
+  session hung after the eval and truncated the files, it ships the run's log, a summary rebuilt
+  from that log, and per-task `success`/`calls`/`errors`/`done` — stated wherever the folder is
+  described. `docs/STATS.md` gains both the base row and the hard-257 paired row (every older
+  interval is byte-identical), the viewer tables are refreshed to 2,314 task rows and 40 runs, and
+  the manifest is re-generated at 84 pinned files.
 - **v3 (2026-11-14/15)** — write-up aligned to the required layout: abstract, base-model-and-method
   line, how the repos connect, a metrics table with directions, data source / language / leak-check
   notes, repo layout, declaration, LLM-usage statement, this changelog. Counts refreshed to 29
-  checks (30 with tests) and 83 pinned files. Three figures added: per-family success on the 90-task
+  checks (30 with tests) and 84 pinned files. Three figures added: per-family success on the 90-task
   holdout, the safety pool, and success per training round. A 257-task split was built, deduplicated
   against every other split and pinned, then scored: 235/257 (91.4%), with 14 of the 22 misses on
   one unseen phrasing; the merged fp16 copy is published and matches the adapter on the three tasks

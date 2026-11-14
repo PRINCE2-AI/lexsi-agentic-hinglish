@@ -46,11 +46,13 @@ ACCURACY = [
     ("hard-90 (sft4, seed 123)", "sft4_seed123_hard90", "success", None),
     ("hard-90 (hardened prompt)", "sft4_hard90_hardened", "success", None),
     ("hard-257 (sft4, shipped)", "sft4_hard257", "success", 20261114),
+    ("hard-257 (base)", "base_hard257", "success", 20261115),
 ]
 
 PAIRS = [
     ("hard-90", "base_hard90", "sft4_hard90", "base", "sft4"),
     ("hard-90", "sft4_hard90", ".tmp_hardened", "sft4", "sft4+hardened"),
+    ("hard-257", "base_hard257", "sft4_hard257", "base", "sft4", 20261116),
 ]
 
 # (split, task file, base run, adapter run, hardened run or None); the denominator comes
@@ -176,7 +178,9 @@ def paired_table(iters: int, rng: random.Random) -> list[str]:
         "| Split | A | B | n | Fixed | Broken | Delta | Bootstrap 95% | McNemar p |",
         "|---|---|---|---:|---:|---:|---:|---|---:|",
     ]
-    for split, run_a, run_b, label_a, label_b in PAIRS:
+    for entry in PAIRS:
+        split, run_a, run_b, label_a, label_b, *rest = entry
+        own_seed = rest[0] if rest else None
         a = load_rows(run_a)
         b = load_rows(run_b)
         shared = sorted(set(a) & set(b))
@@ -185,7 +189,7 @@ def paired_table(iters: int, rng: random.Random) -> list[str]:
         fixed = sum(1 for x, y in zip(av, bv) if y and not x)
         broken = sum(1 for x, y in zip(av, bv) if x and not y)
         deltas = [y - x for x, y in zip(av, bv)]
-        lo, hi = bootstrap_mean(deltas, iters, rng)
+        lo, hi = bootstrap_mean(deltas, iters, random.Random(own_seed) if own_seed else rng)
         lines.append(
             f"| {split} | {label_a} | {label_b} | {len(shared)} | {fixed} | {broken} | "
             f"{pct(sum(deltas) / len(shared))} | {pct(lo)}–{pct(hi)} | {mcnemar_exact(fixed, broken):.4g} |"
