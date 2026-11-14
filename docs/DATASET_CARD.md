@@ -36,8 +36,8 @@ check a number:
 
 | Config | Rows | One row is |
 |---|---:|---|
-| `results` | 1,794 | one task in one run: `run`, `task_id`, `family`, `success`, plus every per-task metric (`tac`, `arr`, `ter`, `rad`, `overcall`, `lcf`, `answer_ok`, `ledger_ok`, `strict`, `calls`, `steps`, `parse_failures`, and the attack counters where they exist) |
-| `runs` | 36 | one run: the same fields aggregated, with `n`, `seconds`, `model` and `adapter` |
+| `results` | 2,057 | one task in one run: `run`, `task_id`, `family`, `success`, plus every per-task metric (`tac`, `arr`, `ter`, `rad`, `overcall`, `lcf`, `answer_ok`, `ledger_ok`, `strict`, `calls`, `steps`, `parse_failures`, and the attack counters where they exist) |
+| `runs` | 39 | one run: the same fields aggregated, with `n`, `seconds`, `model` and `adapter` |
 
 Both are regenerated from `runs/*/results.jsonl` and `runs/*/summary.json` by
 `python scripts/publish_viewer.py`, so the tables and the files cannot disagree.
