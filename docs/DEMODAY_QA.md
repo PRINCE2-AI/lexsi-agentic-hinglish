@@ -63,6 +63,24 @@ Add the two currency-sum phrasings to training data and re-freeze, extend the Hi
 split, and run the guard against a second independent attack author. Those are named as not done in
 `docs/WHAT_DIDNT_WORK.md`, not hidden.
 
+**11. "Another Track-3 entry reports 100% — why is yours 93.3%?"**
+Because 100% on 30 tasks and 96.67% on 30 tasks are the same measurement. Thirty of thirty has a
+Wilson interval of **88.6–100%**, twenty-nine of thirty **83.3–99.4%** — one task apart, overlapping.
+The entries that report 97–100% are reporting on splits they wrote, with no shared benchmark from the
+organisers, so the percentages are not comparable; the methods are. This entry went from 90 tasks to
+**257** (235/257, 87.4–94.3%) on a split pinned by sha256 before the run, measured the base on the
+same ids (**0/257**), and the number went down, not up. `docs/JUDGE.md`.
+
+**12. "Where does this differ from the other eleven Track-3 entries?"**
+Scanned on 15 Nov: **12** Track-3 repos, **11** others. What they have that this entry does not: a
+higher self-reported headline (97–100% on their own splits), 5–8 languages, and shipped GGUF, laptop
+or voice deployments. What this entry has that the scan did not find elsewhere: **SHA-pinned splits
+frozen before the run**, **30 offline checks** that rebuild every published figure from
+`primce/lexsi-runs` with no GPU or token, a **second scorer** that agrees on all 257 ids
+(1.0000), a **measured guard** with an in-sample, blind and source-open number (5/8 blind,
+0/1,010 clean results flagged), and a **base row on every split** (0/257, 1/30, 3/90). Both lists
+are stated because both are true. `docs/JUDGE.md`, `docs/GUARD.md`, `docs/WHAT_DIDNT_WORK.md`.
+
 ## Run of show (2:50, hard stop 3:03)
 
 | Time | Beat | What is on screen |
