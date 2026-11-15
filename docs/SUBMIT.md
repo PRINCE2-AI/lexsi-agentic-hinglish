@@ -9,7 +9,7 @@ independent AuditKIT pass. Everything left is packaging, and packaging is what m
 
 | # | What judges check | Status |
 |---|---|---|
-| 1 | Public repo, runnable, numbers reproducible | done: `python scripts/verify_all.py` → 29/29, no GPU or token; one-click Colab `notebooks/colab_reproduce.ipynb` |
+| 1 | Public repo, runnable, numbers reproducible | done: `python scripts/verify_all.py` → 30/30, no GPU or token; one-click Colab `notebooks/colab_reproduce.ipynb` |
 | 2 | **Live Space demo** with a visible tool trace | **live**: https://huggingface.co/spaces/primce/hinglish-expense-agent (ZeroGPU `zero-a10g`, sft4 adapter, base/tuned switch, injection scenario, and a CPU-only "Try the guard yourself" panel that runs on any paste with no GPU quota) |
 | 3 | **HF Article** with metrics, before/after, rationale | **live**: https://huggingface.co/spaces/primce/hinglish-track3-article (static Space; Hub Articles need PRO) |
 | 4 | HF artifacts: adapter + run logs + dataset | adapter (`sft4_adapter`, `sft4_seed7_adapter`, `sft4_seed123_adapter`, `sft5_adapter`, `sft3_seed7/123_adapter`), all run logs, and two public collections: [models](https://huggingface.co/collections/primce/lexsi-track-3-models-hinglish-expense-agent-6af3f4e4b0388e242c7d574a) and [datasets](https://huggingface.co/collections/primce/lexsi-track-3-datasets-hinglish-expense-agent-6af1584f9048846d4db4970b) |
