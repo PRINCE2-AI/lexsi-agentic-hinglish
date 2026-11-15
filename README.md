@@ -35,10 +35,10 @@ Write-up: https://huggingface.co/spaces/primce/hinglish-track3-article — the f
    [SAFETY.md](docs/SAFETY.md), [GUARD.md](docs/GUARD.md), [STATS.md](docs/STATS.md); each figure
    names the run directory whose `summary.json` it comes from, and `python scripts/fetch_runs.py`
    pulls those files from `primce/lexsi-runs`. [MANIFEST.md](docs/MANIFEST.md) carries the sha256
-   of all 66 published summaries, the shipped adapter and the eight pinned eval files;
+   of all 74 published summaries, the shipped adapter and the eleven pinned eval files;
    `python scripts/manifest.py --check` re-hashes them from the Hub and fails on any drift. What the
    evidence does not cover: [what this does not show](#what-this-does-not-show).
-4. **Recompute offline.** `python scripts/verify_all.py --with-tests` → 29 checks (the pytest
+4. **Recompute offline.** `python scripts/verify_all.py --with-tests` → 31 checks (the pytest
    suite, dataset pins, oracle 30/30, guard, safety splits, demo handlers), no GPU and no token:
 
    ```console
@@ -47,7 +47,7 @@ Write-up: https://huggingface.co/spaces/primce/hinglish-track3-article — the f
    [PASS] hard split pin + oracle
    ...
    [PASS] oracle on hard-30
-   all 29 checks passed - dataset, pins and scoring are consistent
+   all 31 checks passed - dataset, pins and scoring are consistent
    ```
 
 | | Base Tiny Aya (3.35B) | Shipped `sft4_adapter` | Wilson 95% (adapter) |
@@ -55,6 +55,7 @@ Write-up: https://huggingface.co/spaces/primce/hinglish-track3-article — the f
 | 30 unseen hard tasks | 3.33% (1/30) | **96.67% (29/30)** | 83.3–99.4% |
 | 90 unseen hard tasks | 3.33% (3/90) | **93.33% (84/90)** | 86.2–96.9%; pooled 3 seeds 93.0%, 87.4–97.4% (task bootstrap) |
 | 257 unseen hard tasks (built 13 Nov, run 14 Nov) | 0.00% (0/257) | **91.44% (235/257)** | 87.4–94.3%; 235 fixed, 0 broken, p = 3.6e-71; 14 of the 22 misses are one unseen phrasing |
+| 30 unseen hard tasks in Devanagari (built 15 Nov, with base control) | 3.33% (1/30) | **96.67% (29/30)** | 83.3–99.4%; 28 fixed, 0 broken, p = 7.5e-9 |
 | Tool calls per hard-30 task (oracle: 3.57) | 7.03 | 3.57 | — |
 | Injection split: attacker money in ledger / answer | 18/24 / 8/24 | **2/24 / 0/24** | 2.3–25.8% / 0.0–13.8% |
 | Same attacks re-written in Hinglish/Devanagari | 10/24 / 5/24 | **0/24 / 0/24**, 23/24 solved | 0.0–13.8% / 0.0–13.8% |
@@ -105,7 +106,7 @@ are unchanged.
 
 ```bash
 git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
-python scripts/verify_all.py      # 29 checks, no GPU, no token
+python scripts/verify_all.py      # 30 checks, no GPU, no token
 python scripts/fetch_runs.py      # ~20 MB of run logs from primce/lexsi-runs
 python scripts/bootstrap.py       # rewrites docs/STATS.md; git diff shows no change
 ```
@@ -247,7 +248,7 @@ python scripts/verify_all.py
 
 That single command regenerates the hard, hard-90 and safety splits, checks every SHA-256 pin,
 runs every test suite, replays the oracle and runs the AuditKIT adapter tests. It prints
-`all 29 checks passed` when the dataset and the scoring are consistent.
+`all 30 checks passed` when the dataset and the scoring are consistent.
 
 
 ### Tiny Aya access
@@ -438,9 +439,12 @@ from. What the evidence does not cover, written down so a reviewer does not have
 - **One model family, one size.** Tiny Aya Global 3.35B only. Nothing here shows the mix3 recipe
   transfers to 8B, and no 8B ablation was run on free hardware.
 - **One language pair, plus two script variants.** User turns are Roman-script Hinglish with English
-  numerals. The only other user-side language measurement is a 30-task Devanagari rewrite of
-  hard-30 (25/30, re-ided rows); six of the 24 Hinglish attack rows are Devanagari. Hindi, other
-  Indic languages and other scripts are not measured.
+  numerals. Two Devanagari probes exist: a 30-task rewrite of hard-30 (25/30 on the adapter, no base
+  run on that file) and a fresh 30-task split built 15 Nov with five tasks per family and the base
+  measured on the same ids (**29/30 against 1/30**, 28 fixed, 0 broken); six of the 24 Hinglish
+  attack rows are Devanagari. The second probe's template fixes two grammar nits from the first, so
+  the two numbers are a second sample, not a rescore. Hindi beyond Devanagari, other Indic languages
+  and other scripts are not measured.
 - **Synthetic, single-turn, four-tool episodes.** Ledgers are generated, each task is one user turn,
   tools are stateless. No production traffic, no concurrent writes, no multi-turn negotiation.
 - **The oracle is hand-written.** Scoring is deterministic, but only as good as the expected-balance

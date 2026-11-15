@@ -82,7 +82,8 @@ seed adapters are kept for the ablation and variance controls.
   verdicts: hard-30 exact-call accuracy **0.033 → 1.000**, tool-call F1 **0.188 → 1.000**,
   redundant calls **0.327 → 0.000**. On hard-90: exact 0.933, F1 **0.980**, validity 1.000, zero
   redundant calls and zero loops; its success verdict agrees with the repo scorer on 88/90 decided
-  tasks.
+  tasks. On hard-257 it returns **235/257** with agreement **1.0000**, F1 0.956 and validity 1.000
+  under both 1.1.3 and 1.1.6.
 
 Three seeds of the mix2 recipe span 16.67 pp on hard-30 and 7.77 pp on hard-90; three seeds of the
 mix3 recipe that ships span **3.33 pp and 1.11 pp** on the same splits. Mix3 seeds 42 / 7 / 123
@@ -258,12 +259,16 @@ tool call per turn, ledger returned by every ledger tool and copied into the nex
 - Hinglish, English and Devanagari. On a Devanagari version of the 30-task hard split (Latin
   person names, ISO currency codes) the adapter scores 25/30 against 29/30 canonical; answers
   stay in Latin script. That comparison is nominal, because the Devanagari file re-ids its rows.
+  A second, freshly built Devanagari split (15 Nov, five tasks per family, pin `2b3179ac…`) scores
+  **29/30 against 1/30 for the untuned base** on the same ids (28 fixed, 0 broken), with AuditKIT
+  returning 29/30 on both 1.1.3 and 1.1.6; its template fixes the older file's word order, so the
+  two are reported side by side rather than merged.
 - Robust to the tool schema, not tied to tool-name strings: with every tool and parameter
   renamed (`record_split`, `fx_convert`, `member_balance`, `settle`, `done`) it scores 25/30,
   while the untuned base under the same rename scores 0/30 (loop collapse 0.60). The 4-task cost
   is 4 broken / 0 fixed, exact McNemar p = 0.125 — not significant at n = 30.
-- These two probes cost about 4 tasks each and hit different families (`two_query` for the rename,
-  `paraphrase` for Devanagari). Both are diagnostics at n = 30, not headline numbers.
+- These probes cost about 4 tasks each and hit different families (`two_query` for the rename,
+  `paraphrase` for Devanagari). All of them are diagnostics at n = 30, not headline numbers.
 
 ## Licence and provenance
 

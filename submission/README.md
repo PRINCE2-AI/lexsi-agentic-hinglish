@@ -21,7 +21,7 @@ two modes, including one whose payloads are written in Hinglish and Devanagari.*
 | Write-up | https://huggingface.co/spaces/primce/hinglish-track3-article |
 | All 90 held-out episodes, browsable | https://huggingface.co/spaces/primce/hinglish-episodes — base vs shipped adapter on every task, with trace and closing ledger against the oracle; static page, no GPU |
 | All 72 injection episodes, guard off vs on | https://huggingface.co/spaces/primce/hinglish-attacks — both columns replayed from the published run logs, with the exact text the model read after each tool call; static page, no GPU |
-| Provenance | [docs/MANIFEST.md](https://github.com/PRINCE2-AI/lexsi-agentic-hinglish/blob/main/docs/MANIFEST.md) — sha256 of 84 files (72 run summaries, the two adapter files, 10 pinned eval files) at a pinned repo revision; `python scripts/manifest.py --check` fails on drift |
+| Provenance | [docs/MANIFEST.md](https://github.com/PRINCE2-AI/lexsi-agentic-hinglish/blob/main/docs/MANIFEST.md) — sha256 of 87 files (74 run summaries, the two adapter files, 11 pinned eval files) at a pinned repo revision; `python scripts/manifest.py --check` fails on drift |
 | ROI (optional deliverable) | [docs/roi.md](https://github.com/PRINCE2-AI/lexsi-agentic-hinglish/blob/main/docs/roi.md) — measured tokens and latency on hard-90, dated list prices: $0.78 vs $55.63 per 1,000 *solved* tasks on the cheapest closed tier (72x), $7.92 vs $316 self-hosted; `python scripts/roi.py` reproduces the tables |
 | HF Collection | https://huggingface.co/collections/primce/lexsi-track-3-hinglish-expense-agent-6aeb3207e10dfc7dda6329d6 |
 
@@ -43,7 +43,7 @@ backs it; the rest are listed as not claimed, on purpose.
 | Requirement | Evidence in this repo |
 |---|---|
 | **AgentTune used** | `scripts/train_grpo.py` builds the trainer through `agenttune.create_agentic_trainer` and runs 40 GRPO steps on top of the SFT warm start (`scripts/hf_job_stage2.sh`, HF Job `6aeb328dc78863f9c6328d08`). |
-| **AuditKIT used** | `scripts/auditkit_eval.py` rebuilds every recorded episode as an `auditkit.agent_eval.AgentCase` + `episode_from_openai_messages`, runs `AgentEvalRunner` in `mode="recorded"` with `FinalStateAssertion` and `CustomPredicate`, and scores `tool_call_f1`, `tool_call_f1_name`, `tool_call_validity`, `redundant_tool_calls`, `agent_loop_detection`. No judge model is used. Replayed on 1.1.3 and on the current 1.1.6: identical verdicts on all four runs (29/30, 86/90, 28/30, 26/30). |
+| **AuditKIT used** | `scripts/auditkit_eval.py` rebuilds every recorded episode as an `auditkit.agent_eval.AgentCase` + `episode_from_openai_messages`, runs `AgentEvalRunner` in `mode="recorded"` with `FinalStateAssertion` and `CustomPredicate`, and scores `tool_call_f1`, `tool_call_f1_name`, `tool_call_validity`, `redundant_tool_calls`, `agent_loop_detection`. No judge model is used. Replayed on 1.1.3 and on the current 1.1.6: identical verdicts on every run (29/30, 86/90, 235/257, 28/30, 26/30, 29/30 on the fresh Devanagari split). |
 | **Before/after metrics, more than one** | Success, exact-call accuracy, tool-call F1/precision/recall, redundant calls, loop detection, ledger-attack rate, abstention — tables below. |
 | **ROI vs a closed model (optional, preferred)** | Measured token traffic and wall time, priced against dated closed-model list prices at 10,000 tasks/month: `docs/roi.md`. |
 | **HF Collection** | linked above. |
@@ -122,6 +122,16 @@ and 1 of 6 `paraphrase`; `convert_sum` stays at 2/3. Devanagari costs a differen
 re-ids its rows; the schema shift shares task ids and carries the paired test. Runs:
 `sft4_shift_hard30`, `sft4_devanagari30`, `base_shift_hard30` in `primce/lexsi-runs`.
 
+**Second Devanagari probe (2026-11-15).** A fresh 30-task split, seed 20261115, five per family,
+pinned at `2b3179ac…`, text checked disjoint against every other split file, and this time with the
+base measured on the same ids: **29/30 for the adapter, 1/30 for the untuned base, 28 fixed and
+0 broken** (exact McNemar p = 7.5e-9), 3.37 calls against 6.07, strict JSON 100% against 61.53%,
+AuditKIT 29/30 on both 1.1.3 and 1.1.6 at agreement 1.0000. The one miss is `hi-017`: the expense
+sits inside the question sentence, the model calls `get_balance` without recording it and answers
+0.00 — the construction behind 14 of the 22 hard-257 misses. This probe's template fixes the older
+file's word order and feminine agreement, so the 25/30 above is kept beside it, not replaced.
+Runs: `base_hindi30`, `sft4_hindi30`.
+
 ### Answer-level checks on the saved episodes (2026-11-14, no new runs)
 
 `scripts/answer_ledger_audit.py` checks every amount in the reply against the ledger the model
@@ -146,9 +156,13 @@ nearest one, so the 84/90 is not wording recognition.
 | hard-90 | sft2 | 0.9333 | 0.9463 | 0.9444 | 0.9500 | 0.000 | 1.000 |
 | hard-90 | sft3 | 0.7778 | 0.8114 | 0.8130 | 0.8102 | 0.0109 | 0.9875 |
 | hard-90 | **sft4** | **0.9333** | **0.9804** | **0.9852** | **0.9769** | **0.000** | **1.000** |
+| hard-257 | **sft4** | **0.9300** | **0.9556** | **0.9530** | **0.9630** | **0.000** | **1.000** |
 
 AuditKIT's own success rate agrees with the project scorer on 30/30 hard-30 tasks and 88/90
-decided hard-90 tasks, so the toolkit reproduces the result rather than replacing it. Full route
+decided hard-90 tasks, so the toolkit reproduces the result rather than replacing it. On hard-257
+the two agree on **all 257 ids**: 235 successes under each scorer, agreement **1.0000**, tool-call
+F1 0.9556, validity 1.000, zero redundant calls and zero loops — under 1.1.3 and 1.1.6. The fresh
+Devanagari probe is identical under both versions too: 29/30, agreement 1.0000. Full route
 (with `finish` compared on name only): base hard-30 exact 0.100 / F1 0.448; sft4 hard-90 exact
 0.967 / F1 0.996.
 
@@ -275,9 +289,9 @@ not shipped (`docs/GUARD.md`).
 
 ```bash
 git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
-python scripts/verify_all.py      # 29 checks: pins, oracle 30/30, safety (four splits incl. Hinglish payloads), contrarian splits, Devanagari, schema shift, reward, stats, AuditKIT adapter, demo handlers, guard sandbox
-python scripts/verify_all.py --with-tests   # 30 checks: the same, plus the pytest suite
-python scripts/manifest.py --check          # re-hashes 84 files on the Hub; fails on drift
+python scripts/verify_all.py      # 30 checks: pins, oracle 30/30, safety (four splits incl. Hinglish payloads), contrarian splits, Devanagari, schema shift, reward, stats, AuditKIT adapter, demo handlers, guard sandbox
+python scripts/verify_all.py --with-tests   # 31 checks: the same, plus the pytest suite
+python scripts/manifest.py --check          # re-hashes 87 files on the Hub; fails on drift
 ```
 
 On a T4 (one GPU is enough):

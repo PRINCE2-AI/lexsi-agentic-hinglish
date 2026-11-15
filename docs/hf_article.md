@@ -28,8 +28,8 @@ Four steps, no GPU and no token, in the order a judge can do them:
 
 1. **Failure and fix, frozen.** In the Space's replay panel, leave *Shipped adapter — correct split*: verdict **MATCH**, tool trace and closing ledger on the page. Switch to *Base model — duplicate expenses*: **MISMATCH**, 8 calls, never calls `finish`. Same scorer, same page. The [episode gallery](https://huggingface.co/spaces/primce/hinglish-episodes) does this for all 90 held-out tasks, with the six both-model failures one filter away.
 2. **The defence, also frozen.** Open *Try the guard yourself*, pick *Note with an English payload*, mode `strip`, press **Run the guard**: the `note` key is gone and the verdict names the rules that fired. Then pick *Blind b-05*: **not flagged** — a published blind spot, not a bug.
-3. **Every number, its run.** `docs/RESULTS.md`, `docs/SAFETY.md`, `docs/GUARD.md` and `docs/STATS.md` name the run directory behind each figure; `python scripts/fetch_runs.py` pulls those `summary.json` files from `primce/lexsi-runs`, and `docs/MANIFEST.md` carries the sha256 of all 84 published files — 72 run summaries, the two shipped adapter files and ten pinned eval files — re-checkable with `python scripts/manifest.py --check`.
-4. **Recompute offline.** `python scripts/verify_all.py` → 29 checks (dataset pins, oracle 30/30, guard, six safety splits, demo handlers), CPU only; `--with-tests` makes it 30.
+3. **Every number, its run.** `docs/RESULTS.md`, `docs/SAFETY.md`, `docs/GUARD.md` and `docs/STATS.md` name the run directory behind each figure; `python scripts/fetch_runs.py` pulls those `summary.json` files from `primce/lexsi-runs`, and `docs/MANIFEST.md` carries the sha256 of all 87 published files — 74 run summaries, the two shipped adapter files and eleven pinned eval files — re-checkable with `python scripts/manifest.py --check`.
+4. **Recompute offline.** `python scripts/verify_all.py` → 30 checks (dataset pins, oracle 30/30, guard, six safety splits, demo handlers), CPU only; `--with-tests` makes it 31.
 
 ## TL;DR
 
@@ -139,8 +139,9 @@ of names, amounts and phrasings — there is no third-party dataset, and no mode
 The distribution by task type is the `Purpose` column above; by family it is the table below.
 
 **Languages.** All rows are Hinglish written in Roman script, with Devanagari words and names mixed
-into the `paraphrase` family; the Devanagari probe rewrites all 30 hard-30 tasks entirely in
-Devanagari script, and the safety splits carry their payloads in English, Latin Hinglish and
+into the `paraphrase` family; two Devanagari probes rewrite the hard families entirely in Devanagari
+script (a 30-task rewrite of hard-30 at 25/30, and a fresh 30-task split built 15 Nov at 29/30 with
+the base at 1/30), and the safety splits carry their payloads in English, Latin Hinglish and
 Devanagari (6 of the 24 Hinglish-payload rows are Devanagari). There is no English-only scored split.
 
 **Leak check.** Exact text match, not embeddings or MinHash: the builders refuse to emit a task
@@ -337,7 +338,7 @@ Two moves in opposite directions. `two_query` rises from 12/15 to 50/50. `conver
 euros"`. The adapter reads it as a splitting request — two `add_expense` calls, `settle_up`, and a
 balance answer — and scores 0 of 14 on it. That sentence appears nowhere else under `data/`;
 without those rows the run is 235/243 = 96.7%. The other eight misses are two wrong ledgers and six
-total-sum slips where both conversions are right and the stated total is off by 100 or 1,000
+total-sum slips where both conversions are right and the stated total is off by 1, 100 or 1,000
 (`h27-207` says 10,457.20 for 10,557.20). This is reported, not patched: the split was pinned
 before the run, 15 tasks per family never sampled that phrasing, and 257 did.
 
@@ -405,6 +406,24 @@ Devanagari costs a different four tasks: `paraphrase` 6/6 → 3/6 and `two_query
 argument reliability still 1.000 and strict JSON 98.89%, answers still in Latin script. The rename
 instead takes 3 of 6 `two_query`. Two probes, two different failure sets — neither is a single
 mechanism, and neither is a headline number: both are 83.33% at n = 30 (Wilson 66.4–92.7%).
+
+### A second Devanagari probe, built 15 Nov, with the base control
+
+That Devanagari row reuses one split and has no base run. The second probe fixes both: 30 new
+tasks, seed 20261115, five per family, pinned at `2b3179ac…`, text checked disjoint against every
+other split file, and the untuned base measured on the same ids (2026-11-15, one T4, greedy).
+
+| Run | n | success | Wilson 95% | calls | strict JSON | AuditKIT 1.1.3 / 1.1.6 |
+|---|---:|---:|---:|---:|---:|---|
+| untuned base | 30 | 3.33% (1/30) | 0.6–16.7% | 6.07 | 61.53% | 1/30, agreement 1.0000 |
+| shipped adapter | 30 | **96.67% (29/30)** | 83.3–99.4% | 3.37 | 100% | 29/30, agreement 1.0000 |
+
+Paired on the same ids: **28 fixed, 0 broken** (exact McNemar p = 7.5e-9). The adapter's one miss
+is the construction that owns 14 of the 22 hard-257 misses — the expense sits inside the question
+sentence, so the model calls `get_balance` without recording it and answers 0.00. The template in
+this probe fixes the earlier file's word order and feminine amount-verb agreement, and the split is
+new, so **the 25/30 above is kept beside the 29/30 and not replaced by it**: two samples of the
+same question, one with the grammar nits removed.
 
 ## The split a task-success number cannot see
 
@@ -510,7 +529,7 @@ No judge model scores anything. Six shortcuts a tuned agent could take, and what
 
 If you only check five things: the split was frozen before the run (`docs/PREREGISTRATION.md`); a
 second scorer re-derives it (`scripts/auditkit_eval.py`); the paired test runs on the same ids
-(`scripts/bootstrap.py`); each claim has a control; and `python scripts/verify_all.py` passes 29
+(`scripts/bootstrap.py`); each claim has a control; and `python scripts/verify_all.py` passes 30
 checks with no GPU. The full route is in `docs/JUDGE.md`.
 
 ## AuditKIT: an independent scorer on the same episodes
@@ -531,8 +550,10 @@ implementation:
 Its success verdict agrees with this repo's deterministic scorer on **30/30** hard-30 tasks and
 **88/90** decided hard-90 tasks, so the toolkit reproduces the result rather than replacing it.
 On hard-257 the two agree on **every one of the 257 task ids** — 235 successes under each scorer,
-agreement **1.0000** — so the wider headline is not an artefact of this repo's answer check.
-That agreement number is the point: two independent scorers, one dataset, no judge.
+agreement **1.0000** — so the wider headline is not an artefact of this repo's answer check. The
+fresh Devanagari probe (built 15 Nov) behaves the same way: **29/30** for the adapter and **1/30**
+for the base, agreement 1.0000, on both toolkit versions. That agreement number is the point: two
+independent scorers, one dataset, no judge.
 
 Where the two differ, AuditKIT is the more lenient one, and the disagreement only ever goes that
 way: it counts 86/90 on hard-90 against the ledger scorer's 84/90. Both disputed tasks (`h9-019`,
@@ -543,8 +564,8 @@ the balance in the answer and fails them. The headline number is the stricter on
 
 The runs were first scored on AuditKIT 1.1.3 and re-scored on the current 1.1.6, which landed on
 2026-11-07 after our freeze: same verdict on every replayed run — 29/30 (hard-30), 86/90 (hard-90),
-235/257 (hard-257), 28/30 (renamed schema), 26/30 (Devanagari), agreement unchanged at 1.000,
-0.9778, 1.0000, 0.900 and 0.967.
+235/257 (hard-257), 28/30 (renamed schema), 26/30 (Devanagari), 29/30 (Devanagari, fresh split),
+agreement unchanged at 1.000, 0.9778, 1.0000, 0.900, 0.967 and 1.0000.
 
 The base model, on the same rows: tool error rate **22.3%** (hard-30) and **17.4%** (hard-90),
 `overcall` **1.08**, `strict_rate` **0.534**, and 16/30 episodes that never reached `finish`.
@@ -876,7 +897,8 @@ the parse-error correction prompt, a no-payload control on the injection tasks, 
 attacker that can see the eval.
 
 Four probes that used to be on this list now have numbers: the Hammer-style schema shift (25/30
-against 29/30, untuned base 0/30), a Devanagari version of the same 30 tasks (25/30), a second
+against 29/30, untuned base 0/30), two Devanagari splits (25/30 on the first, 29/30 against 1/30
+for the base on the fresh one built 15 Nov), a second
 safety sample plus a payee-redirect attack, and a Hinglish/Devanagari payload split — the last two
 together give 6 attacker expenses in the ledger and 0 attacker values in the answer on 136 injected
 tasks, with a fifth 30-task split at 5/30 and 0/30.
@@ -956,9 +978,10 @@ and it is already in every run's `summary.json`.
   the shipped adapter. Counts are reported next to every percentage.
 - Hard rows are held-out *instances* of the same six templates, so this measures
   generalization across amounts/names/languages, not across task formats.
-- Language coverage is Roman-script Hinglish with English numerals, plus a 30-task Devanagari
-  rewrite of hard-30 (25/30, re-ided rows) and Devanagari rules in the guard; no other language or
-  script was measured.
+- Language coverage is Roman-script Hinglish with English numerals, plus two 30-task Devanagari
+  probes — a rewrite of hard-30 (25/30, re-ided rows, no base run) and a fresh split built 15 Nov
+  (29/30 against 1/30 for the base, 28 fixed and 0 broken) — and Devanagari rules in the guard; no
+  other language or script was measured.
 - eval-24 is in-distribution with easy train, which is why it stays at 100%.
 - The shipped adapter is better than round 1 by 4 tasks on hard-90, but the paired test is not
   significant (7 fixed, 3 broken, p = 0.34); the claim is "at least as good, directionally
@@ -1018,23 +1041,25 @@ huggingface-cli download primce/lexsi-runs --repo-type dataset --local-dir runs
 
 | Number | Command | What it prints |
 |---|---|---|
-| 29 dataset and invariant checks | `python scripts/verify_all.py` | `all 29 checks passed` |
+| 30 dataset and invariant checks | `python scripts/verify_all.py` | `all 30 checks passed` |
 | Every interval | `python scripts/bootstrap.py` | writes `docs/STATS.md`: Wilson + task bootstrap, paired bootstrap |
 | The corrected ledger table, from saved trajectories | `python scripts/rescore_safety.py` | sentinel `0/136`, ledger `6/136`, answer `0/136` for the adapter; held-out `1/30`, `5/30`, `0/30` |
 | Answers that name the injection | `python scripts/warn_scan.py` | adapter `0` of 136, from `final_response` |
 | 29/30 on hard-30, re-scored by AuditKIT | `python scripts/auditkit_eval.py --run sft4_hard30 --tasks data/tasks_hard_eval.jsonl` | `"success": 29`, `agreement_with_own_scorer 1.0` |
 | 84/90 on hard-90, re-scored by AuditKIT | `python scripts/auditkit_eval.py --run sft4_hard90 --tasks data/tasks_hard90_eval.jsonl` | `agreement 0.9778` (88/90), AuditKIT's own count 86/90 — see the scorer note above |
 | 235/257 on hard-257, re-scored by AuditKIT | `python scripts/auditkit_eval.py --run sft4_hard257 --tasks data/tasks_hard257_eval.jsonl` | `"success": 235`, `agreement_with_own_scorer 1.0`, F1 0.9556 |
+| 29/30 on the fresh Devanagari split, re-scored by AuditKIT | `python scripts/auditkit_eval.py --run sft4_hindi30 --tasks data/tasks_hindi30_eval.jsonl` | `"success": 29`, `agreement_with_own_scorer 1.0`, name-route F1 0.9933 |
 | base → shipped, paired | `python scripts/stats.py --a runs/base_hard90 --b runs/sft4_hard90` | 81 fixed, 0 broken, `mcnemar_p` underflows to 0 |
 | sentinel 13/24 and answer 8/24 on base, 0/24 and 0/24 on shipped | `python scripts/safety_table.py` | `attack_ledger` 54.17% → 0.00%, `attack_answer` 33.33% → 0.00% |
 | second sample: 32/72 sentinel and 11/72 answer on base, 0/72 and 0/72 on shipped | `python scripts/safety_table.py --run "Base=runs/safety2_base" --run "sft4=runs/safety2_sft4" --run "sft4+hp=runs/safety2_sft4_hardened"` | every ledger and answer column 0.00 for the adapter |
 | Hinglish payloads: 10/24 and 5/24 on base, 0/24 and 0/24 on shipped | `python scripts/safety_table.py --run "Base=runs/safety_hinglish_base" --run "sft4=runs/safety_hinglish_sft4" --run "sft4+hp=runs/safety_hinglish_sft4_hardened"` | every ledger and answer column 0.00 for the adapter, 23/24 solved |
 | The sixth split: 47/72 → 72/72, and the pooled 13/208 → 0/208 | `python scripts/bootstrap.py` | writes the 72-row table into `docs/STATS.md` from `runs/safety_adaptive72_sft4*` |
-| 84 pinned files, including 72 run summaries and the two adapter files | `python scripts/manifest.py --check` | `all 84 hashes match docs/MANIFEST.md` |
+| 87 pinned files, including 74 run summaries and the two adapter files | `python scripts/manifest.py --check` | `all 87 hashes match docs/MANIFEST.md` |
 | every per-task row | `runs/<run>/results.jsonl` | one JSON row per task, with the same fields as `summary.json` |
 
-The two probe splits are also re-scorable offline, and there the same rule holds: AuditKIT counts
-28/30 (renamed schema) and 26/30 (Devanagari) against the ledger scorer's 25/30 and 25/30.
+The three probe splits are also re-scorable offline, and there the same rule holds: AuditKIT counts
+28/30 (renamed schema), 26/30 (Devanagari) and 29/30 (Devanagari, fresh split) against the ledger
+scorer's 25/30, 25/30 and 29/30.
 
 ## Repo layout
 
@@ -1054,7 +1079,7 @@ The two probe splits are also re-scorable offline, and there the same rule holds
 git clone https://github.com/PRINCE2-AI/lexsi-agentic-hinglish && cd lexsi-agentic-hinglish
 python data/build_hard.py && python data/build_hard90.py && python data/build_mix.py
 python data/build_abstain.py && python data/build_safety.py
-python scripts/verify_all.py          # no GPU, no token: 29 checks
+python scripts/verify_all.py          # no GPU, no token: 30 checks
 python scripts/fetch_runs.py          # run logs from primce/lexsi-runs, ~20 MB, public
 python scripts/bootstrap.py           # rewrites docs/STATS.md; git diff stays empty
 
@@ -1148,6 +1173,13 @@ the GRPO null) and the safety result are mine.
 
 ## Changelog
 
+- **v6 (2026-11-15)** — a second Devanagari probe, this time with the base control. 30 new tasks,
+  seed 20261115, five per family, pinned at `2b3179ac…` and disjoint from every other split file:
+  the shipped adapter scores **29/30** and the untuned base **1/30** on the same ids (**28 fixed,
+  0 broken**, exact McNemar p = 7.5e-9), with AuditKIT 1.1.3 and 1.1.6 both returning 29/30 at
+  agreement 1.0000. The older 30-task rewrite is kept at 25/30; the new template fixes its word
+  order and feminine agreement, so the two are reported side by side and not merged. The single
+  adapter miss is the same construction behind 14 of the 22 hard-257 misses.
 - **v5 (2026-11-15)** — the independent scorer now covers the headline split: AuditKIT 1.1.3 and
   1.1.6 replay all 257 recorded episodes and return **235/257 with per-task agreement 1.0000**
   (tool-call F1 0.956, validity 1.000, zero redundant calls and loops), so the wider number is not

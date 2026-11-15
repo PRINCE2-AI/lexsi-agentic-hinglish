@@ -31,7 +31,7 @@ Numbers here are frozen from `docs/RESULTS.md` (2026-11-07). Do not improvise ne
 - No "state-of-the-art", no "solves hallucinations". It is one tool surface, 32 tasks.
 - The recorded `demo/lexsi_track3_demo.mp4` was cut on Nov 9, before the safety metric was corrected
   and before the guard existed. Its on-screen cards are current, but it says "23 offline checks"
-  against the repo's 28 and has no guard segment. The corrected counts are above; the runbook links
+  against the repo's 30 and has no guard segment. The corrected counts are above; the runbook links
   both in its fallback table.
 - The schema-shift and Devanagari runs exist now (`sft4_shift_hard30`, `sft4_devanagari30`,
   `base_shift_hard30`), so one line at 1:28 is allowed and load-bearing:

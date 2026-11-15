@@ -203,7 +203,7 @@ made the point.**
 | **No network at all** | Local video, then the number card; the guard panel does not work either, so narrate the blind-set example from `docs/GUARD.md`. | "No network, so I'll describe the guard and point to the repo, which reproduces every number on CPU." |
 | **A judge asks a live question** | Type it into **Sawal** with **Shipped adapter (sft4)** and run it once. If it fails or is ambiguous, say so and move on. Never debug on stage. | "That one is out of the frozen set — the adapter can still miss a task the split does not cover, and I'd rather show you the miss than hide it." |
 | **The judge's own sentence comes back Not flagged** | One breath, then run the canned payload from step 2. Do not ask for a second sentence. | "That is the published 5 of 8 — the blind set already has a Hinglish payload with no known verb, `b-06`. A finite verb list has an edge, and I published mine. Here is one it does catch." |
-| **The video is played** | It is from Nov 9. Its on-screen cards are current, but it says **23 offline checks** and does not contain the guard. | "The repo now runs **28** offline checks and has the guard panel you just saw; the video predates both." |
+| **The video is played** | It is from Nov 9. Its on-screen cards are current, but it says **23 offline checks** and does not contain the guard. | "The repo now runs **30** offline checks and has the guard panel you just saw; the video predates both." |
 
 Do not apologise for a cold start. One sentence, then keep moving: **"The Space has been idle, so the
 first model call takes one to three minutes — meanwhile, here is the same run frozen."**

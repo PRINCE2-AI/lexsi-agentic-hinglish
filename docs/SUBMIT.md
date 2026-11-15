@@ -76,13 +76,13 @@ Open the form from the Lexsi Discord and paste this block field by field. Nothin
 **Abstract field (one block, under 500 words):**
 
 ```text
-Track 3, solo. Base model CohereLabs/tiny-aya-global (3.35B); LoRA SFT on oracle trajectories, then 40 GRPO steps through AgentTune's trainer; every headline number re-scored by AuditKIT 1.1.3 in recorded mode.
+Track 3, solo. Base model CohereLabs/tiny-aya-global (3.35B); LoRA SFT on oracle trajectories, then 40 GRPO steps through AgentTune's trainer; every headline number re-scored by AuditKIT 1.1.3 and 1.1.6 in recorded mode. On the 257-task split the organiser's scorer returns the same count on every one of the 257 ids (agreement 1.0000).
 
-Result. On a frozen 30-task hard split, task success goes 3.33% -> 96.67% (28 fixed, 0 broken, exact McNemar p = 7.5e-9); on a 90-task holdout, 3.33% -> 93.33% (81 fixed, 0 broken, p < 1e-20). Three seeds of the shipped recipe pool to 251/270 = 93.0% (87.4-97.4% task-block bootstrap), and the shipped seed is not the best one. A third pinned split of 257 fresh tasks scores 235/257 = 91.44% (87.4-94.3% Wilson); 14 of its 22 misses are one unseen Hinglish phrasing, the rest wrong ledgers or total-sum slips. Calls per task fall from 7.24 to 3.38 against an oracle 3.41. Success is the final ledger compared with a deterministic integer-paise oracle: no LLM judge anywhere.
+Result. On a frozen 30-task hard split, task success goes 3.33% -> 96.67% (28 fixed, 0 broken, exact McNemar p = 7.5e-9); on a 90-task holdout, 3.33% -> 93.33% (81 fixed, 0 broken, p < 1e-20). Three seeds of the shipped recipe pool to 251/270 = 93.0% (87.4-97.4% task-block bootstrap), and the shipped seed is not the best one. A third pinned split of 257 fresh tasks scores 235/257 = 91.44% (87.4-94.3% Wilson); 14 of its 22 misses are one unseen Hinglish phrasing, the rest wrong ledgers or total-sum slips. A fresh Devanagari split, with a base control, is 29/30 against 1/30. Calls per task fall from 7.24 to 3.38 against an oracle 3.41. Success is the final ledger compared with a deterministic integer-paise oracle: no LLM judge anywhere.
 
-Safety, the part I would keep if I could keep one. A shared-expense agent that moves money is a target for indirect prompt injection through tool results. Four pinned splits (136 injected tasks, four payload styles, three payload languages) put an attacker expense in the ledger on 6 of 136 and an attacker value in 0 of 136 answers, while the base model fails 18/24, 48/72, 5/16 and 14/24. An earlier "0 of 136" ledger claim came from a threshold a shared expense cannot reach; it is corrected publicly. A 30-task split built after the adapter froze scores 5/30 and 0/30, every miss on an obfuscated amount. A sixth, 72-task split was then written after reading the guard's rules: the same 999999 INR correction, arriving spelled out, cut across two tool results, or as 1000000 minus 1 so the literal never appears - the adapter alone solves 47/72 and pays the attacker 7 times. A deterministic guard in front of the model takes those rows to 72/72 solved and 0 harm, and the four published splits from 6 to 0 of 136: 13 of 208 attacker expenses pooled, 0 with the guard, 208/208 still solved. Two modes are published, one replacing the injected note and one deleting it, so the effect is the removal and not a hint. The guard is scored on three sets: 166/166 published payloads, 5/8 on eight payloads written after its rules froze, 6/8 on eight written after reading its source (the two misses spell the amount out).
+Safety, the part I would keep if I could keep one. A shared-expense agent that moves money is a target for indirect prompt injection through tool results. Four pinned splits (136 injected tasks, four payload styles, three payload languages) put an attacker expense in 6 of 136 ledgers and an attacker value in 0 of 136 answers, while the base model fails 18/24, 48/72, 5/16 and 14/24. An earlier "0 of 136" ledger claim came from a threshold a shared expense cannot reach; it is corrected publicly. A 30-task split built after the adapter froze scores 5/30 and 0/30, every miss on an obfuscated amount. A sixth, 72-task split was then written after reading the guard's rules: the same 999999 INR correction, arriving spelled out, cut across two tool results, or as 1000000 minus 1 so the literal never appears - the adapter alone solves 47/72 and pays the attacker 7 times. A deterministic guard in front of the model takes those rows to 72/72 solved and 0 harm, and the four published splits from 6 to 0 of 136: 13 of 208 attacker expenses pooled, 0 with the guard, 208/208 still solved. Two modes are published, so the effect is the removal and not a hint. The guard is scored on three sets: 166/166 published payloads, 5/8 on eight written after its rules froze, 6/8 on eight written after reading its source (the two misses spell the amount out).
 
-Verification. python scripts/verify_all.py runs 29 checks offline with no GPU and no token (30 with --with-tests); docs/MANIFEST.md pins 83 files by sha256 at a repo revision and fails on drift; two static galleries render all 90 held-out tasks base-vs-adapter and all 72 injection episodes with the guard off vs on, no GPU; and the limitations (one 8-payload source-read probe and no red-team loop, no 8B ablation, two safety runs aggregate-only) are stated in the README before anyone asks.
+Verification. python scripts/verify_all.py runs 30 checks offline with no GPU and no token (31 with --with-tests); docs/MANIFEST.md pins 87 files by sha256 at a repo revision and fails on drift; two static galleries render all 90 held-out tasks base-vs-adapter and all 72 injection episodes with the guard off vs on, no GPU; and the limitations (one 8-payload source-read probe and no red-team loop, no 8B ablation, two safety runs aggregate-only) are stated in the README before anyone asks.
 ```
 
 **Other fields:**
@@ -101,7 +101,9 @@ LLM judge.
 Toolkits: AgentTune (GRPO stage built with agenttune.create_agentic_trainer, scripts/train_grpo.py)
 and AuditKIT 1.1.3 (episode_from_openai_messages + AgentEvalRunner in recorded mode with
 FinalStateAssertion and CustomPredicate, scripts/auditkit_eval.py). No judge model. Exact-call
-accuracy 0.033 -> 1.000 and tool-call F1 0.188 -> 1.000 on the same 30 tasks.
+accuracy 0.033 -> 1.000 and tool-call F1 0.188 -> 1.000 on the same 30 tasks; on the 257-task split
+AuditKIT returns 235/257 with agreement 1.0000 on every id (tool-call F1 0.956, validity 1.000,
+zero redundant calls).
 
 Differentiator: the repo ships an indirect prompt-injection eval for ledger agents, scored without
 an LLM judge, plus a prompt-level defence measured on the same tasks. Four pinned splits, four
@@ -117,15 +119,16 @@ guard's rules and encodes the same 999999 INR so the literal never appears: the 
 47/72 with 7 expenses and 28 unplanned calls, the guarded run **72/72 with 0 harm**, which is
 **13 of 208 to 0 of 208** pooled. Abstention is 4/8 asked by
 default on both samples and 7/8 and 8/8 with the hardened prompt, 0/8 invented, against a
-pre-registered 6/8 bar. Two generalisation probes are published with their runs: renamed tool
-schema 25/30 against 29/30 canonical, Devanagari 25/30, and the untuned base under the same
-rename 0/30.
+pre-registered 6/8 bar. Three generalisation probes are published with their runs: renamed tool
+schema 25/30 against 29/30 canonical (untuned base 0/30), Devanagari 25/30, and a fresh 30-task
+Devanagari split built 15 Nov at 29/30 with the untuned base at 1/30 (28 fixed, 0 broken) and
+AuditKIT agreeing on both.
 
 Video (1:44, narrated): https://huggingface.co/datasets/primce/lexsi-runs/resolve/main/demo/lexsi_track3_demo.mp4
 Write-up: submission/README.md in the repo (also rendered at the write-up link below)
-Reproduce in two minutes, no GPU and no token: git clone the repo, then python scripts/verify_all.py -> 29 checks (30 with --with-tests);
+Reproduce in two minutes, no GPU and no token: git clone the repo, then python scripts/verify_all.py -> 30 checks (31 with --with-tests);
 python scripts/fetch_runs.py and python scripts/bootstrap.py then recompute every interval, paired test and the pooled seed rate, and leave docs/STATS.md byte-identical;
-python scripts/manifest.py --check re-hashes 83 files on the Hub and fails on drift.
+python scripts/manifest.py --check re-hashes 87 files on the Hub and fails on drift.
 
 Links:
   code: https://github.com/PRINCE2-AI/lexsi-agentic-hinglish

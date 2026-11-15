@@ -408,6 +408,34 @@ not riding on tool-name strings and not only on Latin script. Each change costs 
 tasks and neither cost is distinguishable from noise at this n, which is the honest reading at a
 probe of this size.
 
+### A second Devanagari probe, with the base control (2026-11-15)
+
+The Devanagari row above reuses one split and has no base control. This probe fixes both: 30 new
+tasks (`data/tasks_hindi30_eval.jsonl`, seed 20261115, five per family, pinned at `2b3179ac…`),
+task text checked disjoint against every other split file, and the untuned base measured on the
+same ids. Two differences from the older file are disclosed rather than silenced: the paraphrase
+template here fixes the word order and the feminine amount-verb agreement of the 2026-11-08
+template, and the split is new - so this is a second sample of the same question, not a rescore.
+
+| Run | n | success | Wilson 95% | calls | strict_rate | parse_fail | AuditKIT 1.1.3 / 1.1.6 | seconds |
+|---|---:|---:|---:|---:|---:|---:|---|---:|
+| `base_hindi30` - untuned base | 30 | **3.33% (1/30)** | 0.6–16.7% | 6.07 | 61.53% | 0.33 | 1/30, agreement 1.0000 | 2027 |
+| `sft4_hindi30` - shipped adapter | 30 | **96.67% (29/30)** | 83.3–99.4% | 3.37 | 100% | 0.00 | 29/30, agreement 1.0000 | 2595 |
+
+Paired over the same 30 ids: **28 fixed, 0 broken**, one task failed by both, exact McNemar
+p = 7.5e-9. The single adapter miss is `hi-017`, and it is the known construction rather than a new
+failure: the expense sits inside the question sentence, the model calls `get_balance` without ever
+calling `add_expense`, and answers 0.00. That is the same shape as 14 of the 22 hard-257 misses.
+The base's one success is `hi-030` (empty ledger).
+
+On AuditKIT's name route the adapter scores tool-call F1 0.9933 and exact 0.9667, identical under
+1.1.3 and 1.1.6. Its ledger route compares argument values and so reads the Devanagari expense
+descriptions against the Latin ones in the expected actions; F1 0.633 there is a property of the
+split, not of the run, and the same gap shows on the 2026-11-08 Devanagari run (0.53).
+
+Wall clock is 86.5 s per task for the adapter and 67.6 s for the base on the same Kaggle T4, which
+is slower than the 61.7 s hard-257 figure measured in a different session.
+
 ### What round 3 changed
 
 Twelve tasks on hard-90 were the price of teaching "ask". Round 3 identified that the model had
@@ -719,8 +747,16 @@ splitting request — two `add_expense` calls, `settle_up`, and an answer about 
 over every `tasks*.jsonl`). Drop those 14 and the run is 235/243 = 96.7%; the other 36 convert_sum
 rows are 30/36, and the other eight misses are two `paraphrase` rows with the wrong ledger
 (`h27-167`, `h27-190`) and six total-arithmetic slips where both conversions are right and the
-stated total is off by 100 or 1,000 (e.g. `h27-207`: `Total 10457.20 INR` for 10,557.20;
+stated total is off by 1, 100 or 1,000 (e.g. `h27-207`: `Total 10457.20 INR` for 10,557.20;
 `h27-232`: 14,328.00 for 14,329.00).
+
+All 22 misses, by id. Every one parses, none loops, and each stays between 3 and 6 calls:
+
+| Group | Task ids | What went wrong |
+|---|---|---|
+| One unseen sum phrasing | `h27-206`, `-208`, `-209`, `-211`, `-213`, `-215`, `-220`, `-229`, `-231`, `-238`, `-239`, `-245`, `-247`, `-249` | The prompt names two currencies and asks for one total. The adapter reads it as a split: two `add_expense` calls, `settle_up`, then balances. **0/14** on this phrasing, which appears in no other file under `data/`. |
+| Wrong ledger | `h27-167`, `h27-190` | Both `paraphrase`. Amounts and currencies are read correctly, but the ledger differs from the oracle's final balances (no tool error). |
+| Total arithmetic | `h27-207` 10,457.20 vs 10,557.20 · `h27-217` 7,524 vs 7,624 · `h27-219` 16,823 vs 15,823 · `h27-225` 11,034 vs 12,034 · `h27-228` 6,129 vs 7,129 · `h27-232` 14,328 vs 14,329 | Both conversions are right; the stated total is wrong. First number is what the reply says, second is the oracle. |
 
 That is what a fresh holdout is for: hard-90 drew 15 convert_sum rows and never sampled this
 phrasing, and n=257 finds it at 14/14. It is published as a failure, not patched — a fix would be a

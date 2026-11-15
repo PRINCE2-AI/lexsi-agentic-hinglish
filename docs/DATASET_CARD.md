@@ -58,6 +58,7 @@ Both are regenerated from `runs/*/results.jsonl` and `runs/*/summary.json` by
 | `sft4_hard90_hardened/` | shipped adapter on clean hard-90 with the hardened system prompt (86/90 vs 84/90 default) |
 | `sft4_shift_hard30/` | shipped adapter on hard-30 with every tool and parameter renamed (25/30 vs 29/30 canonical) |
 | `sft4_devanagari30/` | shipped adapter on the Devanagari version of hard-30, canonical schema (25/30) |
+| `sft4_hindi30/`, `base_hindi30/` | second Devanagari probe, built 15 Nov with a fresh seed: adapter 29/30, untuned base 1/30 on the same ids (28 fixed, 0 broken) |
 | `base_shift_hard30/` | untuned base under the same rename (0/30, loop collapse 0.60) |
 | `sft5_hard30/`, `sft5_hard90/`, `sft5_eval/`, `sft5_sanity/` | mixture ablation (fewer ask rows) |
 | `sft3_seed7_hard30/`, `sft3_seed7_hard90/`, `sft3_seed123_hard30/`, `sft3_seed123_hard90/` | seed control on the mix2 recipe |

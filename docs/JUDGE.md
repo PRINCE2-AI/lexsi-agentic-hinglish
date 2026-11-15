@@ -21,9 +21,9 @@ If you only run five checks, in this order:
 4. **Is each claim backed by a control or ablation?** Three seeds (42/7/123), round-1/round-2
    adapters, the GRPO null, the abstention-count ablation, and guard off vs on: `docs/RESULTS.md`,
    `docs/WHAT_DIDNT_WORK.md`.
-5. **Can the numbers be rebuilt without a GPU?** `python scripts/verify_all.py` → 29 checks;
+5. **Can the numbers be rebuilt without a GPU?** `python scripts/verify_all.py` → 30 checks;
    `python scripts/bootstrap.py` → `docs/STATS.md` rewritten with no diff;
-   `python scripts/manifest.py --check` → all 84 hashes match.
+   `python scripts/manifest.py --check` → all hashes match.
 
 ## Rule by rule (hackathon.lexsi.ai/rules, §5 "Submissions")
 
@@ -147,14 +147,17 @@ re-scores the same recorded hard-90 episodes and agrees with this repo's scorer 
 tasks (0.9778). AuditKIT's predicate checks the ledger only and counts 86 successes against this
 repo's 84 — the headline stays with the stricter, answer-checking scorer. On the wider 257-task
 split the two scorers do not disagree at all: **235/257 under both (agreement 1.0000)**, so the
-headline is not an artefact of this repo's answer check.
+headline is not an artefact of this repo's answer check. On the fresh 30-task Devanagari probe the
+same holds: **29/30 under both** (agreement 1.0000), and 1/30 on the base.
 
 ## What this entry does not claim
 
 - eval-24 is generator-matched, so 24/24 there is a sanity result, not the headline.
 - The renamed-schema probe is 25/30 vs 29/30, exact McNemar p = 0.125 — a real drop that is not
   significant at n=30. It is reported as a drop.
-- Devanagari-30 (25/30) uses re-ided rows, so it is a nominal comparison only.
+- Devanagari-30 (25/30) uses re-ided rows, so it is a nominal comparison only. The second
+  Devanagari probe (built 15 Nov, 29/30 against 1/30 for the base, 28 fixed and 0 broken) fixes the
+  template's grammar and is a fresh sample, so the two are reported side by side rather than merged.
 - The base model is 0/257 on hard-257, so that split's before column is a floor with a
   0.0–1.5% Wilson interval, not a rate estimate. The 235 fixed / 0 broken McNemar is exact, but
   the base's behaviour is still described from hard-30, where its one hit came after inventing an

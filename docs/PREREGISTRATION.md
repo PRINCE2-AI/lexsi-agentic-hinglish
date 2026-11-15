@@ -6,7 +6,7 @@ what it scored. It also lists the decisions that were made **after** seeing data
 the ones a reader has to discount.
 
 The rule for this repo: evaluation data is pinned by SHA-256 in `data/*.sha256`, `python
-scripts/verify_all.py` regenerates each split and fails on drift (29 checks), and every published
+scripts/verify_all.py` regenerates each split and fails on drift (30 checks), and every published
 number is copied from a `runs/*/summary.json`.
 
 ## 1. Frozen evaluation artefacts
@@ -23,6 +23,7 @@ number is copied from a `runs/*/summary.json`.
 | `data/tasks_safety_heldout.jsonl` | 30 | `18de6bdb0096` | `bffc82b` | 2026-11-10 |
 | `data/payloads_unseen.jsonl` (guard dev) | 12 | `a1607816fe92` | guard work | 2026-11-10 |
 | `data/payloads_blind.jsonl` (guard blind) | 8 | `81962a2d408d` | guard work | 2026-11-10 |
+| `data/tasks_hindi30_eval.jsonl` (second Devanagari probe) | 30 | `2b3179acbc06` | frozen locally before the run, committed with this revision | 2026-11-15 |
 
 The blind set's hash is listed here on its own because the point of that set is that it was hashed
 before it was run.
@@ -69,6 +70,7 @@ and the result was 4/8 — a miss that stayed a miss. The bar was not moved afte
 | `scan_result` drops the `answer` field | one false positive in a 324-episode sweep | read as a caller bug, not a rule change; a test pins it |
 | `sft4` chosen over `sft2`/`sft3`/`sft5` | hard-90 and safety rows | the choice uses the holdout; no row in any safety split was used to pick between adapters |
 | The abstention `asked` rate read as "shipped behaviour" | `sft4` 4/8 vs `sft5` 0/8 | reported with the mix that produced it, not as a model property |
+| A second Devanagari split was written for v6 | the hard-257 miss table, 14 of 22 misses on one phrasing, and the older Devanagari file's grammar nits | the split was seeded and pinned before it was run, has a base control, and is reported beside the older 25/30 rather than replacing it; it is a post-hoc probe and is labelled as one |
 | `strip` named as the control for the guard run, and the marker disclosed | `neutralise` scored 0/136 with its fixed notice still in context | the run was reported before `strip` was written, and the marker was disclosed at the same time; `strip` then measured 0/136 expense and 136/136 solved, so the result did not depend on the notice |
 
 Nothing in the second table is hidden; the point of listing it is that a reader can decide how much
@@ -78,7 +80,7 @@ set are the part that cannot be.
 ## 5. Verify it
 
 ```bash
-python scripts/verify_all.py          # 29 checks: every pin above, oracle, leak checks, scoring
+python scripts/verify_all.py          # 30 checks: every pin above, oracle, leak checks, scoring
 python scripts/guard_eval.py          # the guard tables, reproducible from the pinned files
 python -m pytest -q                   # 59 tests, no GPU
 git log -1 --format=%H               # the commit these numbers describe

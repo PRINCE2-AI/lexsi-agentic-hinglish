@@ -1,6 +1,6 @@
 """Run every check that does not need a GPU or a token, and print one verdict.
 
-    python scripts/verify_all.py                # 28 offline checks
+    python scripts/verify_all.py                # 30 offline checks
     python scripts/verify_all.py --with-tests   # the same checks plus the pytest suite
 
 A judge should be able to clone the repo and run this before reading anything else.
@@ -39,6 +39,7 @@ STEPS = [
     ("hard-90 split pin + oracle", ["data/build_hard90.py"]),
     ("hard-257 split pin + oracle", ["data/build_hard257.py"]),
     ("devanagari split pin + oracle", ["data/build_devanagari.py"]),
+    ("hindi-30 split pin + oracle", ["data/build_hindi30.py"]),
     ("contrast split oracle", ["data/build_contrast.py"]),
     ("mix2 leak check", ["data/build_mix.py", "--abstain", "--out", "data/tasks_train_mix2.jsonl"]),
     (
