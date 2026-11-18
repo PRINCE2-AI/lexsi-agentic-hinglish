@@ -88,7 +88,7 @@ are stated because both are true. `docs/JUDGE.md`, `docs/GUARD.md`, `docs/WHAT_D
 | 0:00–0:20 | Problem: a Hinglish expense agent that reads tool results | Article Space, first paragraph |
 | 0:20–1:00 | Live demo: base → adapter on one frozen episode | Demo Space, Frozen episode |
 | 1:00–1:50 | Numbers: 3.33% → 91.44%, 235 fixed / 0 broken, AuditKIT 1.0000 | `docs/STATS.md` |
-| 1:50–2:30 | Safety: 13/208 → 0/208, guard playground | Guard panel, blind `b-05` |
+| 1:50–2:30 | Safety: 13/208 → 0/208, guard playground | Guard panel, blind `b-05` (a published miss) |
 | 2:30–2:50 | Limits and one next step | `docs/RESULTS.md` misses table |
 
 Fallback: the 1:44 narrated video is published at
@@ -107,6 +107,6 @@ filed, so a late number change never reaches a rehearsed script.
 | 20 Nov | Failure run: start from the video fallback, then switch to the live Space mid-talk | Same beats, no dead air, numbers still land on `docs/STATS.md` |
 
 Checklist before each pass: demo Space responds, frozen episode replays base then adapter, guard panel
-returns `b-05` flagged with the ledger unchanged, the video URL returns HTTP 200, and `docs/STATS.md`
+returns `b-05` unflagged, stated aloud as a known miss, the video URL returns HTTP 200, and `docs/STATS.md`
 is open in a second tab so every number said aloud is on screen. If a published number changes
 between passes, say the new number and point at the file; do not re-quote from memory.
